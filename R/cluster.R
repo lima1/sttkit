@@ -1,0 +1,318 @@
+#' cluster_spatial
+#'
+#' Normalize spatial transcriptomics Seurat object
+#' @param ndata Object, read by \code{\link{read_spatial}}.
+#' @param resolution Seurat cluster resolution 
+#' @param dims PCs to use
+#' @param verbose Verbose Seurat output
+
+#' @export cluster_spatial
+#' @examples
+#' cluster_spatial()
+
+cluster_spatial <- function(ndata, resolution = 0.8, dims = 1:30, verbose = TRUE) {
+    flog.info("Using resolution %f and %i PCs for clustering.", 
+        resolution, length(dims))
+    ndata <- RunPCA(object = ndata, npcs = min(ncol(ndata)-1, 50),
+         verbose = verbose)
+    ndata <- RunUMAP(object = ndata, dims = dims, verbose = verbose)
+    ndata <- FindNeighbors(ndata, dims = dims, verbose = verbose)
+    ndata <- FindClusters(ndata, resolution = resolution, verbose = verbose)
+    ndata
+}    
+
+#' plot_clusters
+#'
+#' Plot clusters
+#' @param obj Object, read by \code{\link{read_spatial}}.
+#' @param prefix Prefix of output files
+
+#' @export plot_clusters
+#' @examples
+#' plot_clusters()
+plot_clusters <- function(obj, prefix) {
+    reference_technology <- "spatial"
+    if ("technology" %in% colnames(obj@meta.data)) {
+        reference_technology <- obj$technology[obj$reference][1]
+    }
+    if (!"new.idents" %in% colnames(obj@meta.data)) {
+        obj$new.idents <- Idents(obj)
+    }
+    obj$new.idents <- factor(as.character(obj$new.idents), 
+        levels = .order_clusters(obj$new.idents))
+    label <- "predicted.id" %in% colnames(obj@meta.data)
+    pdf(paste0(prefix, "_", reference_technology, "_cluster.pdf"), width=10, height=5)
+    if (label) { 
+        flog.info("UMAP label...")
+    } else {
+        flog.info("UMAP idents...")
+    }
+    print(DimPlot(obj, reduction = "umap", label = label))
+    dev.off()
+    flog.info("UMAP splitted...")
+    if ("call" %in% colnames(obj@meta.data)) {
+        pdf(paste0(prefix, "_", reference_technology, "_cluster_call.pdf"), width = 10, height = 5)
+        print(DimPlot(obj, reduction = "umap", group.by = "call", label = label))
+        dev.off()
+        pdf(paste0(prefix, "_", reference_technology, "_cluster_splitted.pdf"), width = 10, height = 10)
+        print(DimPlot(obj, split.by = "new.idents", group.by = "call"))
+        dev.off()
+    }
+    if ("label" %in% colnames(obj@meta.data)) {
+        .plot_cluster_library(obj, field = "label", prefix = prefix, 
+            reference_technology = reference_technology)
+    } else if ("library" %in% colnames(obj@meta.data)) {
+        .plot_cluster_library(obj, field = "library", prefix = prefix, 
+            reference_technology = reference_technology)
+    }
+    if ("hg19" %in% colnames(obj@meta.data) && 
+        "mm10" %in% colnames(obj@meta.data)) {
+        flog.info("Violinplot hg19 vs mm10...")
+        pdf(paste0(prefix, "_", reference_technology, "_cluster_violin_call.pdf"), width=10, height=5)
+        print(VlnPlot(obj, features = c("hg19", "mm10"), sort = TRUE))
+        dev.off()
+        pdf(paste0(prefix, "_", reference_technology, "_cluster_violin_qc.pdf"), width = 10, height = 5)
+        print(VlnPlot(obj, features = c("percent.mito", "percent.ribo"), sort = TRUE))
+        dev.off()
+    }
+}
+
+.find_technical_replicates <- function(labels) {
+    labels <- gsub("_\\d+$","", labels)
+    tbl <- table(labels)
+    lapply(names(tbl[tbl>1]), function(x) which(labels == x)) 
+}
+    
+.plot_cluster_library <- function(obj, field = "library", prefix, reference_technology) {
+    flog.info("UMAP %s...", field)
+    pdf(paste0(prefix, "_", reference_technology, "_cluster_", field, ".pdf"), width=10, height=5)
+    print(DimPlot(obj, reduction = "umap", 
+        split.by = "new.idents", group.by = field) 
+    )
+    df <- melt(table(obj@meta.data[[field]], Idents(obj)))
+    print(ggplot(df, aes_string("Var1", "value")) + geom_col() + 
+        facet_wrap(~Var2) +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+        ylab("Counts") + xlab("")
+    )
+    dfx <- data.frame(Label=obj@meta.data[[field]], Cluster=Idents(obj))
+    print(ggplot(dfx, aes_string("Cluster", fill = "Label")) +
+        geom_bar(position="fill") + 
+        scale_y_continuous(labels = scales::percent) + 
+        ylab("Label"))
+    # collapse technical replicates
+    dfx$Label <- gsub("_\\d+$","", dfx$Label)
+    print(ggplot(dfx, aes_string("Cluster", fill = "Label")) +
+        geom_bar(position="fill") + 
+        scale_y_continuous(labels = scales::percent) + 
+        ylab("Label"))
+    dev.off()
+}
+
+#' cluster_prediction_strength
+#'
+#' Calculates the cluster consistency across two technical 
+#' replicates. Shows the fraction of spot pairs clustered together
+#' for each spot in both samples.
+#' @param obj1 Object, clustered by \code{\link{cluster_spatial}}.
+#' @param obj2 Object, clustered by \code{\link{cluster_spatial}}.
+#' @param col1 \code{meta.data} column containing cluster labels of 
+#' \code{obj1}. Default use first available.
+#' @param col2 \code{meta.data} column containing cluster labels of 
+#' \code{obj2}. Default use first available.
+#' @param hejpeg1 Jpeg file of H&E for \code{obj1}
+#' @param hejpeg2 Jpeg file of H&E for \code{obj2}
+#' @param prefix Prefix of output files
+
+#' @export cluster_prediction_strength
+#' @examples
+#' cluster_prediction_strength
+
+cluster_prediction_strength <- function(obj1, obj2, col1 = NULL, col2 = NULL,
+                                        hejpeg1 = NULL, hejpeg2 = NULL,
+                                        prefix) {
+
+    .find_cluster_col <- function(obj, label) {
+        col <- grep("snn_res", colnames(obj@meta.data))
+        if (!length(col)) stop("cannot find cluster column for %s.", label)
+        col <- colnames(obj1@meta.data)[col]
+    }    
+    if (is.null(col1)) col1 <- .find_cluster_col(obj1, "obj1")
+    if (is.null(col2)) col2 <- .find_cluster_col(obj2, "obj2")
+    .transfer_cluster_labels <- function(reference, query, refdata) {
+        anchors <- FindTransferAnchors(reference = reference, query = query,
+            dims = 1:30, reduction = "cca")
+        predictions <- TransferData(anchorset = anchors, refdata = refdata,
+            dims = 1:30, weight.reduction = "cca")           
+        query <- AddMetaData(object = query, metadata = predictions)
+    }    
+    .calc_consistency <- function(obj1, obj2, col, hejpeg) {
+        query <- .transfer_cluster_labels(obj1, obj2, obj1@meta.data[[col]])
+        m <- .get_sample_consistency_matrix(query, "predicted.id", col)
+        .plot_consistency_matrix(m, query, obj1, obj2, hejpeg = hejpeg, prefix = prefix)
+    }
+   .calc_consistency(obj1, obj2, col1, hejpeg1)
+   .calc_consistency(obj2, obj1, col2, hejpeg2)
+}
+    
+
+.get_sample_consistency_matrix <- function(query, col1, col2) {
+    m <- matrix(0, ncol(query), ncol(query))
+    for (i in seq(1, ncol(query)-1)) {
+        for (j in seq(i + 1, ncol(query))) {
+            if (query@meta.data[i, col1] == query@meta.data[j, col1] &&
+                query@meta.data[i, col2] == query@meta.data[j, col2]) { 
+                m[i, j] <- sum(query@meta.data[, col1] == query@meta.data[i, col1], na.rm=TRUE)
+                m[j, i] <- sum(query@meta.data[, col2] == query@meta.data[i, col2], na.rm=TRUE)
+            }    
+        }
+    }
+    m
+}
+
+.plot_consistency_matrix <- function(m, query, obj1, obj2, hejpeg, prefix, suffix = "") {
+    query$cluster_consistency <- apply(m, 1, function(x) sum(x > 0)) / 
+        pmax(1, pmax(apply(m, 1, function(x) max(x)), 
+                     apply(m, 2, function(x) max(x))))
+
+    if (!is.null(hejpeg)) {
+        l1 <- if (!is.null(obj1@meta.data$library)) obj1$library[1] else "obj1"
+        l2 <- if (!is.null(obj2@meta.data$library)) obj2$library[1] else "obj2"
+        l2 <- if (l2 == l1)  "" else paste0("_", l2)
+        pdf(paste0(prefix, "_cluster_consistency_", l1, l2, suffix, ".pdf"),
+            width = 4, height = 3.9)
+        plot_features(query, "cluster_consistency", hejpeg = hejpeg,
+            plot_correlations=FALSE, labels_title = "")         
+        print(FeatureScatter(object = query, feature1 = "cluster_consistency",
+                                             feature2 = "nFeature_RNA"))
+        print(FeatureScatter(object = query, feature1 = "cluster_consistency",
+                                             feature2 = "percent.mito"))
+        print(FeatureScatter(object = query, feature1 = "cluster_consistency",
+                                             feature2 = "percent.ribo"))
+        dev.off()
+    } 
+    query
+}
+
+
+#' cluster_nmf
+#'
+#' Performes NMF clustering 
+#' @param obj Object, clustered by \code{\link{cluster_spatial}}.
+#' @param rank Number of clusters 
+#' @param randomize Randomize data, useful for diagnostics and picking rank
+#' @param variable_features If \code{TRUE}, only use variable features
+#' @param max_features Reduce runtime by only using the top 
+#' \code{max_features} features
+#' @param ... Additional parameters passed to the \code{nmf} function.
+#' @export cluster_nmf
+#' @examples
+#' cluster_nmf
+cluster_nmf <- function(obj, rank, randomize = FALSE, variable_features = TRUE, 
+    max_features = NULL, ...) {
+    if (!requireNamespace("NMF", quietly = TRUE)) {
+        stop("This function requires the NMF library.")
+    }
+    if (length(rank) == 1) {
+        key <- paste0("nmf_k_", rank)
+    } else {
+        key <- paste0("nmf_k_", min(rank), "_to_", max(rank))
+    }
+    if (!is.null(max_features)) {
+        obj <- FindVariableFeatures(obj, nfeatures = max_features,
+            selection.method = "disp")
+    }    
+    m <- GetAssayData(obj)
+    if (variable_features) {
+        m <- m[VariableFeatures(obj),]
+    }
+    flog.info("Performing clustering on %i samples and %i features.",
+        ncol(m), nrow(m))
+    
+    m <- as.matrix(m) - min(m)
+    if (randomize) {
+        key <- paste0(key, "_random")
+        m <- NMF::randomize(m)
+    }
+    if (!is.null(obj@misc[[key]])) {
+        flog.warn("Object %s in misc slot already exists. Skipping...")
+        return(obj)
+    }        
+    nmf_obj <- NMF::nmf(m, rank, ...) 
+    obj@misc[[key]] <- nmf_obj
+    # fill meta.data slot with cluster scores
+    if (!randomize) {
+        if (is(nmf_obj, "NMFfit")) {
+            coef <- NMF::scoef(nmf_obj)
+            rownames(coef) <- paste0(key, "_", seq(1,rank))
+            obj@meta.data <- cbind(obj@meta.data, t(coef))
+        } else {
+            for (k in rank) {
+                coef <- NMF::scoef(nmf_obj$fit[[as.character(k)]])
+                rownames(coef) <- paste0("nmf_k_", k, "_", seq(1, k))
+                obj@meta.data <- cbind(obj@meta.data, t(coef))
+            }
+        }
+    }
+    obj
+}
+
+#' write_nmf_features
+#'
+#' Output metagenes to a CSV file
+#' @param obj Object, clustered by \code{\link{cluster_nmf}}.
+#' @param rank Number of clusters (the one used in \code{\link{cluster_nmf}})
+#' @param k Features of rank to be written (must be a single k, not a range)
+#' @param prefix Prefix of output files
+#' @export write_nmf_features
+#' @examples
+#' write_nmf_features
+write_nmf_features <- function(obj, rank, k, prefix) {
+    nmf_obj <- .extract_nmf_obj(obj, rank)
+    nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
+    features <- lapply(NMF::extractFeatures(nmf_obj_f, nodups = FALSE),
+        function(i) NMF::basis(nmf_obj_f)[i,])
+
+    idx <- sapply(features, function(x) !is.null(nrow(x)))
+
+    features_all <- do.call(rbind, 
+        lapply(seq_along(features)[idx], 
+            function(i) data.frame(Gene = rownames(features[[i]]), 
+                               features[[i]], K = i)))
+    filename <- .get_sub_path(prefix, "nmf", paste0("_nmf_cluster_", k, ".csv"))
+    write.csv(features_all, file = filename, row.names = FALSE)
+    filename <- .get_sub_path(prefix, "nmf/advanced", paste0("_nmf_cluster_", k, "_all_basis.csv"))
+    write.csv(NMF::basis(nmf_obj_f), file = filename)
+}
+
+.extract_nmf_r2 <- function(obj, rank, k) {
+    nmf_obj <- .extract_nmf_obj(obj, rank)
+    nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
+
+    nmf_m <- NMF::fitted(nmf_obj_f)
+    nmf_d <- as.matrix(GetAssayData(obj))
+    idx <- intersect(rownames(nmf_d), rownames(nmf_m))
+   
+    r2 <- sapply(seq(ncol(nmf_d)), function(i) summary(lm(nmf_m[idx,i]~nmf_d[idx,i]))$r.squared)
+    obj[[paste0("nmf_k_r2_", k)]] <- r2
+    obj
+}
+.extract_nmf_rss <- function(obj, rank, k) {
+    nmf_obj <- .extract_nmf_obj(obj, rank)
+    nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
+    nmf_m <- NMF::fitted(nmf_obj_f)
+    nmf_d <- as.matrix(GetAssayData(obj))
+    idx <- intersect(rownames(nmf_d), rownames(nmf_m))
+    nmf_x <- scale(nmf_d[idx,], scale = FALSE) - 
+             scale(nmf_m[idx,], scale  = FALSE)
+
+    rss <- apply(nmf_x, 2, function(x) sum(x^2))
+    obj[[paste0("nmf_k_rss_", k)]] <- rss
+    obj
+}
+
+init_nmf_seed <- function(obj, b) {
+    m <- GetAssayData(obj)
+    m <- as.matrix(m) - min(m)
+
+}
