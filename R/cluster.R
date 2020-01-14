@@ -283,6 +283,8 @@ write_nmf_features <- function(obj, rank, k, prefix) {
     write.csv(features_all, file = filename, row.names = FALSE)
     filename <- .get_sub_path(prefix, "nmf/advanced", paste0("_nmf_cluster_", k, "_all_basis.csv"))
     write.csv(NMF::basis(nmf_obj_f), file = filename)
+    filename <- .get_sub_path(prefix, "nmf/advanced", paste0("_nmf_cluster_", k, "_all_coef.csv"))
+    write.csv(t(NMF::coef(nmf_obj_f)), file = filename)
 }
 
 .extract_nmf_r2 <- function(obj, rank, k) {
