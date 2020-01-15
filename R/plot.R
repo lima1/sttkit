@@ -381,7 +381,7 @@ plot_nmf <- function(obj, libs, hejpegs, labels = NULL, rank, prefix,
             plot_correlation_heatmap(lapply(libs, function(i) obj[, obj$library == i]), features)
             dev.off()
         }
-        write_nmf_features(obj, rank, k, prefix)
+        write_nmf_features(obj, rank = rank, k = k, prefix = prefix)
         if (plot_qc) {
             x <- obj@meta.data
             xm <- melt(x[,grep("library|nmf|nFeature", colnames(x))], id.vars=c("library", "nFeature_RNA"))

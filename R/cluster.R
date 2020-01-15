@@ -263,15 +263,21 @@ cluster_nmf <- function(obj, rank, randomize = FALSE, variable_features = TRUE,
 #' @param obj Object, clustered by \code{\link{cluster_nmf}}.
 #' @param rank Number of clusters (the one used in \code{\link{cluster_nmf}})
 #' @param k Features of rank to be written (must be a single k, not a range)
+#' @param min_features Minimum number of features for each cluster to be reported
+#' in case \code{method} returns less.
+#' @param method Parameter of \code{NMF::extractFeatures}
 #' @param prefix Prefix of output files
 #' @export write_nmf_features
 #' @examples
 #' write_nmf_features
-write_nmf_features <- function(obj, rank, k, prefix) {
+write_nmf_features <- function(obj, rank, k, min_features = 20, method = "kim", prefix) {
     nmf_obj <- .extract_nmf_obj(obj, rank)
     nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
-    features <- lapply(NMF::extractFeatures(nmf_obj_f, nodups = FALSE),
-        function(i) NMF::basis(nmf_obj_f)[i,])
+
+    features_method <- NMF::extractFeatures(nmf_obj_f, nodups = FALSE, method = method)
+    features_min <- NMF::extractFeatures(nmf_obj_f, nodups = FALSE, method = min_features)
+    features <- lapply(seq_along(features_min), 
+        function(i) NMF::basis(nmf_obj_f)[na.omit(unique(c(features_min[[i]], features_method[[i]]))),])
 
     idx <- sapply(features, function(x) !is.null(nrow(x)))
 

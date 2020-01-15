@@ -4,7 +4,8 @@
 \alias{write_nmf_features}
 \title{write_nmf_features}
 \usage{
-write_nmf_features(obj, rank, k, prefix)
+write_nmf_features(obj, rank, k, min_features = 20, method = "kim",
+  prefix)
 }
 \arguments{
 \item{obj}{Object, clustered by \code{\link{cluster_nmf}}.}
@@ -12,6 +13,11 @@ write_nmf_features(obj, rank, k, prefix)
 \item{rank}{Number of clusters (the one used in \code{\link{cluster_nmf}})}
 
 \item{k}{Features of rank to be written (must be a single k, not a range)}
+
+\item{min_features}{Minimum number of features for each cluster to be reported
+in case \code{method} returns less.}
+
+\item{method}{Parameter of \code{NMF::extractFeatures}}
 
 \item{prefix}{Prefix of output files}
 }
