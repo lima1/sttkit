@@ -127,6 +127,9 @@ read_signatures <- function(gmt, obj = NULL, max_nchar_title = 25) {
 #' @param perm_n If \code{method="perm"}, number of permutations
 #' @param scale If \code{method="perm"}, scale NMF basis
 #' @param alternative If \code{method="perm"}, direction to test
+#' @param min_nmf_features Minimum number of features for each NMF cluster.
+#' Default means that top 50 genes associated with cluster are tested for 
+#' enrichment.
 #' @param summary_function If \code{method="perm"}, function to summarize 
 #' gene signature scores
 #' @param rank Number of clusters (the one used in \code{\link{cluster_nmf}})
@@ -139,11 +142,12 @@ read_signatures <- function(gmt, obj = NULL, max_nchar_title = 25) {
 #' @importFrom stats fisher.test
 calculate_nmf_gse <- function(obj, sig_set, method = c("fisher", "perm"), 
     perm_n = 1000, scale = TRUE, alternative = c("two.sided", "less", "greater"), 
-    summary_function = mean, rank, k, prefix, verbose = TRUE) {
+    min_nmf_features = 100, summary_function = mean, rank, k, prefix, verbose = TRUE) {
     nmf_obj <- .extract_nmf_obj(obj, rank)
     nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
     # get signatures associated with each NMF cluster
-    features <- .extract_nmf_features(nmf_obj_f, method = "kim", min_features = 20 )
+    features <- .extract_nmf_features(nmf_obj_f, method = "kim", 
+        min_features = min_nmf_features )
     idx <- sapply(features, function(x) !is.null(nrow(x)))
     nmf_sig_set <- lapply(features[idx], rownames)
 

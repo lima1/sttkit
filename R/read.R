@@ -79,6 +79,7 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
 
         }
         dev.off()
+        .write_qc_stats(ndata, prefix)
     }    
     ndata@meta.data$library <- sampleid
     if (!is.null(barcodes)) {
@@ -100,6 +101,13 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
     }
     if (serialize) .serialize(ndata, prefix, "_raw.rds")
     ndata
+}
+
+.write_qc_stats <- function(ndata, prefix) {
+    stats <- suppressWarnings(apply(ndata@meta.data, 2, 
+        function(x) mean(as.numeric(x),na.rm=TRUE)))
+    stats <- t(as.matrix(stats[is.finite(stats)]))
+    write.csv(stats, file = paste0(prefix, "_qc.csv"), row.names = FALSE)
 }
 
 #' read_visium

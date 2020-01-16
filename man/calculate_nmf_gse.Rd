@@ -6,7 +6,8 @@
 \usage{
 calculate_nmf_gse(obj, sig_set, method = c("fisher", "perm"),
   perm_n = 1000, scale = TRUE, alternative = c("two.sided", "less",
-  "greater"), summary_function = mean, rank, k, prefix, verbose = TRUE)
+  "greater"), min_nmf_features = 100, summary_function = mean, rank, k,
+  prefix, verbose = TRUE)
 }
 \arguments{
 \item{obj}{Object, clustered by \code{\link{cluster_nmf}}.}
@@ -20,6 +21,10 @@ calculate_nmf_gse(obj, sig_set, method = c("fisher", "perm"),
 \item{scale}{If \code{method="perm"}, scale NMF basis}
 
 \item{alternative}{If \code{method="perm"}, direction to test}
+
+\item{min_nmf_features}{Minimum number of features for each NMF cluster.
+Default means that top 50 genes associated with cluster are tested for 
+enrichment.}
 
 \item{summary_function}{If \code{method="perm"}, function to summarize 
 gene signature scores}
