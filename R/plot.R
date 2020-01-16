@@ -413,8 +413,10 @@ plot_nmf <- function(obj, libs, hejpegs, labels = NULL, rank, prefix,
             }    
         }
     }
-    if (plot_ranks) {
+    if (plot_qc) {
         .plot_nmf_r2(obj, libs, hejpegs, rank, prefix, file.path(subdir, "qc"), width, png, ...)
+    }
+    if (plot_ranks && length(rank) > 1) {
         #.plot_nmf_r2(obj, libs, hejpegs, rank, prefix, subdir, width, 
         #    png, feature_suffix = "rss", ...)
         filename <- .get_sub_path(prefix, subdir, "_nmf_ranks.pdf")
