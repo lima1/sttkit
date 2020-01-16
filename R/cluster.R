@@ -274,11 +274,7 @@ write_nmf_features <- function(obj, rank, k, min_features = 20, method = "kim", 
     nmf_obj <- .extract_nmf_obj(obj, rank)
     nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
 
-    features_method <- NMF::extractFeatures(nmf_obj_f, nodups = FALSE, method = method)
-    features_min <- NMF::extractFeatures(nmf_obj_f, nodups = FALSE, method = min_features)
-    features <- lapply(seq_along(features_min), 
-        function(i) NMF::basis(nmf_obj_f)[na.omit(unique(c(features_min[[i]], features_method[[i]]))),])
-
+    features <- .extract_nmf_features(nmf_obj_f, method = method, min_features = min_features )
     idx <- sapply(features, function(x) !is.null(nrow(x)))
 
     features_all <- do.call(rbind, 
@@ -291,6 +287,14 @@ write_nmf_features <- function(obj, rank, k, min_features = 20, method = "kim", 
     write.csv(NMF::basis(nmf_obj_f), file = filename)
     filename <- .get_sub_path(prefix, "nmf/advanced", paste0("_nmf_cluster_", k, "_all_coef.csv"))
     write.csv(t(NMF::coef(nmf_obj_f)), file = filename)
+}
+
+.extract_nmf_features <- function(nmf_obj_f, method = "kim", min_features = 20) {
+    features_method <- NMF::extractFeatures(nmf_obj_f, nodups = FALSE, method = method)
+    features_min <- NMF::extractFeatures(nmf_obj_f, nodups = FALSE, method = min_features)
+    features <- lapply(seq_along(features_min), 
+        function(i) NMF::basis(nmf_obj_f)[na.omit(unique(c(features_min[[i]], features_method[[i]]))),])
+    return(features)
 }
 
 .extract_nmf_r2 <- function(obj, rank, k) {

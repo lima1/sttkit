@@ -227,7 +227,8 @@ if (grepl("list$",opt$infile)) {
             stop("No signatures available in --extra_gmt.")
         }    
     }    
-}
+} 
+
 
 .find_integration_features <- function(reference_list, gmt, prefix) {
     n <-  length(VariableFeatures(reference_list[[1]]))
@@ -297,6 +298,9 @@ if (!opt$force && file.exists(filename)) {
         ndata <- readRDS(infiles[1])
         ndata <- cluster_spatial(ndata, 
                              resolution = as.numeric(strsplit(opt$resolution, ":")[[1]]))
+        if (!is.null(opt$extra_gmt)) {
+            extra_gmt <- read_signatures(opt$extra_gmt, ndata)
+        }    
     }
     flog.info("Writing R data structure to %s...", filename)
     sttkit:::.serialize(ndata, opt$outprefix, ".rds")
@@ -437,7 +441,7 @@ if (opt$nmf) {
     if (!is.null(opt$extra_gmt)) {
          gse <- lapply(ks, function(i) calculate_nmf_gse(ndata, extra_gmt,
             rank = ks, k = i, verbose = FALSE))
-         .write_gse_results(gse, gse_method, gse_perm_n, ks,
+         .write_gse_results(gse, gse_method = "fisher", gse_perm_n, ks,
             suffix = opt$suffix_extra_gmt)
     }    
 }

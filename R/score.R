@@ -143,8 +143,7 @@ calculate_nmf_gse <- function(obj, sig_set, method = c("fisher", "perm"),
     nmf_obj <- .extract_nmf_obj(obj, rank)
     nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
     # get signatures associated with each NMF cluster
-    features <- lapply(NMF::extractFeatures(nmf_obj_f, nodups = FALSE),
-        function(i) NMF::basis(nmf_obj_f)[i,])
+    features <- .extract_nmf_features(nmf_obj_f, method = "kim", min_features = 20 )
     idx <- sapply(features, function(x) !is.null(nrow(x)))
     nmf_sig_set <- lapply(features[idx], rownames)
 
