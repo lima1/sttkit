@@ -303,8 +303,9 @@ export_nmf_loupe <- function(obj, rank, k, prefix) {
     nmf_obj <- .extract_nmf_obj(obj, rank)
     nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
     m <- t(NMF::scoef(nmf_obj$fit[[as.character(k)]]))
-    d <- data.frame( Barcode =  .extract_barcode(obj), 
-                     NMF = paste("Cluster", apply(m, 1, which.max)))
+    d <- data.frame( "Barcode" =  .extract_barcode(obj), 
+                     "NMF" = paste("Cluster", apply(m, 1, which.max)))
+    colnames(d)[2] <- paste0(colnames(d)[2], "_", k)
     filename <- .get_sub_path(prefix, "nmf/loupe", paste0("_nmf_cluster_loupe_", k, ".csv"))
     write.csv(d, file = filename, row.names = FALSE)
 }
@@ -335,12 +336,15 @@ export_snn_loupe <- function(obj, prefix) {
 
     sids <- grep("snn_res", colnames(obj@meta.data))
     for (i in sids) {
+        sid_us <- gsub("\\.","_", colnames(obj@meta.data)[i])
+        sid_us <- gsub("snn_res_", "", sid_us)
         filename <- sttkit:::.get_sub_path(prefix, "snn/loupe", 
-            paste0("_snn_cluster_loupe_", 
-            gsub("\\.","_", colnames(obj@meta.data)[i]), ".csv"))
-        id <- as.numeric(obj@meta.data[, i]) + 1
-        d <- data.frame( Barcode =  barcode, 
-                         SNN = paste("Cluster", id))
+            paste0("_snn_cluster_loupe_", sid_us, ".csv"))
+        id <- as.numeric(obj@meta.data[, i]) 
+        if (min(id, na.rm = TRUE) < 1) id <- id + 1
+        d <- data.frame( "Barcode" =  barcode, 
+                         "SNN" = paste("Cluster", id))
+        colnames(d)[2] <- paste0(colnames(d)[2], "_", sid_us)
         write.csv(d, file = filename, row.names = FALSE)
     }
 }

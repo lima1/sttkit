@@ -23,7 +23,7 @@ option_list <- list(
         help="Variables to regress out when --infile is a list of unscaled RDS files [default %default]"),
     make_option(c("--resolution"), action = "store", type = "character", 
         default = "0.8", 
-        help="Resolution values for clustering. When multiple are provided, the first one is the main one [default %default]"),
+        help="Resolution values for clustering. When multiple are provided, the last one is the main one [default %default]"),
     make_option(c("--hejpeg"), action = "store", type = "character", default = NULL,
         help="Optional path to a JPEG containing cropped HE image."),
     make_option(c("--labels"), action = "store", type = "character", default = NULL,
@@ -128,7 +128,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     file.path(s_dir, paste0(basename(prefix), suffix))
 }
 
-.write_clusters <- function(obj, prefix) {
+.write_clusters <- function(obj, prefix, single_input) {
     sids <- grep("snn_res", colnames(obj@meta.data))
     for (i in sids) {
         filename <- sttkit:::.get_sub_path(prefix, "snn", paste0("_cluster_", 
@@ -375,7 +375,7 @@ if (single_input) {
 
 if (!is.null(opt$labels)) .write_labels_diff(ndata, opt$outprefix)
 
-.write_clusters(ndata, opt$outprefix)
+.write_clusters(ndata, opt$outprefix, single_input = single_input)
 .plot_cluster_qc(ndata, opt$outprefix)
 .plot_cluster_heatmaps(ndata, opt$outprefix, opt$markergenes, single_input = single_input)
 

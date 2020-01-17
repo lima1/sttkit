@@ -86,7 +86,7 @@ Advanced multi-sample example with NMF clustering:
 ```
 #! /bin/bash
 #$ -S /bin/bash
-#$ -pe orte 20 # number or parallel jobs
+#$ -pe orte 20 # number of parallel jobs
 #$ -N Wtester
 #$ -cwd
 #$ -j y
