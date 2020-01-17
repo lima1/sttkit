@@ -104,8 +104,14 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
 }
 
 .write_qc_stats <- function(ndata, prefix) {
-    stats <- suppressWarnings(apply(ndata@meta.data, 2, 
+    stats_mean <- suppressWarnings(apply(ndata@meta.data, 2, 
         function(x) mean(as.numeric(x),na.rm=TRUE)))
+    stats_median <- suppressWarnings(apply(ndata@meta.data, 2, 
+        function(x) median(as.numeric(x),na.rm=TRUE)))
+    names(stats_mean) <- paste0(names(stats_mean), ".mean")
+    names(stats_median) <- paste0(names(stats_median), ".median")
+    stats <- c(stats_mean, stats_median)
+    stats <- stats[order(names(stats))]
     stats <- t(as.matrix(stats[is.finite(stats)]))
     write.csv(stats, file = paste0(prefix, "_qc.csv"), row.names = FALSE)
 }
