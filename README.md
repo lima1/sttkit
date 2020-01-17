@@ -12,7 +12,7 @@ Common functionality in this toolkit are provided in an R package called
 sttkit.  Install it from a local git repository with:
 
 ```
-devtools::install_local('~/git/CancerGenetics/ncgs-in-spatial_tools/sttkit')
+devtools::install_github('lima1/sttkit')
 ```
 
 Start R and enter the following to get the path to the command line
