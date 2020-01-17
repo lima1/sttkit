@@ -137,9 +137,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
         m[,1] <- as.numeric(m[,1]) + 1
         write.table(m, file = filename, sep = "\t", quote = FALSE, col.names = FALSE)
     } 
-    if (single_input) {
-        export_snn_loupe(obj, prefix)
-    }    
+    export_snn_loupe(obj, libs = libs, labels = labels, prefix)
 }
 .plot_cluster_qc <- function(object, prefix) {
 	m <- melt(object@meta.data)
@@ -419,10 +417,9 @@ if (opt$nmf) {
     flog.info("Done with NMF clustering!")
     plot_nmf(ndata, libs, hejpegs, labels, rank = ks, prefix = opt$outprefix, png = opt$png, 
         size = opt$dot_size)
-    if (single_input) {
-         loupe <- lapply(ks, function(i) 
-            export_nmf_loupe(obj = ndata, rank = ks, k = i, prefix = opt$outprefix))
-    }
+     loupe <- lapply(ks, function(i) 
+        export_nmf_loupe(obj = ndata, rank = ks, k = i, libs = libs, 
+            labels = labels, prefix = opt$outprefix))
     if (!is.null(opt$gmt)) {
          for (gse_method in c("fisher")) {
              gse_perm_n <- 10000

@@ -4,7 +4,7 @@
 \alias{export_nmf_loupe}
 \title{export_nmf_loupe}
 \usage{
-export_nmf_loupe(obj, rank, k, prefix)
+export_nmf_loupe(obj, rank, k, libs, labels = NULL, prefix)
 }
 \arguments{
 \item{obj}{Object, clustered by \code{\link{cluster_nmf}}.}
@@ -12,6 +12,10 @@ export_nmf_loupe(obj, rank, k, prefix)
 \item{rank}{Number of clusters (the one used in \code{\link{cluster_nmf}})}
 
 \item{k}{Features of rank to be written (must be a single k, not a range)}
+
+\item{libs}{Library ids, must be stored in \code{obj$library}}
+
+\item{labels}{Optional \code{character(n)} with sample labels}
 
 \item{prefix}{Prefix of output files}
 }

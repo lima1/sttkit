@@ -4,10 +4,14 @@
 \alias{export_snn_loupe}
 \title{export_snn_loupe}
 \usage{
-export_snn_loupe(obj, prefix)
+export_snn_loupe(obj, libs, labels = NULL, prefix)
 }
 \arguments{
 \item{obj}{Object, clustered by \code{\link{cluster_nmf}}.}
+
+\item{libs}{Library ids, must be stored in \code{obj$library}}
+
+\item{labels}{Optional \code{character(n)} with sample labels}
 
 \item{prefix}{Prefix of output files}
 }

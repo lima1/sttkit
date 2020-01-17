@@ -359,13 +359,15 @@ plot_nmf <- function(obj, libs, hejpegs, labels = NULL, rank, prefix,
 
             for (i in seq_along(libs)) {
                 label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
-                filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, "_", libs[i], ".pdf"))
+                libs_label <- if (length(libs) < 2) "" else paste0("_",libs[i])
+                
+                filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, libs_label, ".pdf"))
                 pdf(filename, width = width, height = width * ratio)
                 plot_features(obj[, obj$library == libs[i]],
                     features = features, hejpeg = hejpegs[i], ...)
                 dev.off()
                 if (png) {
-                    filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, "_", libs[i], ".png"))
+                    filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, libs_label, ".png"))
                     png(filename, width = width, height = width * ratio, units = "in", res = 150)
                     plot_features(obj[, obj$library == libs[i]],
                         features = features, hejpeg = hejpegs[i],

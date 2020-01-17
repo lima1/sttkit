@@ -295,19 +295,27 @@ write_nmf_features <- function(obj, rank, k, min_features = 20, method = "kim", 
 #' @param obj Object, clustered by \code{\link{cluster_nmf}}.
 #' @param rank Number of clusters (the one used in \code{\link{cluster_nmf}})
 #' @param k Features of rank to be written (must be a single k, not a range)
+#' @param libs Library ids, must be stored in \code{obj$library}
+#' @param labels Optional \code{character(n)} with sample labels
 #' @param prefix Prefix of output files
 #' @export export_nmf_loupe
 #' @examples
 #' export_nmf_loupe
-export_nmf_loupe <- function(obj, rank, k, prefix) {
+export_nmf_loupe <- function(obj, rank, k, libs, labels = NULL, prefix) {
     nmf_obj <- .extract_nmf_obj(obj, rank)
     nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
     m <- t(NMF::scoef(nmf_obj$fit[[as.character(k)]]))
     d <- data.frame( "Barcode" =  .extract_barcode(obj), 
                      "NMF" = paste("Cluster", apply(m, 1, which.max)))
     colnames(d)[2] <- paste0(colnames(d)[2], "_", k)
-    filename <- .get_sub_path(prefix, "nmf/loupe", paste0("_nmf_cluster_loupe_", k, ".csv"))
-    write.csv(d, file = filename, row.names = FALSE)
+    for (i in seq_along(libs)) {
+        label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
+        libs_label <- if (length(libs) < 2) "" else paste0("_",libs[i])
+        idx <- which(obj$library == libs[i]) 
+        filename <- .get_sub_path(prefix, "nmf/loupe", 
+            paste0("_nmf_cluster_loupe_", k, label, libs_label, ".csv"))
+        write.csv(d[idx, , drop = FALSE], file = filename, row.names = FALSE)
+    }    
 }
 
 .extract_barcode <- function(obj) {
@@ -327,25 +335,34 @@ export_nmf_loupe <- function(obj, rank, k, prefix) {
 #'
 #' Output SNN clustering to a CSV file loadable in Loupe
 #' @param obj Object, clustered by \code{\link{cluster_nmf}}.
+#' @param libs Library ids, must be stored in \code{obj$library}
+#' @param labels Optional \code{character(n)} with sample labels
 #' @param prefix Prefix of output files
 #' @export export_snn_loupe
 #' @examples
 #' export_snn_loupe
-export_snn_loupe <- function(obj, prefix) {
+export_snn_loupe <- function(obj, libs, labels = NULL, prefix) {
     barcode <- .extract_barcode(obj)
 
     sids <- grep("snn_res", colnames(obj@meta.data))
     for (i in sids) {
         sid_us <- gsub("\\.","_", colnames(obj@meta.data)[i])
         sid_us <- gsub("snn_res_", "", sid_us)
-        filename <- sttkit:::.get_sub_path(prefix, "snn/loupe", 
-            paste0("_snn_cluster_loupe_", sid_us, ".csv"))
         id <- as.numeric(obj@meta.data[, i]) 
         if (min(id, na.rm = TRUE) < 1) id <- id + 1
         d <- data.frame( "Barcode" =  barcode, 
                          "SNN" = paste("Cluster", id))
         colnames(d)[2] <- paste0(colnames(d)[2], "_", sid_us)
-        write.csv(d, file = filename, row.names = FALSE)
+
+        for (i in seq_along(libs)) {
+            label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
+            libs_label <- if (length(libs) < 2) "" else paste0("_",libs[i])
+                
+            filename <- sttkit:::.get_sub_path(prefix, "snn/loupe", 
+                paste0("_snn_cluster_loupe_", sid_us, label, libs_label, ".csv"))
+            idx <- which(obj$library == libs[i]) 
+            write.csv(d[idx, , drop = FALSE], file = filename, row.names = FALSE)
+        }    
     }
 }
     
