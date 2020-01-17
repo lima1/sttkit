@@ -4,10 +4,26 @@ Version: 0.0.0.9000
 Authors@R: person("Markus", "Riester", email = "markus.riester@novartis.com", role = c("aut", "cre"))
 Description: Utility Functions for SpatialTranscriptomics
 Depends: R (>= 3.4.1), Seurat (>= 3.0.0), ggplot2
-Imports: data.table, futile.logger, methods, scales, utils, RANN,
-        viridis
-Suggests: CellMix, GGally, Matrix, NMF, edgeR, ggpmisc, grid, jpeg,
-        magick, optparse, pheatmap, scran, sctransform
+Imports: data.table (>= 1.12.4), 
+         futile.logger, 
+         methods, 
+         scales, 
+         utils, 
+         RANN,
+         viridis
+Suggests: CellMix,
+          GGally,
+          Matrix,
+          NMF,
+          edgeR,
+          ggpmisc,
+          grid, 
+          jpeg,
+          magick,
+          optparse,
+          pheatmap,
+          scran,
+          sctransform
 License: Artistic-2.0
 Encoding: UTF-8
 LazyData: true

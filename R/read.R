@@ -112,6 +112,8 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
     names(stats_median) <- paste0(names(stats_median), ".median")
     stats <- c(stats_mean, stats_median)
     stats <- stats[order(names(stats))]
+    stats <- c("total.spots" = ncol(ndata), "total.features" = nrow(ndata),
+        stats)
     stats <- t(as.matrix(stats[is.finite(stats)]))
     write.csv(stats, file = paste0(prefix, "_qc.csv"), row.names = FALSE)
 }
