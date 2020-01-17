@@ -289,6 +289,62 @@ write_nmf_features <- function(obj, rank, k, min_features = 20, method = "kim", 
     write.csv(t(NMF::coef(nmf_obj_f)), file = filename)
 }
 
+#' export_nmf_loupe
+#'
+#' Output NMF clustering to a CSV file loadable in Loupe
+#' @param obj Object, clustered by \code{\link{cluster_nmf}}.
+#' @param rank Number of clusters (the one used in \code{\link{cluster_nmf}})
+#' @param k Features of rank to be written (must be a single k, not a range)
+#' @param prefix Prefix of output files
+#' @export export_nmf_loupe
+#' @examples
+#' export_nmf_loupe
+export_nmf_loupe <- function(obj, rank, k, prefix) {
+    nmf_obj <- .extract_nmf_obj(obj, rank)
+    nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
+    m <- t(NMF::scoef(nmf_obj$fit[[as.character(k)]]))
+    d <- data.frame( Barcode =  .extract_barcode(obj), 
+                     NMF = paste("Cluster", apply(m, 1, which.max)))
+    filename <- .get_sub_path(prefix, "nmf/loupe", paste0("_nmf_cluster_loupe_", k, ".csv"))
+    write.csv(d, file = filename, row.names = FALSE)
+}
+
+.extract_barcode <- function(obj) {
+    barcode <- colnames(obj)
+    if ("barcode" %in% colnames(obj@meta.data)) {
+        # Loupe wants the barcode with number suffix
+        if (any(grepl("-1$", obj$barcode))) {
+            barcode <- obj$barcode
+        } else {
+            barcode <- paste0(obj$barcode, "-1")
+        }
+    }
+    return(barcode)
+}
+    
+#' export_snn_loupe
+#'
+#' Output SNN clustering to a CSV file loadable in Loupe
+#' @param obj Object, clustered by \code{\link{cluster_nmf}}.
+#' @param prefix Prefix of output files
+#' @export export_snn_loupe
+#' @examples
+#' export_snn_loupe
+export_snn_loupe <- function(obj, prefix) {
+    barcode <- .extract_barcode(obj)
+
+    sids <- grep("snn_res", colnames(obj@meta.data))
+    for (i in sids) {
+        filename <- sttkit:::.get_sub_path(prefix, "snn/loupe", 
+            paste0("_snn_cluster_loupe_", 
+            gsub("\\.","_", colnames(obj@meta.data)[i]), ".csv"))
+        id <- as.numeric(obj@meta.data[, i]) + 1
+        d <- data.frame( Barcode =  barcode, 
+                         SNN = paste("Cluster", id))
+        write.csv(d, file = filename, row.names = FALSE)
+    }
+}
+    
 .extract_nmf_features <- function(nmf_obj_f, method = "kim", min_features = 20) {
     features_method <- NMF::extractFeatures(nmf_obj_f, nodups = FALSE, method = method)
     features_min <- NMF::extractFeatures(nmf_obj_f, nodups = FALSE, method = min_features)

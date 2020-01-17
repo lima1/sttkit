@@ -71,7 +71,10 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
     }
     obj <- ScaleData(object = obj, vars.to.regress = regressout,
         do.scale = scale, do.center = center)
-    if (serialize) .serialize(obj, prefix, "_scaled.rds")
+    if (serialize) {
+        flog.info("Writing R data structure to %s...", paste0(prefix, "_scaled.rds"))
+        .serialize(obj, prefix, "_scaled.rds")
+    }    
     obj     
 }
 

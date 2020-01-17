@@ -94,7 +94,8 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     filename <- paste0(prefix, "_all.tsv.gz")
     flog.info("Writing normalized data to %s...", basename(filename))
     m <- t(as.matrix(data))
-    suppressWarnings(data.table::fwrite(m, file = filename, sep = "\t", quote = FALSE))
+    data.table::fwrite(data.table::as.data.table(m), file = filename,
+        sep = "\t", quote = FALSE)
     m
 }
 

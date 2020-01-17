@@ -99,7 +99,11 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
         ndata <- AddMetaData(object = ndata, metadata = percent.mm10, col.name = "mm10")
         ndata$nFeature_RNA_mm10 <- apply(as.matrix(cnts[grep("mm10", rownames(cnts)),]),2,function(x) length(which(x>0)))
     }
-    if (serialize) .serialize(ndata, prefix, "_raw.rds")
+
+    if (serialize) {
+        flog.info("Writing R data structure to %s...", paste0(prefix, "_raw.rds"))
+        .serialize(ndata, prefix, "_raw.rds")
+    }
     ndata
 }
 
@@ -133,7 +137,7 @@ read_visium <- function(filtered_feature_bc_matrix_dir, spatial_dir, tissue_posi
     spatial <- read.csv(file.path(spatial_dir, tissue_positions_file),
         header = FALSE, as.is = TRUE)
     idx <- match(colnames(raw_data), gsub("-\\d+$", "", spatial[,1]))
-    barcodes <- colnames(raw_data)
+    barcodes <- spatial[idx,1]
     colnames(raw_data) <- paste0(spatial$V6[idx], "x", spatial$V5[idx])
     names(barcodes) <- colnames(raw_data)
     read_spatial(Matrix::t(raw_data), barcodes = barcodes, ...)
