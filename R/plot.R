@@ -178,7 +178,10 @@ plot_spots <- function(x, hejpeg, labels = scales::percent,
     }
     if (na.rm) {
         x <- x[!is.na(x$fraction),]
-    }    
+    }
+        
+    fun_scale_color <- .get_scale_color_cont(x, palette, palette_inverse)
+
     if (!is.null(hejpeg)) {
         if (!requireNamespace("jpeg", quietly = TRUE) || 
             !requireNamespace("grid", quietly = TRUE) ||
@@ -186,45 +189,33 @@ plot_spots <- function(x, hejpeg, labels = scales::percent,
             stop("Please install packages jpeg, ggforce and grid for --hejpeg.")
         }
         image <- jpeg::readJPEG(hejpeg)
-        fun_scale_color <- scale_color_continuous
-        palette_split <- strsplit(palette, ":")[[1]]
 
-        if (palette_inverse) palette_split <- rev(palette_split)
-            
-        if (is(x$fraction, "factor")) {
-            fun_scale_color <- scale_color_discrete
-        } else if (palette == "viridis") {
-            fun_scale_color <- viridis::scale_color_viridis
-        } else if (length(palette_split)==2) {
-            fun_scale_color <- function(...) scale_color_gradient(low  = palette_split[1],
-                                                    high = palette_split[2], ...)
-        }
         x$x <- x$x - 1
         x$y <- x$y - 1
         gp <- ggplot(x, aes_string("x", "y", color = "fraction")) + 
             annotation_custom(grid::rasterGrob(image)) +  
             geom_point(alpha = alpha, size = size, na.rm = na.rm) +
             theme_void() + xlim(1,31) + ylim(-34,-2)
-        if (!is.null(trans)) {
-            gp <- gp + fun_scale_color(labels = labels, name = labels_title,
-                 trans = scales::log2_trans(),
-                 breaks = scales::trans_breaks("log2", function(x) 2^x))
-        }  else {
-            gp <- gp + fun_scale_color(labels = labels, name = labels_title,
-                limits = limits)
-        }
-        if (length(levels(x$cluster)) <= 16) {
-            print(gp + facet_wrap(~cluster))
-        } else {
-            flog.info("More than 16 clusters, paginate plot.")
-            n_pages <- ceiling(length(levels(x$cluster))/16)
-            for (i in seq_len(n_pages)) {
-                print(gp + ggforce::facet_wrap_paginate(~cluster, ncol = 4, nrow = 4, page = i))
-            }
-        }
     } else {
-        print(ggplot(x, aes_string("x", "y", color = "fraction"))+
-            geom_point()+facet_wrap(~cluster)+ theme_void())
+        gp <- ggplot(x, aes_string("x", "y", color = "fraction"))+
+            geom_point() + theme_void()
+    }        
+    if (!is.null(trans)) {
+        gp <- gp + fun_scale_color(labels = labels, name = labels_title,
+             trans = scales::log2_trans(),
+             breaks = scales::trans_breaks("log2", function(x) 2^x))
+    }  else {
+        gp <- gp + fun_scale_color(labels = labels, name = labels_title,
+            limits = limits)
+    }
+    if (length(levels(x$cluster)) <= 16) {
+        print(gp + facet_wrap(~cluster))
+    } else {
+        flog.info("More than 16 clusters, paginate plot.")
+        n_pages <- ceiling(length(levels(x$cluster))/16)
+        for (i in seq_len(n_pages)) {
+            print(gp + ggforce::facet_wrap_paginate(~cluster, ncol = 4, nrow = 4, page = i))
+        }
     }
 }
 
@@ -784,4 +775,20 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
         "brewer_single_hue_orange" = "#fee6ce:#e6550d",
         "brewer_single_hue_purple" = "#efedf5:#756bb1",
         x)
+}        
+.get_scale_color_cont <- function(x, palette, palette_inverse) {
+    fun_scale_color <- scale_color_continuous
+    palette_split <- strsplit(palette, ":")[[1]]
+
+    if (palette_inverse) palette_split <- rev(palette_split)
+        
+    if (is(x$fraction, "factor")) {
+        fun_scale_color <- scale_color_discrete
+    } else if (palette == "viridis") {
+        fun_scale_color <- viridis::scale_color_viridis
+    } else if (length(palette_split)==2) {
+        fun_scale_color <- function(...) scale_color_gradient(low  = palette_split[1],
+                                                high = palette_split[2], ...)
+    }
+    return(fun_scale_color)
 }        
