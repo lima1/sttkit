@@ -116,11 +116,16 @@ if (grepl("list$",opt$infile)) {
             features <- unique(unlist(gmt))
             features <- features[features %in% rownames(ndata_rna)]
             ratio <- sttkit:::.get_image_ratio(length(features))
+            flog.info("Plotting single feature counts to %s...", filename)
             pdf(filename, width = 10, height = 10 * ratio)
             ndata <- plot_features(ndata_rna, features = features, hejpeg = hejpeg,
                 labels = waiver(), labels_title = "", cells = cells, plot_violin = FALSE,
                 plot_correlations = FALSE, plot_map = FALSE, palette = opt$palette,
                 size = opt$dot_size, undetected_NA = TRUE)
+            dev.off()
+            filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
+                            paste0("_feature_scaled", name, num, ".pdf"))
+            flog.info("Plotting scaled single feature counts to %s...", filename)
             ndata <- plot_features(ndata, features = features, hejpeg = hejpeg,
                 labels = waiver(), labels_title = "", cells = cells, plot_violin = FALSE,
                 size = opt$dot_size, undetected_NA = FALSE, zero_offset = NULL)
@@ -128,6 +133,7 @@ if (grepl("list$",opt$infile)) {
             if (opt$png) {
                 filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
                                 paste0("_feature_counts", name, num, ".png"))
+                flog.info("Plotting single feature counts to %s...", filename)
                 png(filename, width = 10, height = 10 * ratio, units = "in", res = 150)
                 ndata <- plot_features(ndata_rna, features = features, hejpeg = hejpeg,
                     labels = waiver(), labels_title = "", cells = cells, plot_violin = FALSE,
@@ -137,6 +143,7 @@ if (grepl("list$",opt$infile)) {
 
                 filename <- sttkit:::.get_sub_path(prefix, file.path("he",  name_no_dash),
                                 paste0("_feature_scaled", name, num, ".png"))
+                flog.info("Plotting scaled single feature counts to %s...", filename)
                 png(filename, width = 10, height = 10 * ratio, units = "in", res = 150)
                 ndata <- plot_features(ndata, features = features, hejpeg = hejpeg,
                     labels = waiver(), labels_title = "", cells = cells, plot_violin = FALSE,
