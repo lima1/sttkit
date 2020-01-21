@@ -342,6 +342,8 @@ plot_nmf <- function(obj, libs, hejpegs, labels = NULL, rank, prefix,
         features <- paste0("nmf_k_", k, "_", seq(1, k))
         obj <- .extract_nmf_r2(obj, rank, k)
         obj <- .extract_nmf_rss(obj, rank, k)
+        nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
+
         #obj <- .rescale_features(obj, features)
         ratio <- .get_image_ratio(k)
         if (plot_he) {
@@ -405,6 +407,16 @@ plot_nmf <- function(obj, libs, hejpegs, labels = NULL, rank, prefix,
                 dev.off()
             }    
         }
+        filename <- .get_sub_path(prefix, file.path(subdir, "advanced"), paste0("_nmf_cluster_", k, "_coefmap.pdf"))
+        pdf(filename, width = width, height = width)
+        NMF::coefmap(nmf_obj_f)
+        dev.off()
+        if (png) {
+            filename <- .get_sub_path(prefix, file.path(subdir, "advanced"), paste0("_nmf_cluster_", k, "_coefmap.png"))
+            png(filename, width = width, height = width, units = "in", res = 150)
+            NMF::coefmap(nmf_obj_f)
+            dev.off()
+        }    
     }
     if (plot_qc) {
         .plot_nmf_r2(obj, libs, hejpegs, rank, prefix, file.path(subdir, "qc"), width, png, ...)

@@ -126,6 +126,7 @@ if (grepl("list$",opt$infile)) {
             filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
                             paste0("_feature_scaled", name, num, ".pdf"))
             flog.info("Plotting scaled single feature counts to %s...", filename)
+            pdf(filename, width = 10, height = 10 * ratio)
             ndata <- plot_features(ndata, features = features, hejpeg = hejpeg,
                 labels = waiver(), labels_title = "", cells = cells, plot_violin = FALSE,
                 size = opt$dot_size, undetected_NA = FALSE, zero_offset = NULL)
