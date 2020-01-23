@@ -82,6 +82,16 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     plot_features(ndata, features = c("nFeature_RNA"), 
         hejpeg = hejpeg,  labels = function(x) sprintf("%.0f", x), labels_title = "", trans = TRUE,
         reorder_clusters = FALSE)
+    if ("percent.mito" %in% colnames(ndata@meta.data)) {
+        plot_features(ndata, features = c("percent.mito"), 
+            hejpeg = hejpeg,  labels = function(x) sprintf("%.0f", x), labels_title = "", trans = FALSE,
+            reorder_clusters = FALSE)
+    }
+    if ("percent.ribo" %in% colnames(ndata@meta.data)) {
+        plot_features(ndata, features = c("percent.ribo"), 
+            hejpeg = hejpeg,  labels = function(x) sprintf("%.0f", x), labels_title = "", trans = FALSE,
+            reorder_clusters = FALSE)
+    }
     dev.off()
 }
 .get_serialize_path <- function(prefix, suffix) {

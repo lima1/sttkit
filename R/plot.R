@@ -78,9 +78,13 @@ plot_features <- function(obj, features, cells = NULL, undetected_NA = FALSE,
             print(plot_violin(obj, features, cells, zero_offset))
         }    
         if (plot_correlations && requireNamespace("GGally", quietly = TRUE)) {
-            print(GGally::ggcorr(data = NULL, cor_matrix = .cor_nn(obj, features, average_nn = FALSE, zero_offset = zero_offset), 
-                label = TRUE, label_size = 3, layout.exp = 3,
-                hjust = 1))
+            if (length(features) > 50) {
+                flog.warn("Too many features for correlation plot.")
+            } else {    
+                print(GGally::ggcorr(data = NULL, cor_matrix = .cor_nn(obj, features, average_nn = FALSE, zero_offset = zero_offset), 
+                    label = TRUE, label_size = 3, layout.exp = 3,
+                    hjust = 1))
+            }
             #print(GGally::ggcorr(data = NULL, cor_matrix = .cor_nn(obj, features, average_nn = TRUE, zero_offset = zero_offset), 
             #    label = TRUE, label_size = 3, layout.exp = 3,
             #    hjust = 1))
@@ -167,11 +171,16 @@ plot_spots <- function(x, hejpeg, labels = scales::percent,
             levels = .order_clusters(x$cluster))
     }
     palette <- .get_palette(palette)
+    cutoffs <- NULL
     if (!is(x$fraction, "factor")) {
         if (undetected_NA) x$fraction[which(x$fraction < undetected_cutoff)] <- NA
         if (is.null(limits) && max_quantile < 1) {
             cutoffs <- quantile(x$fraction, probs = 
                 c(1 - max_quantile, max_quantile), na.rm = TRUE)
+            if (abs(cutoffs[1] - 1) < 0.0001 && 
+                abs(min(x$fraction, na.rm = TRUE) - 0) < 0.0001) {
+                cutoffs[1] <- -1
+            }
             x$fraction[which(x$fraction < cutoffs[1])] <- cutoffs[1]
             x$fraction[which(x$fraction > cutoffs[2])] <- cutoffs[2]
         }        
@@ -208,6 +217,9 @@ plot_spots <- function(x, hejpeg, labels = scales::percent,
         gp <- gp + fun_scale_color(labels = labels, name = labels_title,
             limits = limits)
     }
+    gp <- gp + labs(caption = paste0("Min: ",
+        round(min(x$fraction, na.rm = TRUE), digits = 2), "; Max: ", 
+        round(max(x$fraction, na.rm = TRUE), digits = 2)))
     if (length(levels(x$cluster)) <= 16) {
         print(gp + facet_wrap(~cluster))
     } else {

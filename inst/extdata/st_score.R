@@ -27,7 +27,7 @@ option_list <- list(
         help="Scale input data"),
     make_option(c("--serialize"), action = "store_true", default = FALSE, 
         help="Serialize infile RDS objects with scores added. By default, only meta data is stored as CSV file"),
-    make_option(c("--max_percent_mito"), action = "store", type = "double", default = 10,
+    make_option(c("--max_percent_mito"), action = "store", type = "double", default = 15,
         help="Remove low quality spots [default %default]"),
     make_option(c("--single_features"), action = "store_true", default = FALSE, 
         help="Plot all genes in the signatures individually"),
@@ -118,7 +118,7 @@ if (grepl("list$",opt$infile)) {
             ratio <- sttkit:::.get_image_ratio(length(features))
             flog.info("Plotting single feature counts to %s...", filename)
             pdf(filename, width = 10, height = 10 * ratio)
-            ndata <- plot_features(ndata_rna, features = features, hejpeg = hejpeg,
+            ndata_rna <- plot_features(ndata_rna, features = features, hejpeg = hejpeg,
                 labels = waiver(), labels_title = "", cells = cells, plot_violin = FALSE,
                 plot_correlations = FALSE, plot_map = FALSE, palette = opt$palette,
                 size = opt$dot_size, undetected_NA = TRUE)
@@ -136,7 +136,7 @@ if (grepl("list$",opt$infile)) {
                                 paste0("_feature_counts", name, num, ".png"))
                 flog.info("Plotting single feature counts to %s...", filename)
                 png(filename, width = 10, height = 10 * ratio, units = "in", res = 150)
-                ndata <- plot_features(ndata_rna, features = features, hejpeg = hejpeg,
+                ndata_rna <- plot_features(ndata_rna, features = features, hejpeg = hejpeg,
                     labels = waiver(), labels_title = "", cells = cells, plot_violin = FALSE,
                     plot_map = FALSE, plot_correlations = FALSE, palette = opt$palette, 
                     size = opt$dot_size, undetected_NA = TRUE)
