@@ -2,10 +2,10 @@
 
 ## Installation
 
-These scripts require Seurat 3.1. 
+These scripts require the Seurat 3.2 pre-release with Visium support. 
 
 ```
-install.packages("Seurat")
+devtools::install_github("satijalab/seurat", ref = "spatial")
 ```
 
 Common functionality in this toolkit are provided in an R package called
