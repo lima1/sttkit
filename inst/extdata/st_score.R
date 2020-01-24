@@ -110,7 +110,7 @@ if (grepl("list$",opt$infile)) {
             method = opt$method)
         if (opt$single_features) {
             ndata_rna <- ndata
-            DefaultAssay(ndata_rna) <- "RNA"
+            DefaultAssay(ndata_rna) <- names(ndata@assays)[1]
             filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
                             paste0("_feature_counts", name, num, ".pdf"))
             features <- unique(unlist(gmt))

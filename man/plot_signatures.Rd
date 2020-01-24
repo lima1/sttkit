@@ -6,7 +6,7 @@
 \usage{
 plot_signatures(obj_spatial, file, gmt, nbin = 24, ctrl = 30,
   method = c("seurat", "mean"), width = 10, png = FALSE,
-  cells = NULL, zero_cutoff = NULL, ...)
+  cells = NULL, zero_cutoff = NULL, assay = "Spatial", ...)
 }
 \arguments{
 \item{obj_spatial}{Seurat object with SpatialTranscriptomics data}
@@ -29,6 +29,8 @@ plot_signatures(obj_spatial, file, gmt, nbin = 24, ctrl = 30,
 \item{cells}{Plot only specified cells}
 
 \item{zero_cutoff}{Cutoff defining zero. Defaults to half the number of genes in the signature.}
+
+\item{assay}{Name of the assay corresponding to the initial input data.}
 
 \item{...}{Arguments passed to \code{\link{plot_spots}}.}
 }

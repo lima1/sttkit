@@ -11,6 +11,8 @@
 #' passing \code{min_spots}
 #' @param transpose Transpose input matrix
 #' @param barcodes Optionally, barcodes for all spots
+#' @param assay Name of the assay corresponding to the initial input data.
+#' @param image Optional \code{VisiumV1} object containing image information.
 #' @param plot_qc Generate QC plots
 #' @param serialize Automatically serialize object
 #' @param prefix Prefix of output files
@@ -27,7 +29,8 @@
 read_spatial <- function(file, sampleid, mt_pattern = regex_mito(), 
                         rp_pattern = regex_ribo(), 
                         min_features = 300, min_spots = 2, required_features = NULL, 
-                        transpose = FALSE, barcodes = NULL,
+                        transpose = FALSE, barcodes = NULL, image = NULL, 
+                        assay = "Spatial",
                         plot_qc = TRUE, serialize = TRUE, prefix) {
     if (is(file, "character")) {
         flog.info("Loading %s...", basename(file))
@@ -60,7 +63,7 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
         raw_data <- raw_data[Matrix::rowSums(raw_data) >= min_spots, ]
     }    
     ndata <- CreateSeuratObject(raw_data, min.cells = 0,
-        min.features = min_features, project = sampleid)
+        min.features = min_features, project = sampleid, assay = assay)
     mito.features <- grep(pattern = mt_pattern, x = rownames(x = ndata), value = TRUE)
     ndata <- PercentageFeatureSet(object = ndata, pattern = mt_pattern, col.name = "percent.mito")
     ndata <- PercentageFeatureSet(object = ndata, pattern = rp_pattern, col.name = "percent.ribo")
@@ -68,14 +71,24 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
     if (plot_qc) {
         pdf(paste0(prefix, "_qc.pdf"))
         print(VlnPlot(object = ndata, 
-            features = c("nFeature_RNA", "nCount_RNA", "percent.mito", "percent.ribo"),
+            features = c(paste0("nFeature_", assay), 
+                         paste0("nCount_", assay), 
+                         "percent.mito", "percent.ribo"),
             ncol = 2))
         par(mfrow = c(2, 2))
-        print(FeatureScatter(object = ndata, feature1 = "nFeature_RNA", feature2 = "nCount_RNA"))
-        print(FeatureScatter(object = ndata, feature1 = "nFeature_RNA", feature2 = "percent.ribo"))
+        print(FeatureScatter(object = ndata, 
+            feature1 = paste0("nFeature_", assay), 
+            feature2 = paste0("nCount_", assay)))
+        print(FeatureScatter(object = ndata, 
+            feature1 = paste0("nFeature_", assay),, 
+            feature2 = "percent.ribo"))
         if (length(unique(ndata$percent.mito))>1) { 
-            print(FeatureScatter(object = ndata, feature1 = "nFeature_RNA", feature2 = "percent.mito"))
-            print(FeatureScatter(object = ndata, feature1 = "percent.mito", feature2 = "percent.ribo"))
+            print(FeatureScatter(object = ndata, 
+                feature1 = paste0("nFeature_", assay),
+                feature2 = "percent.mito"))
+            print(FeatureScatter(object = ndata, 
+                feature1 = "percent.mito", 
+                feature2 = "percent.ribo"))
 
         }
         dev.off()
@@ -85,19 +98,26 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
     if (!is.null(barcodes)) {
         ndata <- AddMetaData(object = ndata, metadata = barcodes, col.name = "barcode")
     }    
+    if (!is.null(image)) {
+        image <- image[Cells(x = ndata)]
+        DefaultAssay(object = image) <- assay
+        ndata[["slice1"]] <- image
+    }
     cnts <- GetAssayData(object = ndata, slot = 'counts')
 
     if (sum(grepl("^hg19", rownames(ndata)))>50) {
         hg19.features <- grep(pattern = "^hg19", x = rownames(x = ndata), value = TRUE)
         percent.hg19 <- Matrix::colSums(x = cnts[hg19.features, ]) / Matrix::colSums(x = cnts)
         ndata <- AddMetaData(object = ndata, metadata = percent.hg19, col.name = "hg19")
-        ndata$nFeature_RNA_hg19 <- apply(as.matrix(cnts[grep("hg19", rownames(cnts)),]),2,function(x) length(which(x>0)))
+        key <- paste0("nFeature_", DefaultAssay(ndata), "_hg19")
+        ndata[[key]] <- apply(as.matrix(cnts[grep("hg19", rownames(cnts)),]),2,function(x) length(which(x>0)))
     }    
     if (sum(grepl("^mm10", rownames(ndata)))>50) {
         mm10.features <- grep(pattern = "^mm10", x = rownames(x = ndata), value = TRUE)
         percent.mm10 <- Matrix::colSums(x = cnts[mm10.features, ]) / Matrix::colSums(x = cnts)
         ndata <- AddMetaData(object = ndata, metadata = percent.mm10, col.name = "mm10")
-        ndata$nFeature_RNA_mm10 <- apply(as.matrix(cnts[grep("mm10", rownames(cnts)),]),2,function(x) length(which(x>0)))
+        key <- paste0("nFeature_", DefaultAssay(ndata), "_mm10")
+        ndata[[key]] <- apply(as.matrix(cnts[grep("mm10", rownames(cnts)),]),2,function(x) length(which(x>0)))
     }
 
     if (serialize) {
@@ -127,20 +147,26 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
 #' Read 10X SpaceRanger data into Seurat object
 #' @param filtered_feature_bc_matrix_dir Path to SpaceRanger filtered matrix
 #' @param spatial_dir Path to SpaceRanger \code{spatial} directory
-#' @param tissue_positions_file File providing the coordindates
+#' @param assay Name of the assay corresponding to the initial input data.
 #' @param ... Arguments passed to \code{\link{read_spatial}}
 #' @export read_visium
 #' @examples
 #' read_visium()
-read_visium <- function(filtered_feature_bc_matrix_dir, spatial_dir, tissue_positions_file = "tissue_positions_list.csv", ...) {
-    raw_data <- Read10X(filtered_feature_bc_matrix_dir)
-    spatial <- read.csv(file.path(spatial_dir, tissue_positions_file),
-        header = FALSE, as.is = TRUE)
-    idx <- match(colnames(raw_data), gsub("-\\d+$", "", spatial[,1]))
-    barcodes <- spatial[idx,1]
-    colnames(raw_data) <- paste0(spatial$V6[idx], "x", spatial$V5[idx])
+read_visium <- function(filtered_feature_bc_matrix_dir, 
+    spatial_dir = file.path(filtered_feature_bc_matrix_dir, "spatial"), 
+    assay = "Spatial", ...) {
+    requireNamespace("hdf5r")
+
+    filename <- file.path(filtered_feature_bc_matrix_dir, 
+        "filtered_feature_bc_matrix.h5")
+    raw_data <- Read10X_h5(filename = filename)
+    image <- Read10X_Image(spatial_dir)
+    DefaultAssay(object = image) <- assay
+
+    barcodes <- colnames(raw_data)
     names(barcodes) <- colnames(raw_data)
-    read_spatial(Matrix::t(raw_data), barcodes = barcodes, ...)
+
+    read_spatial(Matrix::t(raw_data), barcodes = barcodes, image = image, ...)
 } 
 
 .serialize <- function(x, prefix, suffix) {

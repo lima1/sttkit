@@ -4,9 +4,9 @@
 \alias{plot_signatures_fake_bulk}
 \title{plot_signatures_fake_bulk}
 \usage{
-plot_signatures_fake_bulk(objs, gmt, assay = "RNA", log_trans = TRUE,
-  labels = NULL, plot_pairs = TRUE, plot_bar = TRUE,
-  plot_heatmaps = TRUE)
+plot_signatures_fake_bulk(objs, gmt, assay = "Spatial",
+  log_trans = TRUE, labels = NULL, plot_pairs = TRUE,
+  plot_bar = TRUE, plot_heatmaps = TRUE)
 }
 \arguments{
 \item{objs}{Seurat objects with SpatialTranscriptomics data}

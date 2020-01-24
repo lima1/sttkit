@@ -6,7 +6,7 @@
 \usage{
 plot_nmf(obj, libs, hejpegs, labels = NULL, rank, prefix,
   subdir = "nmf", width = 10, png = FALSE, plot_he = TRUE,
-  plot_ranks = TRUE, plot_qc = TRUE, ...)
+  plot_ranks = TRUE, plot_qc = TRUE, assay = "Spatial", ...)
 }
 \arguments{
 \item{obj}{Seurat object that contains a \code{NMF} object after
@@ -33,6 +33,8 @@ running \code{\link{cluster_nmf}}}
 \item{plot_ranks}{Plot diagnostics about all tested ranks}
 
 \item{plot_qc}{Plot QC statistics about all tested ranks}
+
+\item{assay}{Name of the assay corresponding to the initial input data.}
 
 \item{...}{Additional parameters passed to \code{\link{plot_features}}}
 }

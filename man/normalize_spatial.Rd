@@ -6,7 +6,8 @@
 \usage{
 normalize_spatial(obj, nfeatures = 2500, scale = TRUE, center = TRUE,
   correct_umi = TRUE, method = c("sctransform", "seurat2", "scran"),
-  regressout = NULL, serialize = TRUE, prefix, ...)
+  regressout = NULL, assay = "Spatial", serialize = TRUE, prefix,
+  ...)
 }
 \arguments{
 \item{obj}{Object, read by \code{\link{read_spatial}}.}
@@ -23,6 +24,8 @@ normalize_spatial(obj, nfeatures = 2500, scale = TRUE, center = TRUE,
 or use \code{scran} or Seurat 2 style normalization and scaling.}
 
 \item{regressout}{Regressout these features.}
+
+\item{assay}{Name of the assay corresponding to the initial input data.}
 
 \item{serialize}{Automatically serialize object}
 

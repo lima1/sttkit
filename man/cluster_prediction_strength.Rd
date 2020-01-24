@@ -5,7 +5,7 @@
 \title{cluster_prediction_strength}
 \usage{
 cluster_prediction_strength(obj1, obj2, col1 = NULL, col2 = NULL,
-  hejpeg1 = NULL, hejpeg2 = NULL, prefix)
+  hejpeg1 = NULL, hejpeg2 = NULL, assay = "Spatial", prefix)
 }
 \arguments{
 \item{obj1}{Object, clustered by \code{\link{cluster_spatial}}.}
@@ -21,6 +21,8 @@ cluster_prediction_strength(obj1, obj2, col1 = NULL, col2 = NULL,
 \item{hejpeg1}{Jpeg file of H&E for \code{obj1}}
 
 \item{hejpeg2}{Jpeg file of H&E for \code{obj2}}
+
+\item{assay}{Name of the assay corresponding to the initial input data.}
 
 \item{prefix}{Prefix of output files}
 }

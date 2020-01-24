@@ -125,7 +125,7 @@ integrate_spatial <- function(obj_spatial = NULL, references, features = 2000,
     references[order(sapply(references, function(x) x$library[1]))]
 }
 
-.filter_object <- function(x, max_percent_mito, min_features, min_max_counts) {
+.filter_object <- function(x, max_percent_mito, min_features, min_max_counts, assay = "Spatial") {
     nbefore <- ncol(x)
     if ("percent.mito" %in% colnames(x@meta.data)) {
         x <- x[, is.na(x[["percent.mito"]]) | 
@@ -138,7 +138,7 @@ integrate_spatial <- function(obj_spatial = NULL, references, features = 2000,
             nbefore - ncol(x), library_label)
     }
     nbefore <- ncol(x)
-    x <- x[ , x$nFeature_RNA >= min_features]
+    x <- x[ , x[[paste0("nFeature_", assay)]] >= min_features]
     if (ncol(x) < nbefore) {
         flog.info("Min Genes: Removing %i cells from reference library %s.", 
             nbefore - ncol(x), x$library[1])
