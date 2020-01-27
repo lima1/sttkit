@@ -242,7 +242,9 @@ plot_spots <- function(x, hejpeg, labels = scales::percent,
 .parse_coords <- function(obj, n, cols=1:2) {
     # Visium
     if (!is.null(obj@images)) {
-        return(obj@images[[1]]@coordinates[,c("imagecol", "imagerow")])
+        image_idx <- which.max(sapply(obj@images, function(x) 
+            length(intersect(Cells(x), Cells(obj)))))
+        return(obj@images[[image_idx]]@coordinates[,c("imagecol", "imagerow")])
     }
     # ST
     n <- gsub("_\\d+$","", n)
