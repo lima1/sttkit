@@ -82,6 +82,8 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 }
 
 single_input <- TRUE
+hejpegs <- TRUE
+
 if (grepl("list$",opt$infile)) {
     infiles <- .check_file_list(opt$infile)
     if (length(infiles)>1) single_input <- FALSE

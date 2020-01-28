@@ -1,5 +1,9 @@
 # README
 
+This is a collection of command line R scripts for analyzing spatial
+transcriptomics data.  It is based on Seurat 3.2 workflows with a focus on
+multi-sample (technical replicates and treatment/control pairs).
+
 ## Installation
 
 These scripts require the Seurat 3.2 pre-release with Visium support. 
@@ -35,7 +39,7 @@ Usage: /path/to/sttkit/inst/extdata/st_normalize.R [options] ...
 
 ### st_hejpeg.R
 
-Some standard edits to H&E jpegs.
+Some standard edits to H&E jpegs (obsolete with Visium).
 
 Example:
 ```
@@ -68,7 +72,8 @@ Rscript $STTKIT/st_snormalize.R --spaceranger_dir $SAMPLE/${PIPELINE}_pipeline/ 
      --outprefix OUTDIR/${PIPELINE}/$SAMPLE/normalize/$SAMPLE \
 ```
 
-This script will generate a few files with outprefix as filename prefix.
+This script will generate a few files with outprefix as filename prefix. Note that
+hejpeg is ignored for Visium data (here and in all other tools). 
 
 ### st_cluster.R
 

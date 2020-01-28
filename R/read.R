@@ -13,6 +13,7 @@
 #' @param barcodes Optionally, barcodes for all spots
 #' @param assay Name of the assay corresponding to the initial input data.
 #' @param image Optional \code{VisiumV1} object containing image information.
+#' @param slice Optional name for the stored \code{image}
 #' @param plot_qc Generate QC plots
 #' @param serialize Automatically serialize object
 #' @param prefix Prefix of output files
@@ -29,7 +30,7 @@
 read_spatial <- function(file, sampleid, mt_pattern = regex_mito(), 
                         rp_pattern = regex_ribo(), 
                         min_features = 300, min_spots = 2, required_features = NULL, 
-                        transpose = FALSE, barcodes = NULL, image = NULL, 
+                        transpose = FALSE, barcodes = NULL, image = NULL, slice = sampleid,
                         assay = "Spatial",
                         plot_qc = TRUE, serialize = TRUE, prefix) {
     if (is(file, "character")) {
@@ -101,7 +102,7 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
     if (!is.null(image)) {
         image <- image[Cells(x = ndata)]
         DefaultAssay(object = image) <- assay
-        ndata[["slice1"]] <- image
+        ndata[[slice]] <- image
     }
     cnts <- GetAssayData(object = ndata, slot = 'counts')
 

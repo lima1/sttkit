@@ -7,8 +7,8 @@
 read_spatial(file, sampleid, mt_pattern = regex_mito(),
   rp_pattern = regex_ribo(), min_features = 300, min_spots = 2,
   required_features = NULL, transpose = FALSE, barcodes = NULL,
-  image = NULL, assay = "Spatial", plot_qc = TRUE,
-  serialize = TRUE, prefix)
+  image = NULL, slice = sampleid, assay = "Spatial",
+  plot_qc = TRUE, serialize = TRUE, prefix)
 }
 \arguments{
 \item{file}{File or data containing Spatial read counts}
@@ -31,6 +31,8 @@ passing \code{min_spots}}
 \item{barcodes}{Optionally, barcodes for all spots}
 
 \item{image}{Optional \code{VisiumV1} object containing image information.}
+
+\item{slice}{Optional name for the stored \code{image}}
 
 \item{assay}{Name of the assay corresponding to the initial input data.}
 
