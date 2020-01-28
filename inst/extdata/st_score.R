@@ -53,7 +53,7 @@ if (is.null(opt$infile)) {
     stop("Need --infile")
 }
 if (is.null(opt$gmt)) {
-    stop("Need --infile")
+    stop("Need --gmt")
 }
 if (is.null(opt$outprefix)) {
     stop("Need --outprefix")
@@ -82,16 +82,17 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 }
 
 single_input <- TRUE
-hejpegs <- TRUE
-
+hejpegs <- NULL
 if (grepl("list$",opt$infile)) {
     infiles <- .check_file_list(opt$infile)
     if (length(infiles)>1) single_input <- FALSE
-    hejpegs <- .check_file_list(opt$hejpeg)
-    if (length(infiles) != length(hejpegs)) {
-        stop("--infile as list requires --hejpeg as list.")    
+    if (!is.null(opt$hejpeg)) {
+        hejpegs <- .check_file_list(opt$hejpeg)
+        if (length(infiles) != length(hejpegs)) {
+            stop("--infile as list requires --hejpeg as list.")
+        }
     }
-} 
+}
 
 .plot_signature <- function(ndata, prefix, hejpeg, gmt, name = NULL, num = "", cells = NULL) {
     name_no_dash <- sub("^_", "", name)
@@ -175,7 +176,7 @@ if (single_input) {
     }
     gmt <- read_signatures(opt$gmt, ndata_merged)
     
-    for (i in seq_along(hejpegs)) {
+    for (i in seq_along(infiles)) {
        if (!is.null(ndata[[i]]@meta.data$label)) {
            num <- paste0("_", ndata[[i]]$label[1], "_", ndata[[i]]$library[1])
        } else {
