@@ -239,12 +239,16 @@ plot_spots <- function(x, hejpeg, labels = scales::percent,
     s[order(gsub("_\\d+$","", s), as.numeric(gsub("^.*_","", s)))]
 }
 
+.get_image_slice <- function(obj) {
+    Images(obj)[which.max(sapply(Images(obj), function(i) 
+        length(intersect(Cells(obj[[i]]), Cells(obj)))))]
+}
+
 .parse_coords <- function(obj, n, cols=1:2) {
     # Visium
-    if (!is.null(obj@images)) {
-        image_idx <- which.max(sapply(obj@images, function(x) 
-            length(intersect(Cells(x), Cells(obj)))))
-        return(obj@images[[image_idx]]@coordinates[,c("imagecol", "imagerow")])
+    if (length(Images(obj))) {
+        image_idx <- .get_image_slice(obj)
+        return(obj[[image_idx]]@coordinates[,c("imagecol", "imagerow")])
     }
     # ST
     n <- gsub("_\\d+$","", n)

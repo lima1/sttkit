@@ -450,6 +450,27 @@ if (opt$nmf) {
     }    
 }
 
+if (length(Images(ndata))) {
+    filename_features <- .get_serialize_path(opt$outprefix, "_variable_markvariogram.rds")
+    if (!opt$force && file.exists(filename_features)) {
+        flog.warn("%s exists. Skipping spatial differential expression analysis. Use --force to overwrite.", filename_features)
+        spatial_features <- readRDS(filename_features)
+    } else {
+        ndata_split <- SplitObject(ndata, split.by = "library")
+        ndata_split <- lapply(seq_along(ndata_split), function(i) 
+            FindSpatiallyVariableFeatures(ndata_split[[i]], 
+            selection.method = "markvariogram", 
+            image = sttkit:::.get_image_slice(ndata_split[[i]]),
+            features = head(VariableFeatures(ndata), 1000)))
+        spatial_features <- lapply(ndata_split, SpatiallyVariableFeatures, selection.method = "markvariogram")
+        libs <- as.character(sapply(ndata_split, function(x) x$library[1]))
+        names(spatial_features) <- libs
+
+        flog.info("Writing R data structure to %s...", filename_features)
+        sttkit:::.serialize(markers, opt$outprefix, "_variable_markvariogram.rds")
+    }
+} 
+
 if (opt$mpi) {
     closeCluster(cl)
     mpi.quit()
