@@ -56,7 +56,7 @@ suppressPackageStartupMessages(library(sttkit))
 log_file <- paste0(opt$outprefix, "_normalize.log")
 if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 
-.plot_he_ptx <- function(ndata, prefix, hejpeg) {
+.plot_he_ptx <- function(ndata, prefix, hejpeg, assay = "Spatial") {
     flog.info("Plotting counts on H&E...")
     if (sum(grep("^hg19", rownames(ndata)))) {
         filename <- paste0(prefix, "_he_ptx.pdf")
@@ -65,9 +65,10 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
             hejpeg = hejpeg,  labels = scales::percent, 
             reorder_clusters = FALSE, size = opt$dot_size,
             plot_correlations = FALSE)
-        if ("nFeature_RNA_mm10" %in% colnames(ndata@meta.data)) {
+        if (paste0("nFeature_", assay, "_mm10") %in% colnames(ndata@meta.data)) {
             plot_features(ndata, 
-                features = c("nFeature_RNA_mm10", "nFeature_RNA_hg19"), 
+                features = c(paste0("nFeature_", assay, "_mm10"), 
+                             paste0("nFeature_", assay, "_hg19")), 
                 hejpeg = hejpeg,  labels = function(x) sprintf("%.0f", x), 
                 labels_title ="", trans = TRUE, reorder_clusters = FALSE,
                 plot_correlations = FALSE)
@@ -76,10 +77,11 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     }     
     filename <- paste0(prefix, "_he_counts.pdf")
     pdf(filename, width = 4, height = 3.6)
-    plot_features(ndata, features = c("nCount_RNA"), 
+
+    plot_features(ndata, features = paste0("nCount_", assay), 
         hejpeg = hejpeg,  labels = function(x) sprintf("%.0f", x), labels_title = "", trans = TRUE,
         reorder_clusters = FALSE)
-    plot_features(ndata, features = c("nFeature_RNA"), 
+    plot_features(ndata, features = paste0("nFeature_", assay), 
         hejpeg = hejpeg,  labels = function(x) sprintf("%.0f", x), labels_title = "", trans = TRUE,
         reorder_clusters = FALSE)
     if ("percent.mito" %in% colnames(ndata@meta.data)) {
@@ -132,8 +134,7 @@ if (!opt$force && file.exists(filename)) {
                              prefix = opt$outprefix)
     } else {
         ndata <- read_visium(
-                             file.path(opt$spaceranger_dir, "filtered_feature_bc_matrix"),
-                             file.path(opt$spaceranger_dir, "spatial"),
+                             opt$spaceranger_dir,
                              min_spots = opt$min_spots, 
                              min_features = opt$min_features,
                              required_features = required_features, 
@@ -150,7 +151,7 @@ if (!opt$force && file.exists(filename)) {
                          prefix = opt$outprefix)
 }
 
-.plot_he_ptx(ndata, opt$outprefix, opt$hejpeg)
+.plot_he_ptx(ndata, opt$outprefix, opt$hejpeg, assay = names(ndata@assays)[1])
 
 m <- .write_tsv(ndata, opt$outprefix)
 

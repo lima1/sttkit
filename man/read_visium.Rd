@@ -4,15 +4,16 @@
 \alias{read_visium}
 \title{read_visium}
 \usage{
-read_visium(filtered_feature_bc_matrix_dir, spatial_dir,
-  tissue_positions_file = "tissue_positions_list.csv", ...)
+read_visium(filtered_feature_bc_matrix_dir,
+  spatial_dir = file.path(filtered_feature_bc_matrix_dir, "spatial"),
+  assay = "Spatial", ...)
 }
 \arguments{
 \item{filtered_feature_bc_matrix_dir}{Path to SpaceRanger filtered matrix}
 
 \item{spatial_dir}{Path to SpaceRanger \code{spatial} directory}
 
-\item{tissue_positions_file}{File providing the coordindates}
+\item{assay}{Name of the assay corresponding to the initial input data.}
 
 \item{...}{Arguments passed to \code{\link{read_spatial}}}
 }

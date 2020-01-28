@@ -4,12 +4,14 @@
 \alias{plot_gmt_availability}
 \title{plot_gmt_availability}
 \usage{
-plot_gmt_availability(objs, gmt)
+plot_gmt_availability(objs, gmt, assay = "Spatial")
 }
 \arguments{
 \item{objs}{Seurat object}
 
 \item{gmt}{GMT File with gene signatures, read by \code{\link{read_signatures}}}
+
+\item{assay}{Name of the assay corresponding to the initial input data.}
 }
 \description{
 Given a list of Seurat objects, plots the fraction of available genes

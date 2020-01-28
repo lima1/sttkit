@@ -217,9 +217,11 @@ plot_spots <- function(x, hejpeg, labels = scales::percent,
         gp <- gp + fun_scale_color(labels = labels, name = labels_title,
             limits = limits)
     }
-    gp <- gp + labs(caption = paste0("Min: ",
-        round(min(x$fraction, na.rm = TRUE), digits = 2), "; Max: ", 
-        round(max(x$fraction, na.rm = TRUE), digits = 2)))
+    if (!is(x$fraction, "factor")) {
+        gp <- gp + labs(caption = paste0("Min: ",
+            round(min(x$fraction, na.rm = TRUE), digits = 2), "; Max: ", 
+            round(max(x$fraction, na.rm = TRUE), digits = 2)))
+    }
     if (length(levels(x$cluster)) <= 16) {
         print(gp + facet_wrap(~cluster))
     } else {
@@ -238,6 +240,13 @@ plot_spots <- function(x, hejpeg, labels = scales::percent,
 }
 
 .parse_coords <- function(obj, n, cols=1:2) {
+    # Visium
+    if (!is.null(obj@images)) {
+        image_idx <- which.max(sapply(obj@images, function(x) 
+            length(intersect(Cells(x), Cells(obj)))))
+        return(obj@images[[image_idx]]@coordinates[,c("imagecol", "imagerow")])
+    }
+    # ST
     n <- gsub("_\\d+$","", n)
     n <- gsub("^\\d+_","", n)
     apply(do.call(rbind, strsplit(n, split = "x")), 2, as.numeric)[,cols]
@@ -253,10 +262,11 @@ plot_spots <- function(x, hejpeg, labels = scales::percent,
 #' @param nbin Argument of \code{Seurat::AddModuleScore}
 #' @param ctrl Argument of \code{Seurat::AddModuleScore}
 #' @param method Either use \code{Seurat::AddModuleScore} or simple mean
-#' @param zero_cutoff Cutoff defining zero. Defaults to half the number of genes in the signature.
 #' @param width Plot width 
 #' @param png Create, in addition to PDF, PNG files
 #' @param cells Plot only specified cells
+#' @param zero_cutoff Cutoff defining zero. Defaults to half the number of genes in the signature.
+#' @param assay Name of the assay corresponding to the initial input data.
 #' @param ... Arguments passed to \code{\link{plot_spots}}.
 #' @export plot_signatures
 #' @examples
@@ -264,7 +274,7 @@ plot_spots <- function(x, hejpeg, labels = scales::percent,
 
 plot_signatures <- function(obj_spatial, file, gmt, nbin = 24, 
     ctrl = 30, method = c("seurat", "mean"), width = 10, png = FALSE,
-    cells = NULL, zero_cutoff = NULL, ...) {
+    cells = NULL, zero_cutoff = NULL, assay = "Spatial", ...) {
     if (is(gmt, "character") && file.exists(gmt)) {
         sigs <- read_signatures(gmt, obj_spatial)
     } else { 
@@ -275,7 +285,7 @@ plot_signatures <- function(obj_spatial, file, gmt, nbin = 24,
         flog.info("Adding signature scores...")
         obj_spatial <- .add_module_score(obj_spatial, sigs, zero_offset = -1000,
             zero_cutoff = zero_cutoff, nbin = nbin, ctrl = ctrl, 
-            name = names(sigs), method = method)
+            name = names(sigs), method = method, assay = assay)
     } else {
         flog.info("obj_spatial contains signature scores.")
     }    
@@ -332,6 +342,7 @@ plot_signatures <- function(obj_spatial, file, gmt, nbin = 24,
 #' @param plot_he Plot for each library the HE jpeg
 #' @param plot_ranks Plot diagnostics about all tested ranks
 #' @param plot_qc Plot QC statistics about all tested ranks
+#' @param assay Name of the assay corresponding to the initial input data.
 #' @param ... Additional parameters passed to \code{\link{plot_features}}
 #' @importFrom graphics plot
 #' @importFrom grDevices png
@@ -342,7 +353,7 @@ plot_signatures <- function(obj_spatial, file, gmt, nbin = 24,
 #' plot_nmf()
 plot_nmf <- function(obj, libs, hejpegs, labels = NULL, rank, prefix, 
                      subdir = "nmf", width = 10, png = FALSE,
-                     plot_he = TRUE, plot_ranks = TRUE, plot_qc = TRUE, ...) {
+                     plot_he = TRUE, plot_ranks = TRUE, plot_qc = TRUE, assay = "Spatial", ...) {
     nmf_obj <- .extract_nmf_obj(obj, rank)
     nmf_obj_random <- .extract_nmf_obj(obj, rank, randomize = TRUE)
 
@@ -391,18 +402,18 @@ plot_nmf <- function(obj, libs, hejpegs, labels = NULL, rank, prefix,
         write_nmf_features(obj, rank = rank, k = k, prefix = prefix)
         if (plot_qc) {
             x <- obj@meta.data
-            xm <- melt(x[,grep("library|nmf|nFeature", colnames(x))], id.vars=c("library", "nFeature_RNA"))
+            xm <- melt(x[,grep("library|nmf|nFeature", colnames(x))], id.vars=c("library", paste0("nFeature_", assay)))
             xm <- xm[grep(paste0("nmf_k_", k, "_"), xm$variable),]
             filename <- .get_sub_path(prefix, file.path(subdir, "qc"), paste0("_nmf_cluster_", k, "_qc.pdf"))
             pdf(filename, width = width, height = width * ratio)
             if (length(unique(xm$library)) < 6) {
-                gp <- ggplot(xm, aes_string("nFeature_RNA", "value", color = "library")) + 
+                gp <- ggplot(xm, aes_string(paste0("nFeature_", assay), "value", color = "library")) + 
                     geom_point(size=0.2) + 
                     facet_wrap(~variable) + 
                     ylab("Contribution") + 
                     theme(legend.position = "bottom")
             } else {
-                gp <- ggplot(xm, aes_string("nFeature_RNA", "value")) + 
+                gp <- ggplot(xm, aes_string(paste0("nFeature_", assay), "value")) + 
                     geom_point(size=0.2) + 
                     facet_wrap(~variable) + 
                     ylab("Contribution")
@@ -538,20 +549,21 @@ plot_correlation_heatmap <- function(objs, features, sample_labels = NULL, featu
 #' for each signature in a GMT file
 #' @param objs Seurat object 
 #' @param gmt GMT File with gene signatures, read by \code{\link{read_signatures}}
+#' @param assay Name of the assay corresponding to the initial input data.
 #' @export plot_gmt_availability
 #' @examples
 #' plot_gmt_availability
-plot_gmt_availability <- function(objs, gmt) {
+plot_gmt_availability <- function(objs, gmt, assay = "Spatial") {
     libs <- sapply(objs, function(x) x$library[1])
     names(objs) <- as.character(libs)
     gmt <- lapply(gmt, function(sig) sig <- sort(unique(sig)))
     x <- lapply(objs, function(obj) {
-            check_non_zero <- min(apply(GetAssayData(obj, slot = "counts", assay = "RNA"), 1, max)) < 1
+            check_non_zero <- min(apply(GetAssayData(obj, slot = "counts", assay = assay), 1, max)) < 1
             lapply(gmt, function(sig) {
                 # gene available in obj
                 idx <- sig %in% rownames(obj)
                 if (check_non_zero) {
-                    idx_2 <- apply(GetAssayData(obj[sig[idx], ], slot = "counts", assay = "RNA"), 1, max) > 0
+                    idx_2 <- apply(GetAssayData(obj[sig[idx], ], slot = "counts", assay = assay), 1, max) > 0
                     idx[idx] <- idx_2
                 }
                 idx
@@ -663,7 +675,7 @@ plot_nmf_gse <- function(obj, sig, binwidth = 0.025, rank, prefix,
 #' @export plot_signatures_fake_bulk
 #' @examples
 #' plot_signatures_fake_bulk()
-plot_signatures_fake_bulk <- function(objs, gmt, assay = "RNA", log_trans = TRUE, labels = NULL, 
+plot_signatures_fake_bulk <- function(objs, gmt, assay = "Spatial", log_trans = TRUE, labels = NULL, 
     plot_pairs = TRUE, plot_bar = TRUE, plot_heatmaps = TRUE) {
     idx <- sapply(objs, is, "Seurat")
     objs <- objs[idx]

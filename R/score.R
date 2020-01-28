@@ -51,7 +51,7 @@ read_signatures <- function(gmt, obj = NULL, max_nchar_title = 25) {
     return(sigs)
 }
     
-.add_module_score <- function(obj, sigs, zero_offset, zero_cutoff = NULL, clean_names = TRUE, method = c("seurat", "mean"), ...) {
+.add_module_score <- function(obj, sigs, zero_offset, zero_cutoff = NULL, clean_names = TRUE, method = c("seurat", "mean"), assay = "Spatial", ...) {
     method <- match.arg(method)
     for (i in seq_along(sigs)) {
         idx <- sigs[[i]] %in% rownames(obj)
@@ -82,14 +82,14 @@ read_signatures <- function(gmt, obj = NULL, max_nchar_title = 25) {
     if (zero_offset != 0) {
         if (!is.null(obj@meta.data$library) && length(unique(obj$library))>1) { 
             flog.info("Calculating normalization factors...")
-            norm_factors_edger <- edgeR::calcNormFactors(edgeR::DGEList(GetAssayData(obj, "counts", assay = "RNA")))
+            norm_factors_edger <- edgeR::calcNormFactors(edgeR::DGEList(GetAssayData(obj, "counts", assay = assay)))
             norm_factors <- sapply(split(norm_factors_edger$samples$norm.factors, obj$library), mean)
             norm_factors <- norm_factors[obj@meta.data$library]
         } else {
             norm_factors <- 1
         }        
         cnts <- lapply(sigs, function(i) { 
-            m <- GetAssayData(obj, "counts", assay = "RNA")
+            m <- GetAssayData(obj, "counts", assay = assay)
             Matrix::colSums(m[i[i %in% rownames(m)], , drop=F])
         })
         names(cnts) <- .get_signature_names(obj, cnts)

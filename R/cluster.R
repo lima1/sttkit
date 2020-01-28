@@ -122,6 +122,7 @@ plot_clusters <- function(obj, prefix) {
 #' \code{obj2}. Default use first available.
 #' @param hejpeg1 Jpeg file of H&E for \code{obj1}
 #' @param hejpeg2 Jpeg file of H&E for \code{obj2}
+#' @param assay Name of the assay corresponding to the initial input data.
 #' @param prefix Prefix of output files
 
 #' @export cluster_prediction_strength
@@ -130,6 +131,7 @@ plot_clusters <- function(obj, prefix) {
 
 cluster_prediction_strength <- function(obj1, obj2, col1 = NULL, col2 = NULL,
                                         hejpeg1 = NULL, hejpeg2 = NULL,
+                                        assay = "Spatial",
                                         prefix) {
 
     .find_cluster_col <- function(obj, label) {
@@ -149,7 +151,7 @@ cluster_prediction_strength <- function(obj1, obj2, col1 = NULL, col2 = NULL,
     .calc_consistency <- function(obj1, obj2, col, hejpeg) {
         query <- .transfer_cluster_labels(obj1, obj2, obj1@meta.data[[col]])
         m <- .get_sample_consistency_matrix(query, "predicted.id", col)
-        .plot_consistency_matrix(m, query, obj1, obj2, hejpeg = hejpeg, prefix = prefix)
+        .plot_consistency_matrix(m, query, obj1, obj2, hejpeg = hejpeg, assay = assay, prefix = prefix)
     }
    .calc_consistency(obj1, obj2, col1, hejpeg1)
    .calc_consistency(obj2, obj1, col2, hejpeg2)
@@ -170,7 +172,7 @@ cluster_prediction_strength <- function(obj1, obj2, col1 = NULL, col2 = NULL,
     m
 }
 
-.plot_consistency_matrix <- function(m, query, obj1, obj2, hejpeg, prefix, suffix = "") {
+.plot_consistency_matrix <- function(m, query, obj1, obj2, hejpeg, assay = "Spatial", prefix, suffix = "") {
     query$cluster_consistency <- apply(m, 1, function(x) sum(x > 0)) / 
         pmax(1, pmax(apply(m, 1, function(x) max(x)), 
                      apply(m, 2, function(x) max(x))))
@@ -184,7 +186,7 @@ cluster_prediction_strength <- function(obj1, obj2, col1 = NULL, col2 = NULL,
         plot_features(query, "cluster_consistency", hejpeg = hejpeg,
             plot_correlations=FALSE, labels_title = "")         
         print(FeatureScatter(object = query, feature1 = "cluster_consistency",
-                                             feature2 = "nFeature_RNA"))
+                                      feature2 = paste0("nFeature_", assay)))
         print(FeatureScatter(object = query, feature1 = "cluster_consistency",
                                              feature2 = "percent.mito"))
         print(FeatureScatter(object = query, feature1 = "cluster_consistency",

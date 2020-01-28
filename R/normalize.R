@@ -10,6 +10,7 @@
 #' @param method Use \code{sctransform} to normalize and scale data,
 #' or use \code{scran} or Seurat 2 style normalization and scaling.
 #' @param regressout Regressout these features.
+#' @param assay Name of the assay corresponding to the initial input data.
 #' @param serialize Automatically serialize object
 #' @param prefix Prefix of output files
 #' @param ... Additional parameters passed to the normalization 
@@ -22,7 +23,7 @@
 normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE,
                               correct_umi = TRUE,
                               method = c("sctransform", "seurat2", "scran"), 
-                              regressout = NULL, 
+                              regressout = NULL, assay = "Spatial",
                               serialize = TRUE, prefix, ...) {
     regressout <- .check_regressout(obj, regressout)
 
@@ -33,7 +34,7 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
             flog.info("Regressing out %s.", paste(regressout, collapse = ", "))
         }
         min_cells <- min(Matrix::rowSums(GetAssayData(obj, "counts"))) + 1
-        obj <- SCTransform(obj, variable.features.n = nfeatures,
+        obj <- SCTransform(obj, variable.features.n = nfeatures, assay = assay,
             vars.to.regress = regressout, do.correct.umi = correct_umi,
             return.only.var.genes = FALSE, min_cells = min_cells, ...)
         if (serialize) .serialize(obj, prefix, "_scaled.rds")
