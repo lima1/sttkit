@@ -180,6 +180,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
         print(DoHeatmap(ndata, features = genes, group.by = "library"))
     }
     dev.off()
+    flog.info("Plotting PCA heatmap...")
     filename <- paste0(prefix, "_pca_heatmap.pdf")
     pdf(filename, height = 6, width = 8)
     print(DimHeatmap(ndata, dims=1:6, reduction="pca"))
@@ -453,9 +454,10 @@ if (opt$nmf) {
 if (length(Images(ndata))) {
     filename_features <- .get_serialize_path(opt$outprefix, "_variable_markvariogram.rds")
     if (!opt$force && file.exists(filename_features)) {
-        flog.warn("%s exists. Skipping spatial differential expression analysis. Use --force to overwrite.", filename_features)
+        flog.warn("%s exists. Skipping spatial variation analysis. Use --force to overwrite.", filename_features)
         spatial_features <- readRDS(filename_features)
     } else {
+        flog.info("Finding top spatially variable features. This will probably take a while...")
         ndata_split <- SplitObject(ndata, split.by = "library")
         ndata_split <- lapply(seq_along(ndata_split), function(i) 
             FindSpatiallyVariableFeatures(ndata_split[[i]], 
@@ -467,8 +469,27 @@ if (length(Images(ndata))) {
         names(spatial_features) <- libs
 
         flog.info("Writing R data structure to %s...", filename_features)
-        sttkit:::.serialize(markers, opt$outprefix, "_variable_markvariogram.rds")
+        sttkit:::.serialize(spatial_features, opt$outprefix, "_variable_markvariogram.rds")
+       flog.info("Done with spatial variation analysis!") 
+
     }
+    flog.info("Plotting spatial variation...")
+    top_features <- lapply(spatial_features, function(x) head(x, length(x) / 100 * 5))
+    ndata_split <- SplitObject(ndata, split.by = "library")
+    libs <- as.character(sapply(ndata_split, function(x) x$library[1]))
+    for (i in seq_along(ndata_split)) {
+        flog.info("Generating output plots for %s ...", libs[i])
+        ratio <- sttkit:::.get_image_ratio(length(top_features[i]))
+        label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
+        libs_label <- if (length(libs) < 2) "" else paste0("_",libs[i])
+        filename <- sttkit:::.get_sub_path(opt$outprefix, "spatial_variation", 
+            paste0("_he_variable_markvariogram", label, libs_label, ".pdf"))
+        pdf(filename, width = 10, height = 10 * ratio)
+        ndata_split[[i]] <- plot_features(ndata_split[[i]], features = top_features[[i]], hejpeg = NULL,
+        labels = waiver(), labels_title = "", size = opt$dot_size)
+        dev.off()
+    }    
+    
 } 
 
 if (opt$mpi) {
