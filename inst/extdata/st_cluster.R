@@ -474,7 +474,7 @@ if (length(Images(ndata))) {
 
     }
     flog.info("Plotting spatial variation...")
-    top_features <- lapply(spatial_features, function(x) head(x, length(x) / 100 * 5))
+    top_features <- lapply(spatial_features, function(x) head(x, max(80, length(x) / 100 * 5)))
     ndata_split <- SplitObject(ndata, split.by = "library")
     libs <- as.character(sapply(ndata_split, function(x) x$library[1]))
     for (i in seq_along(ndata_split)) {
@@ -485,8 +485,11 @@ if (length(Images(ndata))) {
         filename <- sttkit:::.get_sub_path(opt$outprefix, "spatial_variation", 
             paste0("_he_variable_markvariogram", label, libs_label, ".pdf"))
         pdf(filename, width = 10, height = 10 * ratio)
-        ndata_split[[i]] <- plot_features(ndata_split[[i]], features = top_features[[i]], hejpeg = NULL,
-        labels = waiver(), labels_title = "", size = opt$dot_size)
+        ndata_split[[i]] <- plot_features(ndata_split[[i]], 
+            features = top_features[[i]], hejpeg = NULL,
+            labels = waiver(), labels_title = "", size = opt$dot_size,
+            reorder_clusters = FALSE, plot_map = FALSE, plot_violin = FALSE,
+            plot_correlations = FALSE)
         dev.off()
     }    
     
