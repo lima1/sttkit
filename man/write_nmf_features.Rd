@@ -4,8 +4,7 @@
 \alias{write_nmf_features}
 \title{write_nmf_features}
 \usage{
-write_nmf_features(obj, rank, k, min_features = 20, method = "kim",
-  prefix)
+write_nmf_features(obj, rank, k, min_features = 20, method = "kim", prefix)
 }
 \arguments{
 \item{obj}{Object, clustered by \code{\link{cluster_nmf}}.}

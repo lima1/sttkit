@@ -4,9 +4,20 @@
 \alias{plot_signatures}
 \title{plot_signatures}
 \usage{
-plot_signatures(obj_spatial, file, gmt, nbin = 24, ctrl = 30,
-  method = c("seurat", "mean"), width = 10, png = FALSE,
-  cells = NULL, zero_cutoff = NULL, assay = "Spatial", ...)
+plot_signatures(
+  obj_spatial,
+  file,
+  gmt,
+  nbin = 24,
+  ctrl = 30,
+  method = c("seurat", "mean"),
+  width = 10,
+  png = FALSE,
+  cells = NULL,
+  zero_cutoff = NULL,
+  assay = "Spatial",
+  ...
+)
 }
 \arguments{
 \item{obj_spatial}{Seurat object with SpatialTranscriptomics data}

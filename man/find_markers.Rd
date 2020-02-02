@@ -4,9 +4,19 @@
 \alias{find_markers}
 \title{find_markers}
 \usage{
-find_markers(obj, references, resolution, max_markers = NULL,
-  merged = FALSE, write = TRUE, force = FALSE, serialize = TRUE,
-  prefix, verbose = TRUE, ...)
+find_markers(
+  obj,
+  references,
+  resolution,
+  max_markers = NULL,
+  merged = FALSE,
+  write = TRUE,
+  force = FALSE,
+  serialize = TRUE,
+  prefix,
+  verbose = TRUE,
+  ...
+)
 }
 \arguments{
 \item{obj}{Seurat object containing reference data obtained by

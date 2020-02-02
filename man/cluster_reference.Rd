@@ -4,9 +4,19 @@
 \alias{cluster_reference}
 \title{cluster_reference}
 \usage{
-cluster_reference(integrated, resolution = 0.8, sub = FALSE,
-  idents = NULL, features = NULL, force, plot_umap = TRUE,
-  serialize = TRUE, prefix, verbose = FALSE, ...)
+cluster_reference(
+  integrated,
+  resolution = 0.8,
+  sub = FALSE,
+  idents = NULL,
+  features = NULL,
+  force,
+  plot_umap = TRUE,
+  serialize = TRUE,
+  prefix,
+  verbose = FALSE,
+  ...
+)
 }
 \arguments{
 \item{integrated}{Seurat object containing integrated 

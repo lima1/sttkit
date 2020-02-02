@@ -77,6 +77,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     }     
     filename <- paste0(prefix, "_he_counts.pdf")
     pdf(filename, width = 4, height = 3.6)
+#    SpatialFeaturePlot(brain, features = "nCount_Spatial") + theme(legend.position = "right")
 
     plot_features(ndata, features = paste0("nCount_", assay), 
         hejpeg = hejpeg,  labels = function(x) sprintf("%.0f", x), labels_title = "", trans = TRUE,
@@ -129,6 +130,7 @@ if (!opt$force && file.exists(filename)) {
         ndata <- read_spatial(opt$infile, min_spots = opt$min_spots, 
                              min_features = opt$min_features,
                              required_features = required_features, 
+                             image = opt$hejpeg,
                              transpose = opt$transpose,
                              sampleid = opt$sampleid,
                              prefix = opt$outprefix)

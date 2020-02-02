@@ -4,9 +4,22 @@
 \alias{plot_nmf}
 \title{plot_nmf}
 \usage{
-plot_nmf(obj, libs, hejpegs, labels = NULL, rank, prefix,
-  subdir = "nmf", width = 10, png = FALSE, plot_he = TRUE,
-  plot_ranks = TRUE, plot_qc = TRUE, assay = "Spatial", ...)
+plot_nmf(
+  obj,
+  libs,
+  hejpegs,
+  labels = NULL,
+  rank,
+  prefix,
+  subdir = "nmf",
+  width = 10,
+  png = FALSE,
+  plot_he = TRUE,
+  plot_ranks = TRUE,
+  plot_qc = TRUE,
+  assay = "Spatial",
+  ...
+)
 }
 \arguments{
 \item{obj}{Seurat object that contains a \code{NMF} object after

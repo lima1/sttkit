@@ -4,10 +4,20 @@
 \alias{calculate_nmf_gse}
 \title{calculate_nmf_gse}
 \usage{
-calculate_nmf_gse(obj, sig_set, method = c("fisher", "perm"),
-  perm_n = 1000, scale = TRUE, alternative = c("two.sided", "less",
-  "greater"), min_nmf_features = 100, summary_function = mean, rank, k,
-  prefix, verbose = TRUE)
+calculate_nmf_gse(
+  obj,
+  sig_set,
+  method = c("fisher", "perm"),
+  perm_n = 1000,
+  scale = TRUE,
+  alternative = c("two.sided", "less", "greater"),
+  min_nmf_features = 100,
+  summary_function = mean,
+  rank,
+  k,
+  prefix,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{obj}{Object, clustered by \code{\link{cluster_nmf}}.}

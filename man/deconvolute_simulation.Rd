@@ -4,9 +4,18 @@
 \alias{deconvolute_simulation}
 \title{deconvolute_simulation}
 \usage{
-deconvolute_simulation(simulation, references, min_features, regressout,
-  resolution, idents, max_markers = NULL, plot_qc = TRUE,
-  min_fraction = 0.01, verbose = FALSE)
+deconvolute_simulation(
+  simulation,
+  references,
+  min_features,
+  regressout,
+  resolution,
+  idents,
+  max_markers = NULL,
+  plot_qc = TRUE,
+  min_fraction = 0.01,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{simulation}{True cluster proportions as obtained by \code{\link{simulate_spatial}}}

@@ -4,8 +4,17 @@
 \alias{plot_nmf_gse}
 \title{plot_nmf_gse}
 \usage{
-plot_nmf_gse(obj, sig, binwidth = 0.025, rank, prefix, subdir = "nmf",
-  method = "", width = 10, png = FALSE)
+plot_nmf_gse(
+  obj,
+  sig,
+  binwidth = 0.025,
+  rank,
+  prefix,
+  subdir = "nmf",
+  method = "",
+  width = 10,
+  png = FALSE
+)
 }
 \arguments{
 \item{obj}{Results of \code{\link{calculate_nmf_gse}}}

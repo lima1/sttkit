@@ -4,8 +4,14 @@
 \alias{cluster_nmf}
 \title{cluster_nmf}
 \usage{
-cluster_nmf(obj, rank, randomize = FALSE, variable_features = TRUE,
-  max_features = NULL, ...)
+cluster_nmf(
+  obj,
+  rank,
+  randomize = FALSE,
+  variable_features = TRUE,
+  max_features = NULL,
+  ...
+)
 }
 \arguments{
 \item{obj}{Object, clustered by \code{\link{cluster_spatial}}.}

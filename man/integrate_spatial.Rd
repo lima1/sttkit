@@ -4,11 +4,22 @@
 \alias{integrate_spatial}
 \title{integrate_spatial}
 \usage{
-integrate_spatial(obj_spatial = NULL, references, features = 2000,
-  min_features = 400, min_spots = 200, scale = TRUE,
-  max_percent_mito = 33, min_max_counts = 3, min_detected = 2,
-  reference_technology = "single_cell", force, serialize = TRUE,
-  prefix, verbose = FALSE)
+integrate_spatial(
+  obj_spatial = NULL,
+  references,
+  features = 2000,
+  min_features = 400,
+  min_spots = 200,
+  scale = TRUE,
+  max_percent_mito = 33,
+  min_max_counts = 3,
+  min_detected = 2,
+  reference_technology = "single_cell",
+  force,
+  serialize = TRUE,
+  prefix,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{obj_spatial}{Seurat object containing SpatialTranscriptomics data.

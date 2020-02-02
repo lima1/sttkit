@@ -4,9 +4,18 @@
 \alias{plot_features}
 \title{plot_features}
 \usage{
-plot_features(obj, features, cells = NULL, undetected_NA = FALSE,
-  plot_correlations = TRUE, plot_violin = TRUE, plot_map = FALSE,
-  zero_offset = NULL, slot = "data", ...)
+plot_features(
+  obj,
+  features,
+  cells = NULL,
+  undetected_NA = FALSE,
+  plot_correlations = TRUE,
+  plot_violin = TRUE,
+  plot_map = FALSE,
+  zero_offset = NULL,
+  slot = "data",
+  ...
+)
 }
 \arguments{
 \item{obj}{Seurat object}

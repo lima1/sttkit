@@ -4,10 +4,19 @@
 \alias{normalize_spatial}
 \title{normalize_spatial}
 \usage{
-normalize_spatial(obj, nfeatures = 2500, scale = TRUE, center = TRUE,
-  correct_umi = TRUE, method = c("sctransform", "seurat2", "scran"),
-  regressout = NULL, assay = "Spatial", serialize = TRUE, prefix,
-  ...)
+normalize_spatial(
+  obj,
+  nfeatures = 2500,
+  scale = TRUE,
+  center = TRUE,
+  correct_umi = TRUE,
+  method = c("sctransform", "seurat2", "scran"),
+  regressout = NULL,
+  assay = "Spatial",
+  serialize = TRUE,
+  prefix,
+  ...
+)
 }
 \arguments{
 \item{obj}{Object, read by \code{\link{read_spatial}}.}

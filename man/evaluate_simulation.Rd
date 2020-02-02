@@ -4,8 +4,12 @@
 \alias{evaluate_simulation}
 \title{evaluate_simulation}
 \usage{
-evaluate_simulation(simulation, deconvolution, plot_qc = TRUE,
-  min_fraction = 0.01)
+evaluate_simulation(
+  simulation,
+  deconvolution,
+  plot_qc = TRUE,
+  min_fraction = 0.01
+)
 }
 \arguments{
 \item{simulation}{True cluster proportions as obtained by \code{\link{simulate_spatial}}}

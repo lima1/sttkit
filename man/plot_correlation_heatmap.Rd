@@ -4,8 +4,13 @@
 \alias{plot_correlation_heatmap}
 \title{plot_correlation_heatmap}
 \usage{
-plot_correlation_heatmap(objs, features, sample_labels = NULL,
-  feature_labels = NULL, average_nn = FALSE)
+plot_correlation_heatmap(
+  objs,
+  features,
+  sample_labels = NULL,
+  feature_labels = NULL,
+  average_nn = FALSE
+)
 }
 \arguments{
 \item{objs}{List of Seurat objects}

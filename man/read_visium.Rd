@@ -4,9 +4,12 @@
 \alias{read_visium}
 \title{read_visium}
 \usage{
-read_visium(filtered_feature_bc_matrix_dir,
+read_visium(
+  filtered_feature_bc_matrix_dir,
   spatial_dir = file.path(filtered_feature_bc_matrix_dir, "spatial"),
-  assay = "Spatial", ...)
+  assay = "Spatial",
+  ...
+)
 }
 \arguments{
 \item{filtered_feature_bc_matrix_dir}{Path to SpaceRanger filtered matrix}

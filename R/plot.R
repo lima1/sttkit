@@ -22,74 +22,79 @@ plot_features <- function(obj, features, cells = NULL, undetected_NA = FALSE,
                           plot_correlations = TRUE, plot_violin = TRUE, plot_map = FALSE, 
                           zero_offset = NULL, slot = "data", ...)  {
     if (is.null(cells)) cells <- colnames(obj)
-    limits <- NULL    
-    if (is(obj, "Seurat")) {
-        z <- FetchData(obj, vars = features, slot = slot)
-        features <- features[features %in% colnames(z)]
-    } else {
-        z <- obj
-    }    
-    z0 <- z
-    if (!is.null(zero_offset)) {
-        z0[z0 < zero_offset / 2] <- NA
-    }
-    if (!identical(cells, colnames(obj))) {
-        # make sure ggplot knows the true range of the feature when subset is 
-        # plotted
-        limits <- quantile(z0[, features], probs = c(1 - 0.999, 0.999),
-            na.rm = TRUE)
-        z <- z[cells, , drop = FALSE]
-        z0 <- z0[cells, , drop = FALSE]
-    }
-    z <- t(z)
-    coords <- .parse_coords(obj, colnames(z))
-    d.f <- do.call(rbind, lapply(seq(nrow(z)), function(i) 
-        data.frame( 
-            x = coords[,1], 
-            y = 1-coords[,2], 
-            fraction = z[i,],
-            cluster = rownames(z)[i]
-    )))
-    # ggplot sets values outside limits as NA, we want to truncate them here
-    if (!is.null(limits)) {
-        if (is.null(zero_offset)) {
-            d.f$fraction[d.f$fraction < limits[1]] <- limits[1]
+    limits <- NULL 
+    if (is(obj, "Seurat") && length(Images(obj))) {
+        print(SpatialFeaturePlot(obj[, cells], features, slot = slot))
+    } else {    
+        if (is(obj, "Seurat")) {
+            z <- FetchData(obj, vars = features, slot = slot)
+            features <- features[features %in% colnames(z)]
         } else {
-            d.f$fraction[d.f$fraction < limits[1] & d.f$fraction > zero_offset / 2] <- limits[1]
-        }
-        d.f$fraction[d.f$fraction > limits[2]] <- limits[2]
-    }
-
-    plot_spots(d.f, undetected_NA = undetected_NA, limits = limits, ...) 
-    if (plot_map && is(d.f$fraction, "factor")) {
-        gp <- ggplot(d.f, aes_string("x", "y", color = "fraction")) + 
-            geom_point() +
-            scale_color_discrete(name = "") +
-            theme_void() + theme(legend.position = "none")
-        if (nrow(z) > 1) {
-            gp <- gp + facet_wrap(~cluster+fraction)
-        } else {
-            gp <- gp + facet_wrap(~fraction)
-        }
-        print(gp)    
-    }
-    if (length(features) > 1) {
-        if (plot_violin && length(levels(obj)) > 1) {
-            print(plot_violin(obj, features, cells, zero_offset))
+            z <- obj
         }    
-        if (plot_correlations && requireNamespace("GGally", quietly = TRUE)) {
-            if (length(features) > 50) {
-                flog.warn("Too many features for correlation plot.")
-            } else {    
-                print(GGally::ggcorr(data = NULL, cor_matrix = .cor_nn(obj, features, average_nn = FALSE, zero_offset = zero_offset), 
-                    label = TRUE, label_size = 3, layout.exp = 3,
-                    hjust = 1))
+        z0 <- z
+        if (!is.null(zero_offset)) {
+            z0[z0 < zero_offset / 2] <- NA
+        }
+        if (!identical(cells, colnames(obj))) {
+            # make sure ggplot knows the true range of the feature when subset is 
+            # plotted
+            limits <- quantile(z0[, features], probs = c(1 - 0.999, 0.999),
+                na.rm = TRUE)
+            z <- z[cells, , drop = FALSE]
+            z0 <- z0[cells, , drop = FALSE]
+        }
+        z <- t(z)
+        coords <- .parse_coords(obj, colnames(z))
+        d.f <- do.call(rbind, lapply(seq(nrow(z)), function(i) 
+            data.frame( 
+                x = coords[,1], 
+                y = 1-coords[,2], 
+                fraction = z[i,],
+                cluster = rownames(z)[i]
+        )))
+        # ggplot sets values outside limits as NA, we want to truncate them here
+        if (!is.null(limits)) {
+            if (is.null(zero_offset)) {
+                d.f$fraction[d.f$fraction < limits[1]] <- limits[1]
+            } else {
+                d.f$fraction[d.f$fraction < limits[1] & d.f$fraction > zero_offset / 2] <- limits[1]
             }
-            #print(GGally::ggcorr(data = NULL, cor_matrix = .cor_nn(obj, features, average_nn = TRUE, zero_offset = zero_offset), 
-            #    label = TRUE, label_size = 3, layout.exp = 3,
-            #    hjust = 1))
-        }       
-    }
+            d.f$fraction[d.f$fraction > limits[2]] <- limits[2]
+        }
+
+        plot_spots(d.f, undetected_NA = undetected_NA, limits = limits, ...) 
+
+        if (plot_map && is(d.f$fraction, "factor")) {
+            gp <- ggplot(d.f, aes_string("x", "y", color = "fraction")) + 
+                geom_point() +
+                scale_color_discrete(name = "") +
+                theme_void() + theme(legend.position = "none")
+            if (nrow(z) > 1) {
+                gp <- gp + facet_wrap(~cluster+fraction)
+            } else {
+                gp <- gp + facet_wrap(~fraction)
+            }
+            print(gp)    
+        }
+        if (length(features) > 1) {
+            if (plot_violin && length(levels(obj)) > 1) {
+                print(plot_violin(obj, features, cells, zero_offset))
+            }    
+            if (plot_correlations && requireNamespace("GGally", quietly = TRUE)) {
+                if (length(features) > 50) {
+                    flog.warn("Too many features for correlation plot.")
+                } else {    
+                    print(GGally::ggcorr(data = NULL, cor_matrix = .cor_nn(obj, features, average_nn = FALSE, zero_offset = zero_offset), 
+                        label = TRUE, label_size = 3, layout.exp = 3,
+                        hjust = 1))
+                }
+                #print(GGally::ggcorr(data = NULL, cor_matrix = .cor_nn(obj, features, average_nn = TRUE, zero_offset = zero_offset), 
+                #    label = TRUE, label_size = 3, layout.exp = 3,
+                #    hjust = 1))
+            }       
+        }
+    }    
     obj
 }
 
@@ -832,3 +837,4 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
     }
     return(fun_scale_color)
 }        
+

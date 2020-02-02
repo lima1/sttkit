@@ -4,8 +4,14 @@
 \alias{simulate_spatial}
 \title{simulate_spatial}
 \usage{
-simulate_spatial(obj_single_cell, obj_spatial, clusters_per_spot,
-  cells_per_spot, write = TRUE, prefix)
+simulate_spatial(
+  obj_single_cell,
+  obj_spatial,
+  clusters_per_spot,
+  cells_per_spot,
+  write = TRUE,
+  prefix
+)
 }
 \arguments{
 \item{obj_single_cell}{Seurat object containing scRNA-seq reference}

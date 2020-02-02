@@ -4,8 +4,16 @@
 \alias{cluster_prediction_strength}
 \title{cluster_prediction_strength}
 \usage{
-cluster_prediction_strength(obj1, obj2, col1 = NULL, col2 = NULL,
-  hejpeg1 = NULL, hejpeg2 = NULL, assay = "Spatial", prefix)
+cluster_prediction_strength(
+  obj1,
+  obj2,
+  col1 = NULL,
+  col2 = NULL,
+  hejpeg1 = NULL,
+  hejpeg2 = NULL,
+  assay = "Spatial",
+  prefix
+)
 }
 \arguments{
 \item{obj1}{Object, clustered by \code{\link{cluster_spatial}}.}

@@ -4,12 +4,23 @@
 \alias{plot_spots}
 \title{plot_spots}
 \usage{
-plot_spots(x, hejpeg, labels = scales::percent,
-  labels_title = "Contribution", undetected_NA = TRUE,
-  undetected_cutoff = 0.001, na.rm = TRUE, max_quantile = 0.975,
-  reorder_clusters = TRUE, palette = "viridis",
-  palette_inverse = FALSE, alpha = 0.85, size = 0.9, trans = NULL,
-  limits = NULL)
+plot_spots(
+  x,
+  hejpeg,
+  labels = scales::percent,
+  labels_title = "Contribution",
+  undetected_NA = TRUE,
+  undetected_cutoff = 0.001,
+  na.rm = TRUE,
+  max_quantile = 0.975,
+  reorder_clusters = TRUE,
+  palette = "viridis",
+  palette_inverse = FALSE,
+  alpha = 0.85,
+  size = 0.9,
+  trans = NULL,
+  limits = NULL
+)
 }
 \arguments{
 \item{x}{\code{data.frame} with spot coordinates, value and cluster name.}

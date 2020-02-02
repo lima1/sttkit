@@ -4,8 +4,15 @@
 \alias{plot_signatures_nmf}
 \title{plot_signatures_nmf}
 \usage{
-plot_signatures_nmf(obj, gmt, gmt_name = NULL, rank, prefix,
-  subdir = "nmf", width = 10)
+plot_signatures_nmf(
+  obj,
+  gmt,
+  gmt_name = NULL,
+  rank,
+  prefix,
+  subdir = "nmf",
+  width = 10
+)
 }
 \arguments{
 \item{obj}{Seurat object that contains a \code{NMF} object after

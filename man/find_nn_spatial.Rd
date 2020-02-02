@@ -4,8 +4,7 @@
 \alias{find_nn_spatial}
 \title{find_nn_spatial}
 \usage{
-find_nn_spatial(obj_spatial, obj_ref, k = 20, write = TRUE, prefix,
-  ...)
+find_nn_spatial(obj_spatial, obj_ref, k = 20, write = TRUE, prefix, ...)
 }
 \arguments{
 \item{obj_spatial}{Seurat object containing SpatialTranscriptomics data}

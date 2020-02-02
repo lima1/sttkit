@@ -4,8 +4,16 @@
 \alias{cluster_integrated}
 \title{cluster_integrated}
 \usage{
-cluster_integrated(integrated, regressout, scale = NULL, force,
-  plot_umap = TRUE, serialize = TRUE, prefix, verbose = FALSE)
+cluster_integrated(
+  integrated,
+  regressout,
+  scale = NULL,
+  force,
+  plot_umap = TRUE,
+  serialize = TRUE,
+  prefix,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{integrated}{Seurat object containing integrated 

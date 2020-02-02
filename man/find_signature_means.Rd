@@ -4,8 +4,7 @@
 \alias{find_signature_means}
 \title{find_signature_means}
 \usage{
-find_signature_means(obj, features, slot = "data", label = NULL,
-  fun = mean)
+find_signature_means(obj, features, slot = "data", label = NULL, fun = mean)
 }
 \arguments{
 \item{obj}{Seurat object or a normalized count matrix (row genes, col samples)}

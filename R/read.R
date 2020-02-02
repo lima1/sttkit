@@ -13,6 +13,7 @@
 #' @param barcodes Optionally, barcodes for all spots
 #' @param assay Name of the assay corresponding to the initial input data.
 #' @param image Optional \code{VisiumV1} object containing image information.
+#' Can also be a JPEG for Spatial Transcriptomics data.
 #' @param slice Optional name for the stored \code{image}
 #' @param plot_qc Generate QC plots
 #' @param serialize Automatically serialize object
@@ -100,6 +101,9 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
         ndata <- AddMetaData(object = ndata, metadata = barcodes, col.name = "barcode")
     }    
     if (!is.null(image)) {
+        if (class(image) == "character") {
+            image <- .read_spatial_transcriptomics_image(ndata, image)
+        }
         image <- image[Cells(x = ndata)]
         DefaultAssay(object = image) <- assay
         ndata[[slice]] <- image
@@ -169,6 +173,35 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
 
     read_spatial(Matrix::t(raw_data), barcodes = barcodes, image = image, ...)
 } 
+
+.read_spatial_transcriptomics_image <- function(obj, hejpeg) {
+    if (!requireNamespace("jpeg", quietly = TRUE)) {
+        stop("Please install packages jpeg SpatialTranscriptomics data.")
+    }
+    image <- jpeg::readJPEG(hejpeg)
+    scale.factors <- data.frame(
+        "fiducial_diameter_fullres" = 0.5,
+        "tissue_hires_scalef" = 1,
+        "tissue_lowres_scalef" = max(dim(x = image))/32
+    )
+    coords <- .parse_coords(obj, Cells(obj))
+    tissue.positions <- data.frame( 
+        "tissue" = 1,
+        "row" = coords[,2], 
+        "col" = coords[,1], 
+        "imagerow" = coords[,2] - 1.5,
+        "imagecol" = coords[,1] - 1.5,
+        row.names = Cells(obj)
+    )
+    unnormalized.radius <- scale.factors$fiducial_diameter_fullres * 
+        scale.factors$tissue_lowres_scalef
+    spot.radius <- unnormalized.radius/max(dim(x = image))
+    return(new(Class = "VisiumV1", image = image, 
+        scale.factors = scalefactors(spot = scale.factors$tissue_hires_scalef, 
+        fiducial = scale.factors$fiducial_diameter_fullres, hires = scale.factors$tissue_hires_scalef, 
+        scale.factors$tissue_lowres_scalef), coordinates = tissue.positions, 
+        spot.radius = spot.radius))
+}
 
 .serialize <- function(x, prefix, suffix) {
     filename <- .get_serialize_path(prefix, suffix)
