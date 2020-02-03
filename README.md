@@ -66,14 +66,14 @@ Rscript $STTKIT/st_snormalize.R --infile $SAMPLE/${PIPELINE}_pipeline/${SAMPLE}_
 10X Visium SpaceRanger  example:
 ```
 PIPELINE="standard"
-Rscript $STTKIT/st_snormalize.R --spaceranger_dir $SAMPLE/${PIPELINE}_pipeline/ \
+Rscript $STTKIT/st_normalize.R --spaceranger_dir $SAMPLE/${PIPELINE}_pipeline/ \
      --sampleid $SAMPLE \ 
      --regressout nFeature_RNA \
-     --outprefix OUTDIR/${PIPELINE}/$SAMPLE/normalize/$SAMPLE \
+     --outprefix OUTDIR/${PIPELINE}/$SAMPLE/normalize/$SAMPLE 
 ```
 
 This script will generate a few files with outprefix as filename prefix. Note that
-hejpeg is ignored for Visium data (here and in all other tools). 
+hejpeg is ignored for Visium data. 
 
 ### st_cluster.R
 
@@ -83,7 +83,6 @@ Simple single-sample example:
 ```
 Rscript $STTKIT/st_cluster.R \
      --infile $OUTDIR/${PIPELINE}/$SAMPLE/normalize/serialize/${SAMPLE}_scaled.rds \
-     --hejpeg {SAMPLE}_HE_bw_scaled.jpg \
      --outprefix OUTDIR/${PIPELINE}/$SAMPLE/cluster/$SAMPLE 
 ```
 
@@ -108,19 +107,18 @@ mpirun --mca mpi_warn_on_fork 0 -v -np \$NSLOTS  R --slave \
     --extra_gmt ../../signatures/pathways_kegg.gmt \
     --min_features $MIN_FEATURES \
     --nmf --nmf_rank 4:16 --nmf_nruns \$NSLOTS $NMF_RANDOMIZE --nmf_method nsNMF \
-    --hejpeg lists/${SAMPLE}_he.list --verbose --mpi
+    --verbose --mpi
 ```
 
 Since NMF clustering is slow, we may need to use the doMPI package to run in in
 parallel (provide the --mpi flag).  This example shows that for multi-sample,
 we provide --infile a text file with suffix .list containing multiple input
-files. In that case, the ${SAMPLE}_unscaled.rds file should be provided and
---hejpeg also needs to be a list of input H&E jpeg files. We provide a --gmt
-file with signatures of interest to make sure that the corresponding genes are
-not filtered out for lower variance than other genes. Gene signatures in
---extra_gmt are not forced to be included and instead broadly tested against
-NMF cluster markers.  This is useful for providing large pathway databases such
-as KEGG or REACTOME.
+files. In that case, the ${SAMPLE}_unscaled.rds file should be provided.  We
+provide a --gmt file with signatures of interest to make sure that the
+corresponding genes are not filtered out for lower variance than other genes.
+Gene signatures in --extra_gmt are not forced to be included and instead
+broadly tested against NMF cluster markers.  This is useful for providing large
+pathway databases such as KEGG or REACTOME.
 
 We use the nsNMF algorithm instead of the default to get a more sparse solution
 at the cost of a significantly longer runtime.
@@ -137,8 +135,7 @@ Example:
 Rscript $STTKIT/st_score.R \
     --infile $OUTDIR/${PIPELINE}/$SAMPLE/normalize/serialize/${SAMPLE}_scaled.rds \
     --gmt mm10_io_sigs.gmt \
-    --outprefix OUTDIR/${PIPELINE}/$SAMPLE/signatures/$SAMPLE  \
-    --hejpeg {SAMPLE}_HE_bw_scaled.jpg \
+    --outprefix OUTDIR/${PIPELINE}/$SAMPLE/signatures/$SAMPLE  
 ```
 Advanced feature: --infile can be again a list of input files (see st_cluster.R).
 In this case violin plots are generated to compare the signatures across samples.
@@ -153,8 +150,7 @@ Example:
 Rscript $STTKIT/st_benchmark.R \
     --infile $OUTDIR/$PIPELINE/$SAMPLE/cluster/serialize/${SAMPLE}.rds \
     --htseq ${SAMPLE_BULK}.gene_counts.cts \
-    --outprefix OUTDIR/${PIPELINE}/$SAMPLE/benchmark/$SAMPLE  \
-    --hejpeg {SAMPLE}_HE_bw_scaled.jpg \
+    --outprefix OUTDIR/${PIPELINE}/$SAMPLE/benchmark/$SAMPLE  
 
 ```
 Advanced feature: both --infile and htseq can be again a list of input 
@@ -199,8 +195,7 @@ do
 
     Rscript ~/git/CancerGenetics/ncgs-in-spatial_tools/sttkit/inst/extdata/st_cluster.R \
         --infile $OUTDIR/$PIPELINE/$SAMPLE/normalize/serialize/${SAMPLE}_scaled.rds \
-        --outprefix $OUTDIR/$PIPELINE/$SAMPLE/cluster/$SAMPLE \
-        --hejpeg $PROJECT/$SLIDE/Images/${SAMPLE}_HE_bw_scaled.jpg 
+        --outprefix $OUTDIR/$PIPELINE/$SAMPLE/cluster/$SAMPLE 
 
 done
 
@@ -226,7 +221,6 @@ echo "#! /bin/bash
 mpirun --mca mpi_warn_on_fork 0 -v -np \$NSLOTS  R --slave \
     -f ~/git/CancerGenetics/ncgs-in-spatial_tools/sttkit/inst/extdata/st_cluster.R \
     --args --infile lists/${SAMPLE}_${NORMALIZATION}_spatial.list \
-    --hejpeg lists/${SAMPLE}_he.list \
     --outprefix $OUTDIR/$PIPELINE/${SAMPLE}/cluster/${SAMPLE} \
     --nmf --nmf_ranks 2:12 --nmf_randomize --nmf_method nsNMF \
     --png --force --mpi --verbose
@@ -238,17 +232,9 @@ qsub ${OUTDIR}/$PIPELINE/$SAMPLE/${SAMPLE}_cluster.sh
 done
 ```
 
-The .list files simply list input files line by line:
-
+The .list file simply list input files line by line:
 
 ```
-cat all_good_he.list
-../../data/ST_LP_L4_009_02JUN2018_Breast_EX2/Images/LIB-021633rd1_HE_bw_scaled.jpg
-../../data/ST_LP_L4_009_02JUN2018_Breast_EX2/Images/LIB-021634rd1_HE_bw_scaled.jpg
-../../data/ST_LP_L4_009_02JUN2018_Breast_EX2/Images/LIB-021635rd1_HE_bw_scaled.jpg
-../../data/ST_LP_L4_009_02JUN2018_Breast_EX2/Images/LIB-021636rd1_HE_bw_scaled.jpg
-../../data/ST_LP_L4_009_02JUN2018_Breast_EX2/Images/LIB-021637rd1_HE_bw_scaled.jpg
-
 cat all_good_sctransform_spatial.list
 ../../data/sctransform/standard/LIB-021633rd1/normalize/serialize/LIB-021633rd1_scaled.rds
 ../../data/sctransform/standard/LIB-021634rd1/normalize/serialize/LIB-021634rd1_scaled.rds

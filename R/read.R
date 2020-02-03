@@ -182,7 +182,7 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
     scale.factors <- data.frame(
         "fiducial_diameter_fullres" = 0.5,
         "tissue_hires_scalef" = 1,
-        "tissue_lowres_scalef" = max(dim(x = image))/32
+        "tissue_lowres_scalef" = max(dim(x = image))/34
     )
     coords <- .parse_coords(obj, Cells(obj))
     tissue.positions <- data.frame( 

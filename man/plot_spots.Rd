@@ -6,7 +6,6 @@
 \usage{
 plot_spots(
   x,
-  hejpeg,
   labels = scales::percent,
   labels_title = "Contribution",
   undetected_NA = TRUE,
@@ -24,8 +23,6 @@ plot_spots(
 }
 \arguments{
 \item{x}{\code{data.frame} with spot coordinates, value and cluster name.}
-
-\item{hejpeg}{JPEG of the aligned HE slide}
 
 \item{labels}{transformation of the labels, e.g. \code{scales::percent}}
 

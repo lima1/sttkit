@@ -23,7 +23,7 @@ option_list <- list(
     make_option(c("--normalization_method"), action = "store", default = "sctransform", 
         help="Which normalization method to use, seurat, sctransform or scran [default %default]."),
     make_option(c("--hejpeg"), action = "store", type = "character", default = NULL,
-        help="Optional path to a JPEG containing cropped HE image."),
+        help="Optional path to a JPEG containing cropped HE image (Spatial Transcriptomics data)."),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.5,
         help="Size of dots on H&E."),
     make_option(c("--min_spots"), action="store", type = "integer", default = 2, 
@@ -56,20 +56,20 @@ suppressPackageStartupMessages(library(sttkit))
 log_file <- paste0(opt$outprefix, "_normalize.log")
 if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 
-.plot_he_ptx <- function(ndata, prefix, hejpeg, assay = "Spatial") {
+.plot_he_ptx <- function(ndata, prefix, assay = "Spatial") {
     flog.info("Plotting counts on H&E...")
     if (sum(grep("^hg19", rownames(ndata)))) {
         filename <- paste0(prefix, "_he_ptx.pdf")
         pdf(filename, width=8, height=3.9)
         plot_features(ndata, features = c("mm10", "hg19"), 
-            hejpeg = hejpeg,  labels = scales::percent, 
+            labels = scales::percent, 
             reorder_clusters = FALSE, size = opt$dot_size,
             plot_correlations = FALSE)
         if (paste0("nFeature_", assay, "_mm10") %in% colnames(ndata@meta.data)) {
             plot_features(ndata, 
                 features = c(paste0("nFeature_", assay, "_mm10"), 
                              paste0("nFeature_", assay, "_hg19")), 
-                hejpeg = hejpeg,  labels = function(x) sprintf("%.0f", x), 
+                labels = function(x) sprintf("%.0f", x), 
                 labels_title ="", trans = TRUE, reorder_clusters = FALSE,
                 plot_correlations = FALSE)
         }
@@ -77,23 +77,14 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     }     
     filename <- paste0(prefix, "_he_counts.pdf")
     pdf(filename, width = 4, height = 3.6)
-#    SpatialFeaturePlot(brain, features = "nCount_Spatial") + theme(legend.position = "right")
+    print(SpatialFeaturePlot(ndata, features = paste0("nCount_", assay) ) + theme(legend.position = "right"))
+    print(SpatialFeaturePlot(ndata, features = paste0("nFeature_", assay) ) + theme(legend.position = "right"))
 
-    plot_features(ndata, features = paste0("nCount_", assay), 
-        hejpeg = hejpeg,  labels = function(x) sprintf("%.0f", x), labels_title = "", trans = TRUE,
-        reorder_clusters = FALSE)
-    plot_features(ndata, features = paste0("nFeature_", assay), 
-        hejpeg = hejpeg,  labels = function(x) sprintf("%.0f", x), labels_title = "", trans = TRUE,
-        reorder_clusters = FALSE)
     if ("percent.mito" %in% colnames(ndata@meta.data)) {
-        plot_features(ndata, features = c("percent.mito"), 
-            hejpeg = hejpeg,  labels = function(x) sprintf("%.0f", x), labels_title = "", trans = FALSE,
-            reorder_clusters = FALSE)
+        print(SpatialFeaturePlot(ndata, features = "percent.mito" ) + theme(legend.position = "right"))
     }
     if ("percent.ribo" %in% colnames(ndata@meta.data)) {
-        plot_features(ndata, features = c("percent.ribo"), 
-            hejpeg = hejpeg,  labels = function(x) sprintf("%.0f", x), labels_title = "", trans = FALSE,
-            reorder_clusters = FALSE)
+        print(SpatialFeaturePlot(ndata, features = "percent.ribo" ) + theme(legend.position = "right"))
     }
     dev.off()
 }
@@ -153,20 +144,20 @@ if (!opt$force && file.exists(filename)) {
                          prefix = opt$outprefix)
 }
 
-.plot_he_ptx(ndata, opt$outprefix, opt$hejpeg, assay = names(ndata@assays)[1])
+.plot_he_ptx(ndata, opt$outprefix, assay = names(ndata@assays)[1])
 
 m <- .write_tsv(ndata, opt$outprefix)
 
-.plot_he_scran_cluster <- function(ndata, prefix, hejpeg) {
+.plot_he_scran_cluster <- function(ndata, prefix) {
     filename <- paste0(prefix, "_he_scran_cluster.pdf")
     flog.info("Plotting clusters on H&E...")
     pdf(filename, width = 4, height = 3.9)
-    plot_features(ndata, features = "scran.cluster", hejpeg = hejpeg, 
+    plot_features(ndata, features = "scran.cluster",  
         labels = waiver(), labels_title = "", 
         reorder_clusters = FALSE, size = opt$dot_size)
     dev.off()
 }
 
 if (opt$normalization_method == "scran") {
-    .plot_he_scran_cluster(ndata, opt$outprefix, opt$hejpeg)
+    .plot_he_scran_cluster(ndata, opt$outprefix)
 }

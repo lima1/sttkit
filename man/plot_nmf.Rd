@@ -7,7 +7,6 @@
 plot_nmf(
   obj,
   libs,
-  hejpegs,
   labels = NULL,
   rank,
   prefix,
@@ -26,8 +25,6 @@ plot_nmf(
 running \code{\link{cluster_nmf}}}
 
 \item{libs}{Library ids, must be stored in \code{obj$library}}
-
-\item{hejpegs}{Matching HE jpegs to \code{libs}}
 
 \item{labels}{Optional \code{character(n)} with sample labels}
 

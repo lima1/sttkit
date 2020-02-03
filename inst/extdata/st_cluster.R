@@ -24,8 +24,6 @@ option_list <- list(
     make_option(c("--resolution"), action = "store", type = "character", 
         default = "0.8", 
         help="Resolution values for clustering. When multiple are provided, the last one is the main one [default %default]"),
-    make_option(c("--hejpeg"), action = "store", type = "character", default = NULL,
-        help="Optional path to a JPEG containing cropped HE image."),
     make_option(c("--labels"), action = "store", type = "character", default = NULL,
         help="Optional list of labels for multi-sample analyses"),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.5,
@@ -88,25 +86,17 @@ suppressPackageStartupMessages(library(sttkit))
 log_file <- paste0(opt$outprefix, "_cluster.log")
 if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 
-.plot_he_cluster <- function(ndata, prefix, hejpeg, num = "") {
+.plot_he_cluster <- function(ndata, prefix, num = "") {
     filename <- sttkit:::.get_sub_path(prefix, "snn", paste0("_he_cluster", num, ".pdf"))
     flog.info("Plotting clusters on H&E for %s...", ndata$library[1])
-    ndata$Cluster <- as.factor(as.character(Idents(ndata)))
     pdf(filename, width = 4, height = 3.9)
-    plot_features(ndata, features = "Cluster", hejpeg = hejpeg, 
-        labels = waiver(), labels_title = "", 
-        reorder_clusters = FALSE, size = opt$dot_size, 
-        plot_map = TRUE)
+    print(SpatialDimPlot(ndata))
     .plot_clustering_overlap(ndata)
     dev.off()
     if (opt$png) {
         filename <- sttkit:::.get_sub_path(prefix, "snn", paste0("_he_cluster", num, ".png"))
         png(filename, width = 4, height = 3.9, units = "in", res = 150)
-        plot_features(ndata, features = "Cluster", hejpeg = hejpeg, 
-            labels = waiver(), labels_title = "", 
-            reorder_clusters = FALSE, size = opt$dot_size, 
-            plot_map = FALSE, plot_correlations = FALSE)
-        .plot_clustering_overlap(ndata)
+        print(SpatialDimPlot(ndata))
         dev.off()
     }
 }
@@ -194,16 +184,9 @@ gmt <- NULL
 extra_gmt <- NULL
 infiles <- opt$infile
 labels <- NULL
-hejpegs <- NULL
 if (grepl("list$",opt$infile)) {
     infiles <- cli_check_file_list(opt$infile)
     if (length(infiles)>1) single_input <- FALSE
-    if (!is.null(opt$hejpeg)) {
-        hejpegs <- cli_check_file_list(opt$hejpeg)
-        if (length(infiles) != length(hejpegs)) {
-            stop("--infile as list requires --hejpeg as list.")    
-        }
-    }
     flog.info("Loading infiles %s...", paste(sapply(infiles, basename), collapse=", "))
     reference_list <- lapply(infiles, readRDS)
     if (!is.null(opt$labels)) {
@@ -310,12 +293,12 @@ if (!opt$force && file.exists(filename)) {
 
 if (single_input) {
     libs <- ndata$library[1]
-    .plot_he_cluster(ndata, opt$outprefix, opt$hejpeg)
+    .plot_he_cluster(ndata, opt$outprefix)
 } else {
     libs <- sapply(reference_list, function(x) x$library[1])
     for (i in seq_along(libs)) {
         num <- paste0("_", libs[i])
-       .plot_he_cluster(ndata[,ndata$library == libs[i]], opt$outprefix, hejpegs[i],
+       .plot_he_cluster(ndata[,ndata$library == libs[i]], opt$outprefix, 
             num = num)
         #Idents(reference_list[[i]]) <- Idents(ndata[,ndata$library == libs[i]])
         sttkit:::.serialize(ndata[,ndata$library == libs[i]], prefix = opt$outprefix, 
@@ -416,7 +399,7 @@ if (opt$nmf) {
     ndata <- .run_nmf()
     if (opt$nmf_randomize) ndata <- .run_nmf(TRUE)
     flog.info("Done with NMF clustering!")
-    plot_nmf(ndata, libs, hejpegs, labels, rank = ks, prefix = opt$outprefix, png = opt$png, 
+    plot_nmf(ndata, libs, labels = labels, rank = ks, prefix = opt$outprefix, png = opt$png, 
         size = opt$dot_size)
      loupe <- lapply(ks, function(i) 
         export_nmf_loupe(obj = ndata, rank = ks, k = i, libs = libs, 
@@ -486,7 +469,7 @@ if (length(Images(ndata))) {
             paste0("_he_variable_markvariogram", label, libs_label, ".pdf"))
         pdf(filename, width = 10, height = 10 * ratio)
         ndata_split[[i]] <- plot_features(ndata_split[[i]], 
-            features = top_features[[i]], hejpeg = NULL,
+            features = top_features[[i]], 
             labels = waiver(), labels_title = "", size = opt$dot_size,
             reorder_clusters = FALSE, plot_map = FALSE, plot_violin = FALSE,
             plot_correlations = FALSE)

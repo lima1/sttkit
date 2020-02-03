@@ -23,7 +23,7 @@ plot_features <- function(obj, features, cells = NULL, undetected_NA = FALSE,
                           zero_offset = NULL, slot = "data", ...)  {
     if (is.null(cells)) cells <- colnames(obj)
     limits <- NULL 
-    if (is(obj, "Seurat") && length(Images(obj))) {
+    if (is(obj, "Seurat") && 0 && length(Images(obj))) {
         print(SpatialFeaturePlot(obj[, cells], features, slot = slot))
     } else {    
         if (is(obj, "Seurat")) {
@@ -79,7 +79,11 @@ plot_features <- function(obj, features, cells = NULL, undetected_NA = FALSE,
         }
         if (length(features) > 1) {
             if (plot_violin && length(levels(obj)) > 1) {
-                print(plot_violin(obj, features, cells, zero_offset))
+                if (length(features) > 36) {
+                    flog.warn("Too many features for violin plot.")
+                } else {    
+                    print(plot_violin(obj, features, cells, zero_offset))
+                }
             }    
             if (plot_correlations && requireNamespace("GGally", quietly = TRUE)) {
                 if (length(features) > 50) {
@@ -137,7 +141,6 @@ plot_violin <- function(obj, features, cells = NULL, zero_offset = NULL, pt_size
 #'
 #' Plots spots in a Seurat object on HE slides
 #' @param x \code{data.frame} with spot coordinates, value and cluster name.
-#' @param hejpeg JPEG of the aligned HE slide
 #' @param labels transformation of the labels, e.g. \code{scales::percent}
 #' @param labels_title Title, shown in the legend
 #' @param undetected_NA Remove spots with low value by setting them to \code{NA}
@@ -163,7 +166,7 @@ plot_violin <- function(obj, features, cells = NULL, zero_offset = NULL, pt_size
 #' @examples
 #' plot_spots()
 
-plot_spots <- function(x, hejpeg, labels = scales::percent, 
+plot_spots <- function(x, labels = scales::percent, 
                       labels_title = "Contribution", 
                       undetected_NA = TRUE, 
                       undetected_cutoff = 0.001, na.rm = TRUE,
@@ -196,24 +199,9 @@ plot_spots <- function(x, hejpeg, labels = scales::percent,
         
     fun_scale_color <- .get_scale_color_cont(x, palette, palette_inverse)
 
-    if (!is.null(hejpeg)) {
-        if (!requireNamespace("jpeg", quietly = TRUE) || 
-            !requireNamespace("grid", quietly = TRUE) ||
-            !requireNamespace("ggforce", quietly = TRUE)) {
-            stop("Please install packages jpeg, ggforce and grid for --hejpeg.")
-        }
-        image <- jpeg::readJPEG(hejpeg)
+    gp <- ggplot(x, aes_string("x", "y", color = "fraction"))+
+        geom_point() + theme_void()
 
-        x$x <- x$x - 1
-        x$y <- x$y - 1
-        gp <- ggplot(x, aes_string("x", "y", color = "fraction")) + 
-            annotation_custom(grid::rasterGrob(image)) +  
-            geom_point(alpha = alpha, size = size, na.rm = na.rm) +
-            theme_void() + xlim(1,31) + ylim(-34,-2)
-    } else {
-        gp <- ggplot(x, aes_string("x", "y", color = "fraction"))+
-            geom_point() + theme_void()
-    }        
     if (!is.null(trans)) {
         gp <- gp + fun_scale_color(labels = labels, name = labels_title,
              trans = scales::log2_trans(),
@@ -341,7 +329,6 @@ plot_signatures <- function(obj_spatial, file, gmt, nbin = 24,
 #' @param obj Seurat object that contains a \code{NMF} object after
 #' running \code{\link{cluster_nmf}}
 #' @param libs Library ids, must be stored in \code{obj$library}
-#' @param hejpegs Matching HE jpegs to \code{libs}
 #' @param labels Optional \code{character(n)} with sample labels
 #' @param rank Number of clusters 
 #' @param prefix Output file prefix
@@ -360,7 +347,7 @@ plot_signatures <- function(obj_spatial, file, gmt, nbin = 24,
 #' @export plot_nmf
 #' @examples
 #' plot_nmf()
-plot_nmf <- function(obj, libs, hejpegs, labels = NULL, rank, prefix, 
+plot_nmf <- function(obj, libs, labels = NULL, rank, prefix, 
                      subdir = "nmf", width = 10, png = FALSE,
                      plot_he = TRUE, plot_ranks = TRUE, plot_qc = TRUE, assay = "Spatial", ...) {
     nmf_obj <- .extract_nmf_obj(obj, rank)
@@ -389,13 +376,13 @@ plot_nmf <- function(obj, libs, hejpegs, labels = NULL, rank, prefix,
                 filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, libs_label, ".pdf"))
                 pdf(filename, width = width, height = width * ratio)
                 plot_features(obj[, obj$library == libs[i]],
-                    features = features, hejpeg = hejpegs[i], ...)
+                    features = features, ...)
                 dev.off()
                 if (png) {
                     filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, libs_label, ".png"))
                     png(filename, width = width, height = width * ratio, units = "in", res = 150)
                     plot_features(obj[, obj$library == libs[i]],
-                        features = features, hejpeg = hejpegs[i],
+                        features = features, 
                         plot_map = FALSE, plot_violin = FALSE, 
                         plot_correlations = FALSE, ...)
                     dev.off()
@@ -451,10 +438,10 @@ plot_nmf <- function(obj, libs, hejpegs, labels = NULL, rank, prefix,
         }    
     }
     if (plot_qc) {
-        .plot_nmf_r2(obj, libs, hejpegs, rank, prefix, file.path(subdir, "qc"), width, png, ...)
+        .plot_nmf_r2(obj, libs, rank, prefix, file.path(subdir, "qc"), width, png, ...)
     }
     if (plot_ranks && length(rank) > 1) {
-        #.plot_nmf_r2(obj, libs, hejpegs, rank, prefix, subdir, width, 
+        #.plot_nmf_r2(obj, libs, rank, prefix, subdir, width, 
         #    png, feature_suffix = "rss", ...)
         filename <- .get_sub_path(prefix, subdir, "_nmf_ranks.pdf")
         pdf(filename)
@@ -477,7 +464,7 @@ plot_nmf <- function(obj, libs, hejpegs, labels = NULL, rank, prefix,
     obj
 }
 
-.plot_nmf_r2 <- function(obj, libs, hejpegs, rank, prefix, subdir, width, 
+.plot_nmf_r2 <- function(obj, libs, rank, prefix, subdir, width, 
                          png, feature_suffix = "r2", ...) {
 
     features <- paste0("nmf_k_", feature_suffix, "_", rank)
@@ -490,7 +477,7 @@ plot_nmf <- function(obj, libs, hejpegs, labels = NULL, rank, prefix,
             paste0("_he_nmf_cluster_", feature_suffix, "_", libs[i], ".pdf"))
         pdf(filename, width = width, height = width * ratio)
         plot_features(obj[, obj$library == libs[i]],
-            features = features, hejpeg = hejpegs[i], plot_correlations = FALSE,
+            features = features, plot_correlations = FALSE,
             labels = waiver(), labels_title = sprintf("%12s", labels_title), ...)
         dev.off()
         if (png) {
@@ -498,7 +485,7 @@ plot_nmf <- function(obj, libs, hejpegs, labels = NULL, rank, prefix,
             paste0("_he_nmf_cluster_", feature_suffix, "_",libs[i], ".png"))
             png(filename, width = width, height = width * ratio, units = "in", res = 150)
             plot_features(obj[, obj$library == libs[i]],
-                features = features, hejpeg = hejpegs[i],
+                features = features, 
                 plot_map = FALSE, plot_violin = FALSE, 
                 plot_correlations = FALSE, 
                 labels = waiver(), labels_title = sprintf("%12s", labels_title), ...)

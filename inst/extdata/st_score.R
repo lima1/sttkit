@@ -21,8 +21,6 @@ option_list <- list(
         help="Value of AddModuleScore ctrl argument [default %default]"),
     make_option(c("--outprefix"), action = "store", type = "character", default = NULL,
         help="Outfile."),
-    make_option(c("--hejpeg"), action = "store", type = "character", default = NULL,
-        help="Optional path to a JPEG containing cropped HE image."),
     make_option(c("--scale"), action = "store_true", default = FALSE, 
         help="Scale input data"),
     make_option(c("--serialize"), action = "store_true", default = FALSE, 
@@ -82,19 +80,12 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 }
 
 single_input <- TRUE
-hejpegs <- NULL
 if (grepl("list$",opt$infile)) {
     infiles <- .check_file_list(opt$infile)
     if (length(infiles)>1) single_input <- FALSE
-    if (!is.null(opt$hejpeg)) {
-        hejpegs <- .check_file_list(opt$hejpeg)
-        if (length(infiles) != length(hejpegs)) {
-            stop("--infile as list requires --hejpeg as list.")
-        }
-    }
 }
 
-.plot_signature <- function(ndata, prefix, hejpeg, gmt, name = NULL, num = "", cells = NULL) {
+.plot_signature <- function(ndata, prefix, gmt, name = NULL, num = "", cells = NULL) {
     name_no_dash <- sub("^_", "", name)
     # make sure he subdir exists
     filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "tmp.pdf")
@@ -105,7 +96,7 @@ if (grepl("list$",opt$infile)) {
         flog.warn("%s exists. Use --force to overwrite.", filename)
     } else {
         ndata <- sttkit:::.filter_object(ndata, opt$max_percent_mito, 0, 0)
-        ndata <- plot_signatures(ndata, file = filename, gmt = gmt, hejpeg = hejpeg,
+        ndata <- plot_signatures(ndata, file = filename, gmt = gmt, 
             labels = waiver(), labels_title = "", reorder_clusters = FALSE, cells = cells,
             png = opt$png, palette = opt$palette, size = opt$dot_size,
             nbin = opt$seurat_nbin, ctrl = opt$seurat_ctrl,
@@ -121,7 +112,7 @@ if (grepl("list$",opt$infile)) {
             ratio <- sttkit:::.get_image_ratio(length(features))
             flog.info("Plotting single feature counts to %s...", filename)
             pdf(filename, width = 10, height = 10 * ratio)
-            ndata_rna <- plot_features(ndata_rna, features = features, hejpeg = hejpeg,
+            ndata_rna <- plot_features(ndata_rna, features = features, 
                 labels = waiver(), labels_title = "", cells = cells, plot_violin = FALSE,
                 plot_correlations = FALSE, plot_map = FALSE, palette = opt$palette,
                 size = opt$dot_size, undetected_NA = TRUE)
@@ -130,7 +121,7 @@ if (grepl("list$",opt$infile)) {
                             paste0("_feature_scaled", name, num, ".pdf"))
             flog.info("Plotting scaled single feature counts to %s...", filename)
             pdf(filename, width = 10, height = 10 * ratio)
-            ndata <- plot_features(ndata, features = features, hejpeg = hejpeg,
+            ndata <- plot_features(ndata, features = features, 
                 labels = waiver(), labels_title = "", cells = cells, plot_violin = FALSE,
                 size = opt$dot_size, undetected_NA = FALSE, zero_offset = NULL)
             dev.off()
@@ -139,7 +130,7 @@ if (grepl("list$",opt$infile)) {
                                 paste0("_feature_counts", name, num, ".png"))
                 flog.info("Plotting single feature counts to %s...", filename)
                 png(filename, width = 10, height = 10 * ratio, units = "in", res = 150)
-                ndata_rna <- plot_features(ndata_rna, features = features, hejpeg = hejpeg,
+                ndata_rna <- plot_features(ndata_rna, features = features, 
                     labels = waiver(), labels_title = "", cells = cells, plot_violin = FALSE,
                     plot_map = FALSE, plot_correlations = FALSE, palette = opt$palette, 
                     size = opt$dot_size, undetected_NA = TRUE)
@@ -149,7 +140,7 @@ if (grepl("list$",opt$infile)) {
                                 paste0("_feature_scaled", name, num, ".png"))
                 flog.info("Plotting scaled single feature counts to %s...", filename)
                 png(filename, width = 10, height = 10 * ratio, units = "in", res = 150)
-                ndata <- plot_features(ndata, features = features, hejpeg = hejpeg,
+                ndata <- plot_features(ndata, features = features, 
                     labels = waiver(), labels_title = "", cells = cells, plot_violin = FALSE,
                     plot_map = FALSE, plot_correlations = FALSE, 
                     size = opt$dot_size, undetected_NA = FALSE, zero_offset = NULL)
@@ -165,7 +156,7 @@ name_no_dash <- sub("^_", "", name)
 if (single_input) {
     ndata <- readRDS(opt$infile)
     gmt <- read_signatures(opt$gmt, ndata)
-    ndata_merged <- .plot_signature(ndata, opt$outprefix, opt$hejpeg, gmt, name)
+    ndata_merged <- .plot_signature(ndata, opt$outprefix, gmt, name)
     sig_names <- sttkit:::.get_signature_names(ndata_merged, gmt)
 } else {
     flog.info("Loading infiles %s...", paste(sapply(infiles, basename), collapse=", "))
@@ -182,7 +173,7 @@ if (single_input) {
        } else {
            num <- paste0("_", ndata[[i]]$library[1])
        }         
-       ndata_merged <- .plot_signature(ndata_merged, opt$outprefix, hejpegs[i], 
+       ndata_merged <- .plot_signature(ndata_merged, opt$outprefix,  
             cells = colnames(ndata_merged[, ndata_merged$library==ndata[[i]]$library[1]]),
             gmt = gmt, name = name, num = num)
     }

@@ -20,8 +20,6 @@ option_list <- list(
         help="Signature name used in output files"),
     make_option(c("--outprefix"), action = "store", type = "character", default = NULL,
         help="Outfile."),
-    make_option(c("--hejpeg"), action = "store", type = "character", default = NULL,
-        help="Optional path to a JPEG containing cropped HE image."),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.5,
         help="Size of dots on H&E"),
     make_option(c("--hide_r2"), action = "store_true", default = FALSE, 
@@ -61,16 +59,11 @@ suppressPackageStartupMessages(library(sttkit))
 }
 
 single_input <- TRUE
-hejpegs <- opt$hejpeg 
 infiles <- opt$infile
 htseqs <- opt$htseq
 if (grepl("list$",opt$infile)) {
     infiles <- .check_file_list(opt$infile)
     if (length(infiles)>1) single_input <- FALSE
-    hejpegs <- .check_file_list(opt$hejpeg)
-    if (length(infiles) != length(hejpegs)) {
-        stop("--infile as list requires --hejpeg as list.")    
-    }
 }
 
 if (!is.null(opt$htseq)) {
@@ -92,13 +85,13 @@ if (!is.null(opt$gtf)) {
     gtf <- rtracklayer::import(opt$gtf)
 }
     
-.plot_signature <- function(ndata, prefix, hejpeg, gmt, name = NULL, num = "") {
+.plot_signature <- function(ndata, prefix, gmt, name = NULL, num = "") {
     name <- if (is.null(name)) "" else paste0("_", name)
     filename <- paste0(prefix, "_signature_scores", name, num, ".pdf")
     if (!opt$force && file.exists(filename)) {
         flog.warn("%s exists. Skipping clustering. Use --force to overwrite.", filename)
     } else {
-        ndata <- plot_signatures(ndata, file = filename, gmt = gmt, hejpeg = hejpeg,
+        ndata <- plot_signatures(ndata, file = filename, gmt = gmt, 
             labels = waiver(), labels_title = "", reorder_clusters = FALSE, 
             plot_correlations = FALSE)
     }
@@ -118,7 +111,7 @@ if (!is.null(opt$gtf)) {
     list(normalized = log(2^bulk_norm), counts = bulk_counts)
 }
 
-.plot_spots_bulk <- function(obj, bulk_norm, hejpeg) {
+.plot_spots_bulk <- function(obj, bulk_norm) {
     ncounts <- as.matrix(GetAssayData(obj))
     # make sure we don't miss genes because of make.names
     names(ncounts) <- make.names(names(ncounts))
@@ -127,7 +120,7 @@ if (!is.null(opt$gtf)) {
                      rownames(bulk_norm))
     cor_bulk <- cor(ncounts[isc,], bulk_norm[isc,1])
     obj <- AddMetaData(obj, cor_bulk, "Correlation Bulk")
-    plot_features(obj, features = "Correlation Bulk", hejpeg = hejpeg, 
+    plot_features(obj, features = "Correlation Bulk",  
         size = opt$dot_size, labels = waiver(), labels_title = "R")
     obj
 }
@@ -220,7 +213,7 @@ if (!is.null(opt$gmt)) {
 .plot_benchmark <- function(ndata, j, num1, num2) {
     filename <- paste0(opt$outprefix, "_he_benchmark", num1, num2, ".pdf")
     pdf(filename, width = 4, height = 3.6)
-    .plot_spots_bulk(ndata, bdata[[j]]$normalized, hejpegs[i])
+    .plot_spots_bulk(ndata, bdata[[j]]$normalized)
     dev.off()
     filename <- paste0(opt$outprefix, "_benchmark", num1, num2, ".pdf")
     pdf(filename, width = 4, height = 3.6)
