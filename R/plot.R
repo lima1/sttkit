@@ -239,6 +239,7 @@ plot_spots <- function(x, labels = scales::percent,
 
 .parse_coords <- function(obj, n, cols=1:2) {
     # Visium
+    obj <- obj[, n]
     if (length(Images(obj))) {
         image_idx <- .get_image_slice(obj)
         return(obj[[image_idx]]@coordinates[,c("imagecol", "imagerow")])
