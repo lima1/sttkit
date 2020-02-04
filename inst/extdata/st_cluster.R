@@ -55,6 +55,8 @@ option_list <- list(
         help="Do additional NMF clustering on randomized data to find better rank"),
     make_option(c("--nmf_method"), action = "store", type = "character", default = NULL,
         help="If provided, will use a different than default NMF method."),
+    make_option(c("--spatially_variable_method"), action = "store", type = "character", default = "markvariogram",
+        help="Method(s) to find top spatially variable features [default %default]."),
     make_option(c("--mpi"), action = "store_true", default = FALSE, 
         help="Use doMPI package for parallel NMF."),
     make_option(c("--png"), action = "store_true", default = FALSE, 
@@ -435,65 +437,34 @@ if (opt$nmf) {
 }
 
 if (length(Images(ndata))) {
-    filename_features <- .get_serialize_path(opt$outprefix, "_variable_markvariogram.rds")
-    if (!opt$force && file.exists(filename_features)) {
-        flog.warn("%s exists. Skipping spatial variation analysis. Use --force to overwrite.", filename_features)
-        spatial_features <- readRDS(filename_features)
-    } else {
-        flog.info("Finding top spatially variable features. This will probably take a while...")
-        ndata_split <- SplitObject(ndata, split.by = "library")
-        ndata_split <- lapply(seq_along(ndata_split), function(i) 
-            FindSpatiallyVariableFeatures(ndata_split[[i]], 
-            selection.method = "markvariogram", 
-            image = sttkit:::.get_image_slice(ndata_split[[i]]),
-            features = head(VariableFeatures(ndata), 1000)))
-        spatial_features <- lapply(ndata_split, SpatiallyVariableFeatures, selection.method = "markvariogram")
-        libs <- as.character(sapply(ndata_split, function(x) x$library[1]))
-        names(spatial_features) <- libs
-
-        flog.info("Writing R data structure to %s...", filename_features)
-        sttkit:::.serialize(spatial_features, opt$outprefix, "_variable_markvariogram.rds")
-        flog.info("Done with spatial variation analysis!") 
-    }
-    flog.info("Plotting spatial variation...")
-    .reorder_features <- function(features, x) {
-        m1 <- FetchData(x, features)
-        idx <- colnames(x@meta.data)[grep("nmf", colnames(x@meta.data))]
-        if (length(idx)) {
-            m2 <- FetchData(x, idx)
-            d <- dist(t(apply(m1, 2, function(x) cor(x, m2))))
+    methods <- sapply(strsplit(opt$spatially_variable_method, ":")[[1]], trimws)
+    for (method in methods) {
+        filename_features <- .get_serialize_path(opt$outprefix, paste0("_variable_", method, ".rds"))
+        if (!opt$force && file.exists(filename_features)) {
+            flog.warn("%s exists. Skipping spatial variation analysis. Use --force to overwrite.", filename_features)
+            spatial_features <- readRDS(filename_features)
         } else {
-            d <- dist(t(m1))
+            flog.info("Finding top spatially variable features. This will probably take a while...")
+            ndata_split <- SplitObject(ndata, split.by = "library")
+            ndata_split <- lapply(seq_along(ndata_split), function(i) 
+                FindSpatiallyVariableFeatures(ndata_split[[i]], 
+                selection.method = method, 
+                image = sttkit:::.get_image_slice(ndata_split[[i]]),
+                features = head(VariableFeatures(ndata), 1000)))
+            spatial_features <- lapply(ndata_split, SpatiallyVariableFeatures, selection.method = method)
+            libs <- as.character(sapply(ndata_split, function(x) x$library[1]))
+            names(spatial_features) <- libs
+
+            flog.info("Writing R data structure to %s...", filename_features)
+            sttkit:::.serialize(spatial_features, opt$outprefix, paste0("_variable_", method, ".rds"))
+            flog.info("Done with spatial variation analysis!") 
         }
-        hc <- hclust(d, method = "ward.D2")
-        ct <- cutree(hc, h = median(hc$height))
-        ct <- split(features, ct[features])
-        ranking <- seq_along(features)
-        names(ranking) <- features
-        idx <- order(sapply(ct, function(x) mean(ranking[x])))
-        as.character(unlist(ct[idx]))
+        flog.info("Plotting spatial variation...")
+        plot_spatially_variable(ndata, labels = labels, method = method, 
+            spatial_features = spatial_features, prefix = opt$outprefix,
+            size = opt$dot_size)
     }
-    top_features <- lapply(spatial_features, function(x) head(x, max(80, length(x) / 100 * 5)))
-    top_features <- lapply(top_features, .reorder_features, ndata)
-    ndata_split <- SplitObject(ndata, split.by = "library")
-    libs <- as.character(sapply(ndata_split, function(x) x$library[1]))
-    for (i in seq_along(ndata_split)) {
-        flog.info("Generating output plots for %s ...", libs[i])
-        ratio <- sttkit:::.get_image_ratio(length(top_features[i]))
-        label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
-        libs_label <- if (length(libs) < 2) "" else paste0("_",libs[i])
-        filename <- sttkit:::.get_sub_path(opt$outprefix, "spatial_variation", 
-            paste0("_he_variable_markvariogram", label, libs_label, ".pdf"))
-        pdf(filename, width = 10, height = 10 * ratio)
-        ndata_split[[i]] <- plot_features(ndata_split[[i]], 
-            features = top_features[[i]], 
-            labels = waiver(), labels_title = "", size = opt$dot_size,
-            reorder_clusters = FALSE, plot_map = FALSE, plot_violin = FALSE,
-            plot_correlations = FALSE)
-        dev.off()
-    }    
-    
-} 
+}
 
 if (opt$mpi) {
     closeCluster(cl)

@@ -825,3 +825,59 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
     return(fun_scale_color)
 }        
 
+#' plot_spatially_variable
+#'
+#' Plots results of spatial differential expression analysis
+#' @param obj Seurat object 
+#' @param labels Optional \code{character(n)} vector with labels
+#' @param spatial_features Results of\code{Seurat::SpatiallyVariableFeatures}.
+#' @param method Method used to find spatially variable features
+#' @param number_features Plot that many features.
+#' @param prefix Output file prefix
+#' @param subdir Put files in a subdirectory
+#' @param width Output PDF width
+#' @param ... Arguments passed to \code{\link{plot_features}}
+#' @export plot_spatially_variable
+#' @examples
+#' plot_spatially_variable
+plot_spatially_variable <- function(ndata, labels = NULL, spatial_features,
+    method = "markvariogram", 
+    number_features = 80, prefix, subdir = "spatial_variation", width = 10, ...) {
+    top_features <- lapply(spatial_features, function(x) head(x, number_features))
+    top_features <- lapply(top_features, .reorder_spatially_variable_features, ndata)
+    ndata_split <- SplitObject(ndata, split.by = "library")
+    libs <- as.character(sapply(ndata_split, function(x) x$library[1]))
+    for (i in seq_along(ndata_split)) {
+        flog.info("Generating output plots for %s ...", libs[i])
+        ratio <- .get_image_ratio(length(top_features[i]))
+        label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
+        libs_label <- if (length(libs) < 2) "" else paste0("_",libs[i])
+        filename <- sttkit:::.get_sub_path(prefix, subdir, 
+            paste0("_he_variable_", method, label, libs_label, ".pdf"))
+        pdf(filename, width = width, height = width * ratio)
+        ndata_split[[i]] <- plot_features(ndata_split[[i]], 
+            features = top_features[[i]], 
+            labels = waiver(), labels_title = "",
+            reorder_clusters = FALSE, plot_map = FALSE, plot_violin = FALSE,
+            plot_correlations = FALSE, ...)
+        dev.off()
+    }        
+}
+
+.reorder_spatially_variable_features <- function(features, x) {
+    m1 <- FetchData(x, features)
+    idx <- colnames(x@meta.data)[grep("nmf", colnames(x@meta.data))]
+    if (length(idx)) {
+        m2 <- FetchData(x, idx)
+        d <- dist(t(apply(m1, 2, function(x) cor(x, m2))))
+    } else {
+        d <- dist(t(m1))
+    }
+    hc <- hclust(d, method = "ward.D2")
+    ct <- cutree(hc, h = median(hc$height))
+    ct <- split(features, ct[features])
+    ranking <- seq_along(features)
+    names(ranking) <- features
+    idx <- order(sapply(ct, function(x) mean(ranking[x])))
+    as.character(unlist(ct[idx]))
+}
