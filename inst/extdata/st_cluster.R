@@ -55,8 +55,10 @@ option_list <- list(
         help="Do additional NMF clustering on randomized data to find better rank"),
     make_option(c("--nmf_method"), action = "store", type = "character", default = NULL,
         help="If provided, will use a different than default NMF method."),
-    make_option(c("--spatially_variable_method"), action = "store", type = "character", default = "markvariogram",
+    make_option(c("--spatially_variable_method"), action = "store", type = "character", default = "markvariogram:moransi",
         help="Method(s) to find top spatially variable features [default %default]."),
+    make_option(c("--spatially_variable_nfeatures"), action = "store", type = "integer", default = 80,
+        help="Plot the specified number of top spatially variable features"),
     make_option(c("--mpi"), action = "store_true", default = FALSE, 
         help="Use doMPI package for parallel NMF."),
     make_option(c("--png"), action = "store_true", default = FALSE, 
@@ -285,9 +287,6 @@ if (!opt$force && file.exists(filename)) {
         ndata <- readRDS(infiles[1])
         ndata <- cluster_spatial(ndata, 
                              resolution = as.numeric(strsplit(opt$resolution, ":")[[1]]))
-        if (!is.null(opt$extra_gmt)) {
-            extra_gmt <- read_signatures(opt$extra_gmt, ndata)
-        }    
     }
     flog.info("Writing R data structure to %s...", filename)
     sttkit:::.serialize(ndata, opt$outprefix, ".rds")
@@ -296,6 +295,12 @@ if (!opt$force && file.exists(filename)) {
 if (single_input) {
     libs <- ndata$library[1]
     .plot_he_cluster(ndata, opt$outprefix)
+    if (!is.null(opt$gmt)) {
+        gmt <- read_signatures(opt$gmt, ndata)
+    }    
+    if (!is.null(opt$extra_gmt)) {
+        extra_gmt <- read_signatures(opt$extra_gmt, ndata)
+    }    
 } else {
     libs <- sapply(reference_list, function(x) x$library[1])
     for (i in seq_along(libs)) {
@@ -462,6 +467,7 @@ if (length(Images(ndata))) {
         flog.info("Plotting spatial variation...")
         plot_spatially_variable(ndata, labels = labels, method = method, 
             spatial_features = spatial_features, prefix = opt$outprefix,
+            number_features = opt$spatially_variable_nfeatures,
             size = opt$dot_size)
     }
 }
