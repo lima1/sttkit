@@ -453,11 +453,28 @@ if (length(Images(ndata))) {
 
         flog.info("Writing R data structure to %s...", filename_features)
         sttkit:::.serialize(spatial_features, opt$outprefix, "_variable_markvariogram.rds")
-       flog.info("Done with spatial variation analysis!") 
-
+        flog.info("Done with spatial variation analysis!") 
     }
     flog.info("Plotting spatial variation...")
+    .reorder_features <- function(features, x) {
+        m1 <- FetchData(x, features)
+        idx <- colnames(x@meta.data)[grep("nmf", colnames(x@meta.data))]
+        if (length(idx)) {
+            m2 <- FetchData(x, idx)
+            d <- dist(t(apply(m1, 2, function(x) cor(x, m2))))
+        } else {
+            d <- dist(t(m1))
+        }
+        hc <- hclust(d, method = "ward.D2")
+        ct <- cutree(hc, h = median(hc$height))
+        ct <- split(features, ct[features])
+        ranking <- seq_along(features)
+        names(ranking) <- features
+        idx <- order(sapply(ct, function(x) mean(ranking[x])))
+        as.character(unlist(ct[idx]))
+    }
     top_features <- lapply(spatial_features, function(x) head(x, max(80, length(x) / 100 * 5)))
+    top_features <- lapply(top_features, .reorder_features, ndata)
     ndata_split <- SplitObject(ndata, split.by = "library")
     libs <- as.character(sapply(ndata_split, function(x) x$library[1]))
     for (i in seq_along(ndata_split)) {
