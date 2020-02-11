@@ -838,6 +838,7 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
 #' @param subdir Put files in a subdirectory
 #' @param width Output PDF width
 #' @param ... Arguments passed to \code{\link{plot_features}}
+#' @importFrom gridExtra marrangeGrob
 #' @export plot_spatially_variable
 #' @examples
 #' plot_spatially_variable
@@ -855,13 +856,17 @@ plot_spatially_variable <- function(ndata, labels = NULL, spatial_features,
         libs_label <- if (length(libs) < 2) "" else paste0("_",libs[i])
         filename <- sttkit:::.get_sub_path(prefix, subdir, 
             paste0("_he_variable_", method, label, libs_label, ".pdf"))
-        pdf(filename, width = width, height = width * ratio)
-        ndata_split[[i]] <- plot_features(ndata_split[[i]], 
-            features = top_features[[i]], 
-            labels = waiver(), labels_title = "",
-            reorder_clusters = FALSE, plot_map = FALSE, plot_violin = FALSE,
-            plot_correlations = FALSE, ...)
-        dev.off()
+        if (length(top_features[[i]]) > 16) {
+            glist <- SpatialFeaturePlot(ndata_split[[i]], features = top_features[[i]], combine = FALSE)
+            glist <- lapply(glist, ggplotGrob)
+            ggsave(filename, 
+                marrangeGrob(glist, ncol = 4, nrow = 4),
+                    width = width, height = width * ratio)
+        } else { 
+            pdf(filename, width = width, height = width * ratio)
+            print(SpatialFeaturePlot(ndata_split[[i]], features = top_features[[i]], combine = TRUE))
+            dev.off()
+        }
     }        
 }
 
