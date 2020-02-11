@@ -7,12 +7,12 @@ suppressPackageStartupMessages(library(reshape2))
 option_list <- list(
     make_option(c("--infile"), action = "store", type = "character", default = NULL,
         help="Infile RDS file from st_normalize.R."),
-    make_option(c("--gmt"), action = "store", type = "character", 
-        default = NULL, 
+    make_option(c("--gmt"), action = "store", type = "character", default = NULL, 
         help="Input GMT file"),
-    make_option(c("--name"), action = "store", type = "character", 
-        default = NULL, 
+    make_option(c("--name"), action = "store", type = "character", default = NULL, 
         help="Signature name used in output files"),
+    make_option(c("--labels"), action = "store", type = "character", default = NULL,
+        help="Optional list of labels for multi-sample analyses"),
     make_option(c("--method"), action = "store", type = "character", default = "seurat",
         help="Method to summarize gene signature scores"),
     make_option(c("--seurat_nbin"), action = "store", type = "integer", default = 24,
@@ -68,21 +68,17 @@ suppressPackageStartupMessages(library(sttkit))
 log_file <- paste0(opt$outprefix, "_score.log")
 if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 
-.check_file_list <- function(file) {
-    flog.info("Parsing input list %s...", file)
-    files <- read.delim(file, as.is = TRUE, header = FALSE)[,1]
-    files <- trimws(files, which = "both")
-    num_exists <- sum(file.exists(files), na.rm = TRUE)
-    if (num_exists < length(files)) { 
-        stop("File not exists in file ", file)
-    }
-    files
-}
-
 single_input <- TRUE
+labels <- NULL
 if (grepl("list$",opt$infile)) {
-    infiles <- .check_file_list(opt$infile)
+    infiles <- cli_check_file_list(opt$infile)
     if (length(infiles)>1) single_input <- FALSE
+}
+if (!is.null(opt$labels)) {
+    labels <- cli_check_file_list(opt$labels, check_exists = FALSE)
+    if (length(infiles) != length(labels)) {
+        stop("--labels requires the same length as --infile.")
+    }
 }
 
 .plot_signature <- function(ndata, prefix, gmt, name = NULL, num = "", cells = NULL) {
@@ -152,6 +148,7 @@ if (grepl("list$",opt$infile)) {
 }
 name <- if (is.null(opt$name)) "" else paste0("_", opt$name)
 name_no_dash <- sub("^_", "", name)
+group.term <- "library"
 
 if (single_input) {
     ndata <- readRDS(opt$infile)
@@ -161,6 +158,12 @@ if (single_input) {
 } else {
     flog.info("Loading infiles %s...", paste(sapply(infiles, basename), collapse=", "))
     ndata <- lapply(infiles, readRDS)
+    if (!is.null(labels)) {
+        ndata <- lapply(seq_along(ndata), function(i) {
+            ndata[[i]]$label <- labels[i]
+            ndata[[i]]})
+        group.term <- "label"
+    }
     ndata_merged <- sttkit:::.merge_safely(ndata)
     if (opt$scale) {
         ndata_merged <- ScaleData(ndata_merged)
@@ -182,8 +185,8 @@ if (single_input) {
     flog.info("Plotting signature/library associations...")
     filename <- sttkit:::.get_advanced_path(opt$outprefix, paste0("_signature_scores_library", name, ".pdf"))
     pdf(filename, width = 12, height= 12 * sttkit:::.get_image_ratio(length(sig_names)))
-    print(plot_violin(ndata_merged, features = sig_names, group.by = "library", zero_offset = -1000, pt_size = 0))
-    print(DotPlot(ndata_merged, features = sig_names, group.by = "library")+
+    print(plot_violin(ndata_merged, features = sig_names, group.by = group.term, zero_offset = -1000, pt_size = 0))
+    print(DotPlot(ndata_merged, features = sig_names, group.by = group.term)+
         theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)))
     dev.off()
 
@@ -240,7 +243,7 @@ if (single_input) {
 flog.info("Plotting signature/cluster associations...")
 filename <- sttkit:::.get_advanced_path(opt$outprefix, paste0("_signature_scores_cluster", name, ".pdf"))
 pdf(filename, width = 12, height= 12 * sttkit:::.get_image_ratio(length(sig_names)))
-print(plot_violin(ndata_merged, features = sig_names, zero_offset = -1000, pt_size = 0))
+print(plot_violin(ndata_merged, features = sig_names, group.by = group.term, zero_offset = -1000, pt_size = 0))
 dev.off()
 
 filename <- sttkit:::.get_advanced_path(opt$outprefix, paste0("_score", name, ".csv"))
