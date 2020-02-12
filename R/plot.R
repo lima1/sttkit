@@ -844,7 +844,7 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
 #' plot_spatially_variable
 plot_spatially_variable <- function(ndata, labels = NULL, spatial_features,
     method = "markvariogram", 
-    number_features = 80, prefix, subdir = "spatial_variation", width = 10, ...) {
+    number_features = 80, prefix, subdir = "spatial_variation", width = 10, ncol = 4, nrow = 4, ...) {
     top_features <- lapply(spatial_features, function(x) head(x, number_features))
     top_features <- lapply(top_features, .reorder_spatially_variable_features, ndata)
     ndata_split <- SplitObject(ndata, split.by = "library")
@@ -857,15 +857,17 @@ plot_spatially_variable <- function(ndata, labels = NULL, spatial_features,
         filename <- sttkit:::.get_sub_path(prefix, subdir, 
             paste0("_he_variable_", method, label, libs_label, ".pdf"))
         if (length(top_features[[i]]) > 16) {
-            glist <- SpatialFeaturePlot(.resize_slice_images(ndata_split[[i]]), 
-                features = top_features[[i]], combine = FALSE)
+            ndata_split_resized <- .resize_slice_images(ndata_split[[i]])
+            glist <- SpatialFeaturePlot(ndata_split_resized,, 
+                image = .get_image_slice(ndata_split_resized), 
+                features = top_features[[i]], combine = FALSE, ...)
             glist <- lapply(glist, ggplotGrob)
             ggsave(filename, 
-                marrangeGrob(glist, ncol = 4, nrow = 4),
+                marrangeGrob(glist, ncol = ncol, nrow = nrow),
                     width = width, height = width * ratio)
         } else { 
             pdf(filename, width = width, height = width * ratio)
-            print(SpatialFeaturePlot(ndata_split[[i]], features = top_features[[i]], combine = TRUE))
+            print(SpatialFeaturePlot(ndata_split[[i]], features = top_features[[i]], combine = TRUE, ...))
             dev.off()
         }
     }        

@@ -26,8 +26,12 @@ option_list <- list(
         help="Resolution values for clustering. When multiple are provided, the last one is the main one [default %default]"),
     make_option(c("--labels"), action = "store", type = "character", default = NULL,
         help="Optional list of labels for multi-sample analyses"),
-    make_option(c("--dot_size"), action = "store", type = "double", default = 1.5,
+    make_option(c("--dot_size"), action = "store", type = "double", default = 1.6,
         help="Size of dots on H&E."),
+    make_option(c("--ncol"), action = "store", type = "double", default = 4,
+        help="Number of columns in spatial plot for multiple-sample clustering"),
+    make_option(c("--nrow"), action = "store", type = "double", default = 4,
+        help="Number of rows in spatial plot for multiple-sample clustering"),
     make_option(c("--markergenes"), action="store", type = "double", default = 30, 
         help="Heatmap: Use that many marker genes per cluster [default %default]"),
     make_option(c("--gmt"), action = "store", type = "character", 
@@ -468,7 +472,7 @@ if (length(Images(ndata))) {
         plot_spatially_variable(ndata, labels = labels, method = method, 
             spatial_features = spatial_features, prefix = opt$outprefix,
             number_features = opt$spatially_variable_nfeatures,
-            size = opt$dot_size)
+            pt.size.factor = opt$dot_size, ncol = opt$ncol, nrow = opt$nrow)
     }
 }
 
