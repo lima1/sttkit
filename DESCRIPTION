@@ -24,6 +24,7 @@ Suggests: CellMix,
           optparse,
           pheatmap,
           scran,
+          EBImage,
           sctransform
 License: Artistic-2.0
 Encoding: UTF-8
