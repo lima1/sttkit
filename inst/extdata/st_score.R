@@ -8,7 +8,7 @@ option_list <- list(
     make_option(c("--infile"), action = "store", type = "character", default = NULL,
         help="Infile RDS file from st_normalize.R."),
     make_option(c("--gmt"), action = "store", type = "character", default = NULL, 
-        help="Input GMT file"),
+        help="Input GMT file. Can be a list of files, separated by ':' (e.g. --gmt a.gmt:b.gmt)."),
     make_option(c("--name"), action = "store", type = "character", default = NULL, 
         help="Signature name used in output files"),
     make_option(c("--labels"), action = "store", type = "character", default = NULL,

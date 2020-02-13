@@ -12,6 +12,12 @@
 #' read_signatures()
     
 read_signatures <- function(gmt, obj = NULL, max_nchar_title = 25) {
+    if (!file.exists(gmt)) {
+        gmts <- strsplit(gmt, ":")[[1]]
+        if (length(gmts) > 1) {
+            return( do.call(c, lapply(gmts, read_signatures, obj = obj, max_nchar_title = max_nchar_title)))
+        } 
+    }    
     if (file_ext(gmt) == "csv") {
         x <- read.csv(gmt, as.is = TRUE)
         sigs <- lapply(split(x$gene, x$cluster), sort)
