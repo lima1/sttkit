@@ -98,13 +98,13 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     filename <- sttkit:::.get_sub_path(prefix, "snn", paste0("_he_cluster", num, ".pdf"))
     flog.info("Plotting clusters on H&E for %s...", ndata$library[1])
     pdf(filename, width = 4, height = 3.9)
-    print(SpatialDimPlot(ndata, label = TRUE, label.size = 3))
+    print(SpatialDimPlot(ndata, label = TRUE, image = sttkit:::.get_image_slice(ndata), label.size = 3))
     .plot_clustering_overlap(ndata)
     dev.off()
     if (opt$png) {
         filename <- sttkit:::.get_sub_path(prefix, "snn", paste0("_he_cluster", num, ".png"))
         png(filename, width = 4, height = 3.9, units = "in", res = 150)
-        print(SpatialDimPlot(ndata, label = TRUE, label.size = 3))
+        print(SpatialDimPlot(ndata, label = TRUE, image = sttkit:::.get_image_slice(ndata), label.size = 3))
         dev.off()
     }
 }
@@ -127,6 +127,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 }
 
 .write_clusters <- function(obj, prefix, single_input) {
+    flog.info("Exporting Loupe files...")
     sids <- grep("snn_res", colnames(obj@meta.data))
     for (i in sids) {
         filename <- sttkit:::.get_sub_path(prefix, "snn", paste0("_cluster_", 

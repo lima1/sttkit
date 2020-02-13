@@ -242,9 +242,10 @@ cluster_reference <- function(integrated, resolution = 0.8, sub = FALSE,
     sub <- ifelse(sub, "sub_","")
     features <- ifelse(!is.null(features), "features_", "")
     reference_technology <- integrated$technology[integrated$reference][1]
+    resolution_label <-  paste0(resolution, collapse="_")
     if (serialize || !force) {
         filename <- .get_serialize_path(prefix, paste0("_", reference_technology,
-            "_cluster_", sub, features, resolution, ".rds"))
+            "_cluster_", sub, features, resolution_label, ".rds"))
     }
     if (!force && file.exists(filename)) {
         flog.warn("%s exists. Skipping scRNA clustering. Use --force to overwrite.", filename)
@@ -271,7 +272,7 @@ cluster_reference <- function(integrated, resolution = 0.8, sub = FALSE,
                obj_ref <- RenameIdents(object = obj_ref, ids)
                if (plot_umap) {
                    pdf(.get_advanced_path(prefix, paste0("_", reference_technology, "_cluster_", sub, features, 
-                        resolution, "predictedid.pdf")), width=10, height=10)
+                        resolution_label, "predictedid.pdf")), width=10, height=10)
                    print(DimPlot(obj_ref, reduction = "umap", split.by = "predicted.id"))
                    dev.off()
                }
