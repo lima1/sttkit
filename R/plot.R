@@ -682,7 +682,7 @@ plot_signatures_fake_bulk <- function(objs, gmt, assay = "Spatial", log_trans = 
     }
     gg_data <- do.call(rbind, lapply(seq_along(objs), function(i) {
         obj <- objs[[i]]
-        counts <- Matrix::rowSums(GetAssayData(obj, slot.name = "counts", assay = assay))
+        counts <- Matrix::rowSums(GetAssayData(obj, slot = "counts", assay = assay))
         # make sure we don't miss genes because of make.names
         names(counts) <- make.names(names(counts))
         if (log_trans) {
@@ -702,6 +702,9 @@ plot_signatures_fake_bulk <- function(objs, gmt, assay = "Spatial", log_trans = 
                    Id = sample_id, 
                    Spatial = counts[, 1])
     }))
+    universe <- Reduce(intersect, lapply(objs, rownames))
+    gg_data <- gg_data[gg_data[,1] %in% universe,]
+
     gg_data_casted <- data.frame(data.table::dcast(data=gg_data, 
         formula = Symbol~Id, value.var = "Spatial"), row.names = 1)
 
