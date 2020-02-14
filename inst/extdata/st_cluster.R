@@ -412,7 +412,7 @@ if (opt$nmf) {
     if (opt$nmf_randomize) ndata <- .run_nmf(TRUE)
     flog.info("Done with NMF clustering!")
     plot_nmf(ndata, libs, labels = labels, rank = ks, prefix = opt$outprefix, png = opt$png, 
-        size = opt$dot_size)
+        pt.size.factor = opt$dot_size)
      loupe <- lapply(ks, function(i) 
         export_nmf_loupe(obj = ndata, rank = ks, k = i, libs = libs, 
             labels = labels, prefix = opt$outprefix))

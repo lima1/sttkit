@@ -173,7 +173,7 @@ plot_spots <- function(x, labels = scales::percent,
                       max_quantile = 0.975,
                       reorder_clusters = TRUE, palette = "viridis", 
                       palette_inverse = FALSE,
-                      alpha = 0.85, size = 0.9, trans = NULL, limits = NULL) {
+                      alpha = 0.85, pt.size.factor = 0.9, trans = NULL, limits = NULL) {
     if (reorder_clusters) {
         x$cluster <- factor(as.character(x$cluster), 
             levels = .order_clusters(x$cluster))
@@ -373,21 +373,12 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
             for (i in seq_along(libs)) {
                 label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
                 libs_label <- if (length(libs) < 2) "" else paste0("_",libs[i])
-                
-                filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, libs_label, ".pdf"))
-                pdf(filename, width = width, height = width * ratio)
-                plot_features(obj[, obj$library == libs[i]],
-                    features = features, ...)
-                dev.off()
-                if (png) {
-                    filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, libs_label, ".png"))
-                    png(filename, width = width, height = width * ratio, units = "in", res = 150)
-                    plot_features(obj[, obj$library == libs[i]],
-                        features = features, 
-                        plot_map = FALSE, plot_violin = FALSE, 
-                        plot_correlations = FALSE, ...)
-                    dev.off()
-                }    
+                obj_split <- obj[,obj$library == libs[i]]
+                obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
+
+                filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, libs_label))
+                .plot_spatial_with_image (filename, obj_split, features = features, 
+                      width = width, ratio = ratio, plot_correlations = TRUE, plot_violin = TRUE, png = TRUE, ...)
             }
         }
         if (length(features) > 2 & length(libs) > 1) {
@@ -475,23 +466,12 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
     for (i in seq_along(libs)) {
         flog.info("Generating output %s plots for %s...", labels_title, libs[i])
         filename <- .get_sub_path(prefix, subdir,
-            paste0("_he_nmf_cluster_", feature_suffix, "_", libs[i], ".pdf"))
-        pdf(filename, width = width, height = width * ratio)
-        plot_features(obj[, obj$library == libs[i]],
-            features = features, plot_correlations = FALSE,
-            labels = waiver(), labels_title = sprintf("%12s", labels_title), ...)
-        dev.off()
-        if (png) {
-            filename <- .get_sub_path(prefix, subdir,
-            paste0("_he_nmf_cluster_", feature_suffix, "_",libs[i], ".png"))
-            png(filename, width = width, height = width * ratio, units = "in", res = 150)
-            plot_features(obj[, obj$library == libs[i]],
-                features = features, 
-                plot_map = FALSE, plot_violin = FALSE, 
-                plot_correlations = FALSE, 
-                labels = waiver(), labels_title = sprintf("%12s", labels_title), ...)
-            dev.off()
-        }    
+            paste0("_he_nmf_cluster_", feature_suffix, "_", libs[i]))
+        obj_split <- obj[,obj$library == libs[i]]
+        obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
+        .plot_spatial_with_image (filename, obj_split, features = features, 
+              width = width, ratio = ratio, plot_violin = TRUE, png = TRUE, ...)
+    #        labels = waiver(), labels_title = sprintf("%12s", labels_title), ...)
     }
 }    
 
@@ -826,6 +806,42 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
     return(fun_scale_color)
 }        
 
+.plot_spatial_with_image <- function(fileprefix, object, features, width, ratio, ncol, nrow, 
+                                     cells = NULL, zero_offset = NULL, png = FALSE,
+                                     plot_correlations = FALSE, plot_violin = FALSE, ...) {
+    filename <- paste0(fileprefix, ".pdf")
+    object_resized <- .resize_slice_images(object)
+    if (is.null(cells)) cells <- colnames(object_resized)
+
+    if (length(features) > 16) {
+        glist <- SpatialFeaturePlot(object_resized, image = .get_image_slice(object_resized), 
+            features = features, combine = FALSE, ...)
+        glist <- lapply(glist, ggplotGrob)
+        ggsave(filename, marrangeGrob(glist, ncol = ncol, nrow = nrow), 
+               width = width, height = width * ratio)
+        flog.warn("Too many features for violin plot. Skipping...")
+        flog.warn("Too many features for correlation plot. Skipping...")
+    } else {
+        pdf(filename, width = width, height = width * ratio)
+        print(SpatialFeaturePlot(object_resized, features = features, combine = TRUE, ...))
+        if (length(features) > 1) {
+            if (plot_violin && length(levels(object_resized)) > 1)
+                print(plot_violin(object_resized, features, cells, zero_offset))
+            if (plot_correlations && requireNamespace("GGally", quietly = TRUE))
+                print(GGally::ggcorr(data = NULL, cor_matrix = .cor_nn(object_resized, features, average_nn = FALSE, zero_offset = zero_offset), 
+                      label = TRUE, label_size = 3, layout.exp = 3, hjust = 1))
+        }
+        dev.off()
+
+        if(png) {
+            filename <- paste0(fileprefix, ".png")
+            png(filename, width = width, height = width * ratio, units = "in", res = 150)
+            print(SpatialFeaturePlot(object_resized, features = features, combine = TRUE, ...))
+            dev.off()
+        }
+    }
+}
+
 #' plot_spatially_variable
 #'
 #' Plots results of spatial differential expression analysis
@@ -842,8 +858,7 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
 #' @export plot_spatially_variable
 #' @examples
 #' plot_spatially_variable
-plot_spatially_variable <- function(ndata, labels = NULL, spatial_features,
-    method = "markvariogram", 
+plot_spatially_variable <- function(ndata, labels = NULL, spatial_features, method = "markvariogram", 
     number_features = 80, prefix, subdir = "spatial_variation", width = 10, ncol = 4, nrow = 4, ...) {
     top_features <- lapply(spatial_features, function(x) head(x, number_features))
     top_features <- lapply(top_features, .reorder_spatially_variable_features, ndata)
@@ -855,22 +870,10 @@ plot_spatially_variable <- function(ndata, labels = NULL, spatial_features,
         label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
         libs_label <- if (length(libs) < 2) "" else paste0("_",libs[i])
         filename <- sttkit:::.get_sub_path(prefix, subdir, 
-            paste0("_he_variable_", method, label, libs_label, ".pdf"))
-        if (length(top_features[[i]]) > 16) {
-            ndata_split_resized <- .resize_slice_images(ndata_split[[i]])
-            glist <- SpatialFeaturePlot(ndata_split_resized,, 
-                image = .get_image_slice(ndata_split_resized), 
-                features = top_features[[i]], combine = FALSE, ...)
-            glist <- lapply(glist, ggplotGrob)
-            ggsave(filename, 
-                marrangeGrob(glist, ncol = ncol, nrow = nrow),
-                    width = width, height = width * ratio)
-        } else { 
-            pdf(filename, width = width, height = width * ratio)
-            print(SpatialFeaturePlot(ndata_split[[i]], features = top_features[[i]], combine = TRUE, ...))
-            dev.off()
-        }
-    }        
+            paste0("_he_variable_", method, label, libs_label))
+            .plot_spatial_with_image(filename, ndata_split[[i]], top_features[[i]], 
+                                     width, ratio, ncol, nrow, ...)
+    }
 }
 
 .reorder_spatially_variable_features <- function(features, x) {
