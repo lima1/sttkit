@@ -298,9 +298,13 @@ cluster_reference <- function(integrated, resolution = 0.8, sub = FALSE,
 }
 
 .merge_safely <- function(obj) {
-    Reduce(merge, lapply(seq_along(obj), function(i) {
-        RenameCells(obj[[i]], add.cell.id = i)
-    }))
+    if (any(duplicated(unlist(sapply(obj, Cells))))) {
+        return(
+            Reduce(merge, lapply(seq_along(obj), function(i) {
+                RenameCells(obj[[i]], add.cell.id = i)}))
+        )
+    }
+    Reduce(merge, obj)
 }
 
 .remove_undetected_features <- function(references, min_detected) {

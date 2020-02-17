@@ -671,6 +671,7 @@ plot_signatures_fake_bulk <- function(objs, gmt, assay = "Spatial", log_trans = 
                    Spatial = counts[, 1])
     }))
     universe <- Reduce(intersect, lapply(objs, rownames))
+    universe <- c(universe, make.names(universe))
     gg_data <- gg_data[gg_data[,1] %in% universe,]
 
     gg_data_casted <- data.frame(data.table::dcast(data=gg_data, 

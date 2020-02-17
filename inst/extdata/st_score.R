@@ -88,36 +88,32 @@ if (!is.null(opt$labels)) {
 
     filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash), 
                     paste0("_signature_scores", name, num, ".pdf"))
-    if (!opt$force && file.exists(filename)) {
-        flog.warn("%s exists. Use --force to overwrite.", filename)
-    } else {
-        ndata <- sttkit:::.filter_object(ndata, opt$max_percent_mito, 0, 0)
-        ndata <- plot_signatures(ndata, file = filename, gmt = gmt, 
-            cells = cells, pt.size.factor = opt$dot_size,
-            nbin = opt$seurat_nbin, ctrl = opt$seurat_ctrl,
-            method = opt$method, png = opt$png)
-        if (opt$single_features) {
-            ndata_rna <- ndata
-            DefaultAssay(ndata_rna) <- names(ndata@assays)[1]
-            features <- unique(unlist(gmt))
-            features <- features[features %in% rownames(ndata_rna)]
-            ratio <- sttkit:::.get_image_ratio(length(features))
+    ndata <- sttkit:::.filter_object(ndata, opt$max_percent_mito, 0, 0)
+    ndata <- plot_signatures(ndata, file = filename, gmt = gmt, 
+        cells = cells, pt.size.factor = opt$dot_size,
+        nbin = opt$seurat_nbin, ctrl = opt$seurat_ctrl,
+        method = opt$method, png = opt$png)
+    if (opt$single_features) {
+        ndata_rna <- ndata
+        DefaultAssay(ndata_rna) <- names(ndata@assays)[1]
+        features <- unique(unlist(gmt))
+        features <- features[features %in% rownames(ndata_rna)]
+        ratio <- sttkit:::.get_image_ratio(length(features))
 
-            filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
-                            paste0("_feature_counts", name, num, ".pdf"))
-            flog.info("Plotting single feature counts to %s...", filename)
-            ndata_rna <- .plot_spatial_with_image(filename, ndata_rna, features, 10, ratio, 
-                          cells = cells, pt.size.factor = opt$dot_size, zero_offset = 0,
-                          png = TRUE, plot_correlations = TRUE)
+        filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
+                        paste0("_feature_counts", name, num, ".pdf"))
+        flog.info("Plotting single feature counts to %s...", filename)
+        ndata_rna <- .plot_spatial_with_image(filename, ndata_rna, features, 10, ratio, 
+                      cells = cells, pt.size.factor = opt$dot_size, zero_offset = 0,
+                      png = TRUE, plot_correlations = TRUE)
 
-            filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
-                            paste0("_feature_scaled", name, num, ".pdf"))
-            flog.info("Plotting scaled single feature counts to %s...", filename)
-            ndata <- .plot_spatial_with_image(filename, ndata, features, 10, ratio, 
-                          cells = cells, pt.size.factor = opt$dot_size, zero_offset = 0,
-                          png = TRUE, plot_correlations = TRUE)
-        }    
-    }
+        filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
+                        paste0("_feature_scaled", name, num, ".pdf"))
+        flog.info("Plotting scaled single feature counts to %s...", filename)
+        ndata <- .plot_spatial_with_image(filename, ndata, features, 10, ratio, 
+                      cells = cells, pt.size.factor = opt$dot_size, zero_offset = 0,
+                      png = TRUE, plot_correlations = TRUE)
+    }    
     ndata
 }
 name <- if (is.null(opt$name)) "" else paste0("_", opt$name)
