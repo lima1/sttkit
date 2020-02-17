@@ -289,19 +289,8 @@ plot_signatures <- function(obj_spatial, file, gmt, nbin = 24,
     }    
     sig_names <- .get_signature_names(obj_spatial, sigs)
     ratio <- .get_image_ratio(length(sig_names))
-    pdf(file, width = width, height = width * ratio)
-    obj_spatial <- plot_features(obj_spatial, features = sig_names, 
-        cells = cells,
-        zero_offset = -1000, undetected_NA = TRUE, undetected_cutoff = -500, ...)
-    dev.off()
-    if (png) {
-        png(sub("pdf$", "png", file), width = width, height = width * ratio, units = "in", res = 150)
-        plot_features(obj_spatial, features = sig_names, 
-            cells = cells, plot_correlations = FALSE, plot_violin = FALSE,
-            zero_offset = -1000, undetected_NA = TRUE, undetected_cutoff = -500, ...)
-        dev.off()
-    }    
-
+    obj_spatial <- .plot_spatial_with_image(file, obj_spatial, sig_names, width, ratio, cells = cells,
+                  zero_offset = 0, png = TRUE, ...)
     obj_spatial
 }
 
@@ -376,9 +365,9 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
                 obj_split <- obj[,obj$library == libs[i]]
                 obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
 
-                filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, libs_label))
-                .plot_spatial_with_image (filename, obj_split, features = features, 
-                      width = width, ratio = ratio, plot_correlations = TRUE, plot_violin = TRUE, png = TRUE, ...)
+                filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, libs_label, ".pdf"))
+                .plot_spatial_with_image (filename, obj_split, features, width, ratio, 
+                              plot_correlations = TRUE, plot_violin = TRUE, png = TRUE, ...)
             }
         }
         if (length(features) > 2 & length(libs) > 1) {
@@ -466,11 +455,10 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
     for (i in seq_along(libs)) {
         flog.info("Generating output %s plots for %s...", labels_title, libs[i])
         filename <- .get_sub_path(prefix, subdir,
-            paste0("_he_nmf_cluster_", feature_suffix, "_", libs[i]))
+            paste0("_he_nmf_cluster_", feature_suffix, "_", libs[i], ".pdf"))
         obj_split <- obj[,obj$library == libs[i]]
         obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
-        .plot_spatial_with_image (filename, obj_split, features = features, 
-              width = width, ratio = ratio, plot_violin = TRUE, png = TRUE, ...)
+        .plot_spatial_with_image (filename, obj_split, features, width, ratio, plot_violin = TRUE, png = TRUE, ...)
     #        labels = waiver(), labels_title = sprintf("%12s", labels_title), ...)
     }
 }    
@@ -809,10 +797,9 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
     return(fun_scale_color)
 }        
 
-.plot_spatial_with_image <- function(fileprefix, object, features, width, ratio, ncol, nrow, 
-                                     cells = NULL, zero_offset = NULL, png = FALSE,
-                                     plot_correlations = FALSE, plot_violin = FALSE, ...) {
-    filename <- paste0(fileprefix, ".pdf")
+.plot_spatial_with_image <- function(filename, object, features, width = 10, ratio = 0.5,
+                                 ncol = 4, nrow = 4, cells = NULL, zero_offset = NULL, 
+                                 png = FALSE, plot_correlations = FALSE, plot_violin = FALSE, ...) {
     object_resized <- .resize_slice_images(object)
     if (is.null(cells)) cells <- colnames(object_resized)
 
@@ -831,18 +818,19 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
             if (plot_violin && length(levels(object_resized)) > 1)
                 print(plot_violin(object_resized, features, cells, zero_offset))
             if (plot_correlations && requireNamespace("GGally", quietly = TRUE))
-                print(GGally::ggcorr(data = NULL, cor_matrix = .cor_nn(object_resized, features, average_nn = FALSE, zero_offset = zero_offset), 
+                print(GGally::ggcorr(data = NULL, cor_matrix = .cor_nn(object_resized, 
+                      features, average_nn = FALSE, zero_offset = zero_offset), 
                       label = TRUE, label_size = 3, layout.exp = 3, hjust = 1))
         }
         dev.off()
 
         if(png) {
-            filename <- paste0(fileprefix, ".png")
-            png(filename, width = width, height = width * ratio, units = "in", res = 150)
+            png(gsub(".pdf$", ".png", filename), width = width, height = width * ratio, units = "in", res = 150)
             print(SpatialFeaturePlot(object_resized, features = features, combine = TRUE, ...))
             dev.off()
         }
     }
+    object_resized
 }
 
 #' plot_spatially_variable
@@ -856,6 +844,8 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
 #' @param prefix Output file prefix
 #' @param subdir Put files in a subdirectory
 #' @param width Output PDF width
+#' @param ncol Number of columns to plot genes
+#' @param nrow Number of rows to plot genes
 #' @param ... Arguments passed to \code{\link{plot_features}}
 #' @importFrom gridExtra marrangeGrob
 #' @export plot_spatially_variable
@@ -873,7 +863,7 @@ plot_spatially_variable <- function(ndata, labels = NULL, spatial_features, meth
         label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
         libs_label <- if (length(libs) < 2) "" else paste0("_",libs[i])
         filename <- sttkit:::.get_sub_path(prefix, subdir, 
-            paste0("_he_variable_", method, label, libs_label))
+            paste0("_he_variable_", method, label, libs_label, ".pdf"))
             .plot_spatial_with_image(filename, ndata_split[[i]], top_features[[i]], 
                                      width, ratio, ncol, nrow, ...)
     }

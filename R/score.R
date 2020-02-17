@@ -84,42 +84,9 @@ read_signatures <- function(gmt, obj = NULL, max_nchar_title = 25) {
             obj@meta.data[[sig_names[i]]] <- NULL
         }
     }
-
-    if (zero_offset != 0) {
-        if (!is.null(obj@meta.data$library) && length(unique(obj$library))>1) { 
-            flog.info("Calculating normalization factors...")
-            norm_factors_edger <- edgeR::calcNormFactors(edgeR::DGEList(GetAssayData(obj, "counts", assay = assay)))
-            norm_factors <- sapply(split(norm_factors_edger$samples$norm.factors, obj$library), mean)
-            norm_factors <- norm_factors[obj@meta.data$library]
-        } else {
-            norm_factors <- 1
-        }        
-        cnts <- lapply(sigs, function(i) { 
-            m <- GetAssayData(obj, "counts", assay = assay)
-            Matrix::colSums(m[i[i %in% rownames(m)], , drop=F])
-        })
-        names(cnts) <- .get_signature_names(obj, cnts)
-        names(sigs) <- names(cnts)
-        for (i in names(cnts)) {
-            x <- obj@meta.data[[i]]
-            zero_cutoff_used <- zero_cutoff 
-            if (is.null(zero_cutoff)) {
-                zero_cutoff_used <- pmax(0, ceiling(1 / norm_factors) - 1)
-            } 
-            if (length(zero_cutoff_used) == 1) {
-                flog.info("Setting min counts for signature %s to %i.", i, zero_cutoff_used)
-            } else {
-                idx <- !duplicated(obj$library)
-                flog.info("Setting min counts for signature %s to %s for libraries %s.", i,
-                    paste(zero_cutoff_used[idx], collapse = ","), 
-                    paste(obj$library[idx], collapse=","))
-            }    
-            x[cnts[[i]] < zero_cutoff_used + 1] <- x[cnts[[i]] < zero_cutoff_used + 1] + zero_offset
-            obj@meta.data[[i]] <- x
-        }    
-    }
     obj
 }
+
 .get_signature_names <- function(obj, sigs) {
     sig_names <- colnames(obj@meta.data)[sapply(names(sigs), function(x) 
         grep(paste0("^",x, "\\d*$"), colnames(obj@meta.data))[1])]

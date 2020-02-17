@@ -60,7 +60,7 @@ if (!dir.exists(dirname(opt$outprefix))) {
     dir.create(dirname(dirname(opt$outprefix)))
     dir.create(dirname(opt$outprefix))
 }
-    
+
 flog.info("Loading Seurat...")
 suppressPackageStartupMessages(library(Seurat))
 suppressPackageStartupMessages(library(sttkit))
@@ -93,55 +93,29 @@ if (!is.null(opt$labels)) {
     } else {
         ndata <- sttkit:::.filter_object(ndata, opt$max_percent_mito, 0, 0)
         ndata <- plot_signatures(ndata, file = filename, gmt = gmt, 
-            labels = waiver(), labels_title = "", reorder_clusters = FALSE, cells = cells,
-            png = opt$png, palette = opt$palette, size = opt$dot_size,
+            cells = cells, pt.size.factor = opt$dot_size,
             nbin = opt$seurat_nbin, ctrl = opt$seurat_ctrl,
-            palette_inverse = opt$palette_inverse,
-            method = opt$method)
+            method = opt$method, png = opt$png)
         if (opt$single_features) {
             ndata_rna <- ndata
             DefaultAssay(ndata_rna) <- names(ndata@assays)[1]
-            filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
-                            paste0("_feature_counts", name, num, ".pdf"))
             features <- unique(unlist(gmt))
             features <- features[features %in% rownames(ndata_rna)]
             ratio <- sttkit:::.get_image_ratio(length(features))
+
+            filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
+                            paste0("_feature_counts", name, num, ".pdf"))
             flog.info("Plotting single feature counts to %s...", filename)
-            pdf(filename, width = 10, height = 10 * ratio)
-            ndata_rna <- plot_features(ndata_rna, features = features, 
-                labels = waiver(), labels_title = "", cells = cells, plot_violin = FALSE,
-                plot_correlations = FALSE, plot_map = FALSE, palette = opt$palette,
-                size = opt$dot_size, undetected_NA = TRUE)
-            dev.off()
+            ndata_rna <- .plot_spatial_with_image(filename, ndata_rna, features, 10, ratio, 
+                          cells = cells, pt.size.factor = opt$dot_size, zero_offset = 0,
+                          png = TRUE, plot_correlations = TRUE)
+
             filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
                             paste0("_feature_scaled", name, num, ".pdf"))
             flog.info("Plotting scaled single feature counts to %s...", filename)
-            pdf(filename, width = 10, height = 10 * ratio)
-            ndata <- plot_features(ndata, features = features, 
-                labels = waiver(), labels_title = "", cells = cells, plot_violin = FALSE,
-                size = opt$dot_size, undetected_NA = FALSE, zero_offset = NULL)
-            dev.off()
-            if (opt$png) {
-                filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
-                                paste0("_feature_counts", name, num, ".png"))
-                flog.info("Plotting single feature counts to %s...", filename)
-                png(filename, width = 10, height = 10 * ratio, units = "in", res = 150)
-                ndata_rna <- plot_features(ndata_rna, features = features, 
-                    labels = waiver(), labels_title = "", cells = cells, plot_violin = FALSE,
-                    plot_map = FALSE, plot_correlations = FALSE, palette = opt$palette, 
-                    size = opt$dot_size, undetected_NA = TRUE)
-                dev.off()
-
-                filename <- sttkit:::.get_sub_path(prefix, file.path("he",  name_no_dash),
-                                paste0("_feature_scaled", name, num, ".png"))
-                flog.info("Plotting scaled single feature counts to %s...", filename)
-                png(filename, width = 10, height = 10 * ratio, units = "in", res = 150)
-                ndata <- plot_features(ndata, features = features, 
-                    labels = waiver(), labels_title = "", cells = cells, plot_violin = FALSE,
-                    plot_map = FALSE, plot_correlations = FALSE, 
-                    size = opt$dot_size, undetected_NA = FALSE, zero_offset = NULL)
-                dev.off()
-            }    
+            ndata <- .plot_spatial_with_image(filename, ndata, features, 10, ratio, 
+                          cells = cells, pt.size.factor = opt$dot_size, zero_offset = 0,
+                          png = TRUE, plot_correlations = TRUE)
         }    
     }
     ndata

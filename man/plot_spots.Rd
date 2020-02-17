@@ -16,7 +16,7 @@ plot_spots(
   palette = "viridis",
   palette_inverse = FALSE,
   alpha = 0.85,
-  size = 0.9,
+  pt.size.factor = 0.9,
   trans = NULL,
   limits = NULL
 )
@@ -48,12 +48,12 @@ single hue palettes from colorbrewer2.org}
 
 \item{alpha}{Transparency of spots}
 
-\item{size}{Size of spot dots}
-
 \item{trans}{Transform values, currently only log2 is implemented when this 
 parameter is set to a different value than \code{NULL}.}
 
 \item{limits}{Optional limits for continuous scores}
+
+\item{size}{Size of spot dots}
 }
 \description{
 Plots spots in a Seurat object on HE slides
