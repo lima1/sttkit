@@ -61,18 +61,18 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     if (sum(grep("^hg19", rownames(ndata)))) {
         filename <- paste0(prefix, "_he_ptx.pdf")
         pdf(filename, width=8, height=3.9)
-        plot_features(ndata, features = c("mm10", "hg19"), 
-            labels = scales::percent, 
-            reorder_clusters = FALSE, size = opt$dot_size,
-            plot_correlations = FALSE)
+        print( SpatialFeaturePlot(ndata, features = c("mm10", "hg19"), 
+            pt.size.factor = opt$dot_size) +
+            theme(legend.position = "right") + 
+            scale_color_continuous(labels = scales::percent))
+
         if (paste0("nFeature_", assay, "_mm10") %in% colnames(ndata@meta.data)) {
-            plot_features(ndata, 
-                features = c(paste0("nFeature_", assay, "_mm10"), 
-                             paste0("nFeature_", assay, "_hg19")), 
-                labels = function(x) sprintf("%.0f", x), 
-                labels_title ="", trans = TRUE, reorder_clusters = FALSE,
-                plot_correlations = FALSE)
-        }
+            print(SpatialFeaturePlot(ndata, 
+                    features = c(paste0("nFeature_", assay, "_mm10"), 
+                                 paste0("nFeature_", assay, "_hg19")),
+                    pt.size.factor = opt$dot_size) + 
+                    theme(legend.position = "right"))
+        }    
         dev.off()
     }     
     filename <- paste0(prefix, "_he_counts.pdf")

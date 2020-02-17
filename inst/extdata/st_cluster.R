@@ -249,14 +249,13 @@ if (grepl("list$",opt$infile)) {
 }
 
 .write_labels_diff <- function(ndata, prefix) {
-    # TODO remove
-    ndata$label <- gsub(" Mouse", "_Mouse", ndata$label)
     Idents(ndata) <- ndata$label
 
     filename <- sttkit:::.get_sub_path(prefix, "advanced", "_labels_diff.csv") 
     markers <- FindAllMarkers(ndata)
     write.csv(markers, file = filename, row.names = FALSE)
-    if (length(grep("_", levels(ndata)))) {
+    # in case labels contain a suffix, e.g. trt_1, trt_2, ctl_1, ctl_2 
+    if (length(grep("_\\d+$", levels(ndata)))) {
         Idents(ndata) <- gsub("_.*$", "", ndata$label)
         filename <- sttkit:::.get_sub_path(prefix, "advanced", "_labels_diff_2.csv") 
         markers <- FindAllMarkers(ndata)
