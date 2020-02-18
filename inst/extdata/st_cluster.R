@@ -250,7 +250,7 @@ if (grepl("list$",opt$infile)) {
     write.csv(markers, file = filename, row.names = FALSE)
     # in case labels contain a suffix, e.g. trt_1, trt_2, ctl_1, ctl_2 
     if (length(grep("_\\d+$", levels(ndata)))) {
-        Idents(ndata) <- gsub("_.*$", "", ndata$label)
+        Idents(ndata) <- gsub("_\\d+$", "", ndata$label)
         filename <- sttkit:::.get_sub_path(prefix, "advanced", "_labels_diff_2.csv") 
         markers <- .find_all_markers(ndata, prefix, "_snn_labels_2_markers.rds")
         write.csv(markers, file = filename, row.names = FALSE)
