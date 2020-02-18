@@ -14,8 +14,10 @@ Imports: data.table (>= 1.12.4),
          viridis
 Suggests: CellMix,
           GGally,
+          EBImage,
           Matrix,
           NMF,
+          corrplot,
           edgeR,
           ggpmisc,
           grid, 
@@ -24,7 +26,6 @@ Suggests: CellMix,
           optparse,
           pheatmap,
           scran,
-          EBImage,
           sctransform
 License: Artistic-2.0
 Encoding: UTF-8

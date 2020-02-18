@@ -371,17 +371,24 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
             }
         }
         if (length(features) > 2 & length(libs) > 1) {
-            filename <- .get_sub_path(prefix, subdir, paste0("_nmf_cluster_", k, "_correlations.pdf"))
+            tmp <- .get_sub_path(prefix, file.path(subdir, "advanced"), "") # make sure that advanced directory exists
+            filename <- .get_sub_path(prefix, file.path(subdir,"advanced", k), 
+                paste0("_nmf_cluster_", k, "_correlations.pdf"))
             pdf(filename, width = width, height = width * ratio, onefile = FALSE)
             plot_correlation_heatmap(lapply(libs, function(i) obj[, obj$library == i]), features)
             dev.off()
+            
+            .plot_correlation_labels(obj, cluster_labels = predict(nmf_obj_f), 
+                rank = k, prefix = prefix, file.path(subdir, "advanced", k), 
+                suffix = paste0("_nmf_cluster_", k, "_label_correlations.pdf")) 
         }
         write_nmf_features(obj, rank = rank, k = k, prefix = prefix)
         if (plot_qc) {
             x <- obj@meta.data
             xm <- melt(x[,grep("library|nmf|nFeature", colnames(x))], id.vars=c("library", paste0("nFeature_", assay)))
             xm <- xm[grep(paste0("nmf_k_", k, "_"), xm$variable),]
-            filename <- .get_sub_path(prefix, file.path(subdir, "qc"), paste0("_nmf_cluster_", k, "_qc.pdf"))
+            tmp <- .get_sub_path(prefix, file.path(subdir, "qc"), "") # make sure that qc directory exists
+            filename <- .get_sub_path(prefix, file.path(subdir, "qc", k), paste0("_nmf_cluster_", k, "_qc.pdf"))
             pdf(filename, width = width, height = width * ratio)
             if (length(unique(xm$library)) < 6) {
                 gp <- ggplot(xm, aes_string(paste0("nFeature_", assay), "value", color = "library")) + 
@@ -401,18 +408,18 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
             print(gp)
             dev.off()
             if (png) {
-                filename <- .get_sub_path(prefix, file.path(subdir, "qc"), paste0("_nmf_cluster_", k, "_qc.png"))
+                filename <- .get_sub_path(prefix, file.path(subdir, "qc", k), paste0("_nmf_cluster_", k, "_qc.png"))
                 png(filename, width = width, height = width * ratio, units = "in", res = 150)
                 print(gp)
                 dev.off()
             }    
         }
-        filename <- .get_sub_path(prefix, file.path(subdir, "advanced"), paste0("_nmf_cluster_", k, "_coefmap.pdf"))
+        filename <- .get_sub_path(prefix, file.path(subdir, "advanced", k), paste0("_nmf_cluster_", k, "_coefmap.pdf"))
         pdf(filename, width = width, height = width)
         NMF::coefmap(nmf_obj_f)
         dev.off()
         if (png) {
-            filename <- .get_sub_path(prefix, file.path(subdir, "advanced"), paste0("_nmf_cluster_", k, "_coefmap.png"))
+            filename <- .get_sub_path(prefix, file.path(subdir, "advanced", k), paste0("_nmf_cluster_", k, "_coefmap.png"))
             png(filename, width = width, height = width, units = "in", res = 150)
             NMF::coefmap(nmf_obj_f)
             dev.off()
@@ -424,7 +431,7 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
     if (plot_ranks && length(rank) > 1) {
         #.plot_nmf_r2(obj, libs, rank, prefix, subdir, width, 
         #    png, feature_suffix = "rss", ...)
-        filename <- .get_sub_path(prefix, subdir, "_nmf_ranks.pdf")
+        filename <- .get_sub_path(prefix, file.path(subdir, "qc"), "_nmf_ranks.pdf")
         pdf(filename)
         if (is.null(nmf_obj_random)) {
             print(plot(nmf_obj))
@@ -463,6 +470,20 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
     }
 }    
 
+.plot_correlation_labels <- function(obj, cluster_labels, rank, prefix, subdir, suffix) {
+    if (!requireNamespace("corrplot")) {
+        flog.warn("Package corrplot not installed.")
+    } else {
+        chisq <- chisq.test( table(cluster_labels, obj$label))
+        contrib <- 100*chisq$residuals^2/chisq$statistic
+        filename <- .get_sub_path(prefix, subdir, suffix)
+        pdf(filename, height = 8, width = 3)
+        corrplot(contrib, is.cor = FALSE)
+        dev.off()
+    }
+}
+
+#
 #' plot_correlation_heatmap
 #'
 #' Given a list of Seurat objects, plots the fraction of available genes

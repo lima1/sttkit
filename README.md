@@ -139,8 +139,9 @@ Rscript $STTKIT/st_score.R \
     --gmt mm10_io_sigs.gmt \
     --outprefix OUTDIR/${PIPELINE}/$SAMPLE/signatures/$SAMPLE  
 ```
-Advanced feature: --infile can be again a list of input files (see `st_cluster.R`).
-In this case violin plots are generated to compare the signatures across samples.
+Advanced feature: `--infile` can be again a list of input files (see
+`st_cluster.R`).  In this case violin plots are generated to compare the
+signatures across samples.
 
 ### st_benchmark.R
 
