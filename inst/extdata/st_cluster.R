@@ -167,7 +167,8 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 }
 
 .plot_cluster_heatmaps <- function(obj, prefix, markergenes, single_input, group.by = "ident") {
-    filename <- sttkit:::.get_sub_path(prefix, "snn", "_cluster_heatmap.pdf")
+    filename <- sttkit:::.get_sub_path(prefix, "snn", "")
+    filename <- sttkit:::.get_sub_path(prefix, "snn/heatmap", "_cluster_heatmap.pdf")
     markers <- .find_all_markers(obj, prefix, "_snn_markers.rds")
     m <- GetAssayData(obj, slot="scale.data")
     genes <- unique(unlist(lapply(split(markers, markers$cluster), function(x) 

@@ -2,7 +2,7 @@
 
 This is a collection of command line R scripts for analyzing spatial
 transcriptomics data.  It is based on Seurat 3.2 workflows with a focus on
-multi-sample (technical replicates and treatment/control pairs).
+multi-sample analyses (technical replicates and treatment/control pairs).
 
 ## Installation
 
@@ -13,7 +13,7 @@ devtools::install_github("satijalab/seurat", ref = "spatial")
 ```
 
 Common functionality in this toolkit are provided in an R package called
-`sttkit`.  Install it from a local git repository with:
+`sttkit`.  Install it from GitHub:
 
 ```
 devtools::install_github('lima1/sttkit')
