@@ -41,7 +41,10 @@ plot_clusters <- function(obj, prefix) {
     obj$new.idents <- factor(as.character(obj$new.idents), 
         levels = .order_clusters(obj$new.idents))
     label <- "predicted.id" %in% colnames(obj@meta.data)
-    pdf(paste0(prefix, "_", reference_technology, "_cluster.pdf"), width=10, height=5)
+    # make sure than snn directory is created
+    filename <- .get_sub_path(prefix, "snn", "")
+    filename <- .get_sub_path(prefix, "snn/umap", paste0("_", reference_technology, "_cluster.pdf"))
+    pdf(filename, width = 10, height = 5)
     if (label) { 
         flog.info("UMAP label...")
     } else {
@@ -51,10 +54,12 @@ plot_clusters <- function(obj, prefix) {
     dev.off()
     flog.info("UMAP splitted...")
     if ("call" %in% colnames(obj@meta.data)) {
-        pdf(paste0(prefix, "_", reference_technology, "_cluster_call.pdf"), width = 10, height = 5)
+        filename <- .get_sub_path(prefix, "snn/umap", paste0("_", reference_technology, "_cluster_call.pdf"))
+        pdf(filename, width = 10, height = 5)
         print(DimPlot(obj, reduction = "umap", group.by = "call", label = label))
         dev.off()
-        pdf(paste0(prefix, "_", reference_technology, "_cluster_splitted.pdf"), width = 10, height = 10)
+        filename <- .get_sub_path(prefix, "snn/umap", paste0("_", reference_technology, "_cluster_splitted.pdf"))
+        pdf(filename, width = 10, height = 10)
         print(DimPlot(obj, split.by = "new.idents", group.by = "call"))
         dev.off()
     }
@@ -68,10 +73,12 @@ plot_clusters <- function(obj, prefix) {
     if ("hg19" %in% colnames(obj@meta.data) && 
         "mm10" %in% colnames(obj@meta.data)) {
         flog.info("Violinplot hg19 vs mm10...")
-        pdf(paste0(prefix, "_", reference_technology, "_cluster_violin_call.pdf"), width=10, height=5)
+        filename <- .get_sub_path(prefix, "snn/qc", paste0("_", reference_technology, "_cluster_violin_call.pdf"))
+        pdf(filename, width=10, height=5)
         print(VlnPlot(obj, features = c("hg19", "mm10"), sort = TRUE))
         dev.off()
-        pdf(paste0(prefix, "_", reference_technology, "_cluster_violin_qc.pdf"), width = 10, height = 5)
+        filename <- .get_sub_path(prefix, "snn/qc", paste0("_", reference_technology, "_cluster_violin_qc.pdf"))
+        pdf(filename, width = 10, height = 5)
         print(VlnPlot(obj, features = c("percent.mito", "percent.ribo"), sort = TRUE))
         dev.off()
     }
@@ -85,7 +92,9 @@ plot_clusters <- function(obj, prefix) {
     
 .plot_cluster_library <- function(obj, field = "library", prefix, reference_technology) {
     flog.info("UMAP %s...", field)
-    pdf(paste0(prefix, "_", reference_technology, "_cluster_", field, ".pdf"), width=10, height=5)
+    filename <- .get_sub_path(prefix, "snn/umap", paste0("_", reference_technology, "_cluster_", field, ".pdf"))
+
+    pdf(filename, width = 10, height = 5)
     print(DimPlot(obj, reduction = "umap", 
         split.by = "new.idents", group.by = field) 
     )

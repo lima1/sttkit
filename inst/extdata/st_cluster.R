@@ -95,14 +95,17 @@ log_file <- paste0(opt$outprefix, "_cluster.log")
 if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 
 .plot_he_cluster <- function(ndata, prefix, num = "") {
-    filename <- sttkit:::.get_sub_path(prefix, "snn", paste0("_he_cluster", num, ".pdf"))
+    #makes sure that snn is available
+    filename <- sttkit:::.get_sub_path(prefix, "snn", "tmp.pdf")
+
+    filename <- sttkit:::.get_sub_path(prefix, "snn/he", paste0("_he_cluster", num, ".pdf"))
     flog.info("Plotting clusters on H&E for %s...", ndata$library[1])
     pdf(filename, width = 4, height = 3.9)
     print(SpatialDimPlot(ndata, label = TRUE, image = sttkit:::.get_image_slice(ndata), label.size = 3))
     .plot_clustering_overlap(ndata)
     dev.off()
     if (opt$png) {
-        filename <- sttkit:::.get_sub_path(prefix, "snn", paste0("_he_cluster", num, ".png"))
+        filename <- sttkit:::.get_sub_path(prefix, "snn/he", paste0("_he_cluster", num, ".png"))
         png(filename, width = 4, height = 3.9, units = "in", res = 150)
         print(SpatialDimPlot(ndata, label = TRUE, image = sttkit:::.get_image_slice(ndata), label.size = 3))
         dev.off()
@@ -126,22 +129,15 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     file.path(s_dir, paste0(basename(prefix), suffix))
 }
 
-.write_clusters <- function(obj, prefix, single_input) {
+.write_clusters <- function(obj, prefix) {
     flog.info("Exporting Loupe files...")
     sids <- grep("snn_res", colnames(obj@meta.data))
-    for (i in sids) {
-        filename <- sttkit:::.get_sub_path(prefix, "snn", paste0("_cluster_", 
-            colnames(obj@meta.data)[i], ".txt"))
-        m <- obj@meta.data[, i, drop = FALSE]
-        m[,1] <- as.numeric(m[,1]) + 1
-        write.table(m, file = filename, sep = "\t", quote = FALSE, col.names = FALSE)
-    } 
     export_snn_loupe(obj, libs = libs, labels = labels, prefix)
 }
 .plot_cluster_qc <- function(object, prefix) {
 	m <- melt(object@meta.data)
 	colnames(m)[max(grep("snn_res", colnames(m)))] <- "res"
-    filename <- sttkit:::.get_sub_path(prefix, "snn", "_cluster_qc.pdf")
+    filename <- sttkit:::.get_sub_path(prefix, "snn/qc", "_cluster_qc.pdf")
     pdf(filename, width=8, height=4)
 	require(ggplot2)
     flog.info("Plotting cluster QC...")
@@ -180,11 +176,11 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     }
     dev.off()
     flog.info("Plotting PCA heatmap...")
-    filename <- paste0(prefix, "_pca_heatmap.pdf")
+    filename <- sttkit:::.get_sub_path(prefix, "pca", "_pca_heatmap.pdf") 
     pdf(filename, height = 6, width = 8)
     print(DimHeatmap(ndata, dims=1:6, reduction="pca"))
     dev.off()
-    filename <- sttkit:::.get_sub_path(prefix, "snn", "_cluster.csv") 
+    filename <- sttkit:::.get_sub_path(prefix, "snn/advanced", "_cluster_markers.csv") 
     write.csv(markers, file = filename, row.names = FALSE)
 }
 
@@ -224,7 +220,7 @@ if (grepl("list$",opt$infile)) {
         nfeatures = n)
     if (is.null(gmt)) return(variable_features)
     gp <- plot_gmt_availability(reference_list, gmt)
-    filename <- paste0(prefix, "_signatures_availability.pdf")
+    filename <- sttkit:::.get_sub_path(prefix, "signatures", "_signatures_availability.pdf") 
     pdf(filename, height = 10, width = 10)
     print(gp)
     dev.off()
@@ -312,19 +308,19 @@ if (single_input) {
     }
     plot_clusters(ndata, opt$outprefix)
     if (!is.null(gmt)) {
-        filename <- paste0(opt$outprefix, "_signatures_normalized_counts.pdf")
+        filename <- sttkit:::.get_sub_path(opt$outprefix, "signatures", "_signatures_normalized_counts.pdf") 
         flog.info("Plotting normalized signature counts...")
         pdf(filename, width = 10, height = 10 * sttkit:::.get_image_ratio(length(gmt)))
         plot_signatures_fake_bulk(reference_list, plot_pairs = FALSE, 
             plot_bar = TRUE, plot_heatmaps = FALSE, log_trans = FALSE, gmt = gmt)
         dev.off()
-        filename <- paste0(opt$outprefix, "_signatures_normalized_counts_heatmaps.pdf")
+        filename <- sttkit:::.get_sub_path(opt$outprefix, "signatures", "_signatures_normalized_counts_heatmaps.pdf") 
         pdf(filename, width = 10, height = 10)
         plot_signatures_fake_bulk(reference_list, plot_pairs = FALSE, 
             plot_bar = FALSE, plot_heatmaps = TRUE, log_trans = TRUE, gmt = gmt)
         dev.off()
         gp <- plot_gmt_availability(list(ndata), gmt)
-        filename <- paste0(opt$outprefix, "_signatures_availability_after_integration.pdf")
+        filename <- sttkit:::.get_sub_path(opt$outprefix, "signatures", "_signatures_availability_after_integration.pdf") 
         pdf(filename, height = 10, width = 10)
         print(gp)
         dev.off()
@@ -363,7 +359,7 @@ if (single_input) {
 
 if (!is.null(opt$labels)) .write_labels_diff(ndata, opt$outprefix)
 
-.write_clusters(ndata, opt$outprefix, single_input = single_input)
+.write_clusters(ndata, opt$outprefix)
 .plot_cluster_qc(ndata, opt$outprefix)
 .plot_cluster_heatmaps(ndata, opt$outprefix, opt$markergenes, single_input = single_input)
 

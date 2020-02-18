@@ -199,7 +199,7 @@ cluster_integrated <- function(integrated, regressout, scale = NULL,
         dims = 1:30, verbose = verbose)
     if (plot_umap) {
         flog.info("Plotting UMAP...")
-        pdf(.get_advanced_path(prefix, "_integration_overview.pdf"), width = 10, height = 5)
+        pdf(.get_advanced_path(prefix, "_umap_integration_overview.pdf"), width = 10, height = 5)
         if ("call" %in% colnames(integrated@meta.data)) {
             print(DimPlot(integrated, reduction = "umap", split.by = "technology",
                           group.by = "call"))
