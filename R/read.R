@@ -51,8 +51,7 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
         rownames(raw_data) <- gsub("^hs", "hg19", rownames(raw_data))
     }
     if (!is.null(required_features)) {
-        required_features <- make.names(required_features)
-        required_features <- required_features[!required_features %in% rownames(raw_data)]
+        required_features <- required_features[!make.names(required_features) %in% make.names(rownames(raw_data))]
         if (length(required_features)) {
             raw_data_required <- matrix(0, nrow = length(required_features),
                 ncol = ncol(raw_data), 
@@ -60,7 +59,7 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
             raw_data <- rbind(raw_data, raw_data_required)
         }
         raw_data <- raw_data[Matrix::rowSums(raw_data) >= min_spots | 
-                             rownames(raw_data) %in% required_features, ]
+                             make.names(rownames(raw_data)) %in% make.names(required_features), ]
     } else {
         raw_data <- raw_data[Matrix::rowSums(raw_data) >= min_spots, ]
     }    

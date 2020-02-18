@@ -214,13 +214,6 @@ if (grepl("list$",opt$infile)) {
             stop("No signatures available in --gmt.")
         }    
     }    
-    if (!is.null(opt$extra_gmt)) {
-        ndata_merged <- Reduce(merge, reference_list)
-        extra_gmt <- read_signatures(opt$extra_gmt, ndata_merged)
-        if (!length(extra_gmt)) {
-            stop("No signatures available in --extra_gmt.")
-        }    
-    }    
 } 
 
 
@@ -239,7 +232,7 @@ if (grepl("list$",opt$infile)) {
     flog.info("Adding additional features provided in --gmt.")
     all_features <- Reduce(intersect, lapply(reference_list, rownames))
     all_non0_features <- Reduce(union, lapply(reference_list, function(x) { 
-        m <- GetAssayData(x, "counts")
+        m <- GetAssayData(x, "counts", assay = "Spatial")
         rownames(m)[apply(m, 1, max) > 0]
     }))
     wanted_features <- union(variable_features, unlist(gmt))
@@ -296,15 +289,17 @@ if (!opt$force && file.exists(filename)) {
     sttkit:::.serialize(ndata, opt$outprefix, ".rds")
 }
 
+# reloading after merging because some genes might drop out
+if (!is.null(opt$gmt)) {
+    gmt <- read_signatures(opt$gmt, ndata)
+}    
+if (!is.null(opt$extra_gmt)) {
+    extra_gmt <- read_signatures(opt$extra_gmt, ndata)
+}    
+
 if (single_input) {
     libs <- ndata$library[1]
     .plot_he_cluster(ndata, opt$outprefix)
-    if (!is.null(opt$gmt)) {
-        gmt <- read_signatures(opt$gmt, ndata)
-    }    
-    if (!is.null(opt$extra_gmt)) {
-        extra_gmt <- read_signatures(opt$extra_gmt, ndata)
-    }    
 } else {
     libs <- sapply(reference_list, function(x) x$library[1])
     for (i in seq_along(libs)) {

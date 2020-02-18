@@ -652,7 +652,6 @@ plot_signatures_fake_bulk <- function(objs, gmt, assay = "Spatial", log_trans = 
         obj <- objs[[i]]
         counts <- Matrix::rowSums(GetAssayData(obj, slot = "counts", assay = assay))
         # make sure we don't miss genes because of make.names
-        names(counts) <- make.names(names(counts))
         if (log_trans) {
             # this silly line makes sure that we use log, not log2
             # as Seurat does and that we deal with the pseudo-counts
@@ -666,12 +665,11 @@ plot_signatures_fake_bulk <- function(objs, gmt, assay = "Spatial", log_trans = 
         } else if (!is.null(obj@meta.data$label)) {
             sample_id <- obj@meta.data$label[1]
         }
-        data.frame(Symbol = rownames(counts),
+        data.frame(Symbol = make.names(rownames(counts)),
                    Id = sample_id, 
                    Spatial = counts[, 1])
     }))
-    universe <- Reduce(intersect, lapply(objs, rownames))
-    universe <- c(universe, make.names(universe))
+    universe <- make.names(Reduce(intersect, lapply(objs, rownames)))
     gg_data <- gg_data[gg_data[,1] %in% universe,]
 
     gg_data_casted <- data.frame(data.table::dcast(data=gg_data, 

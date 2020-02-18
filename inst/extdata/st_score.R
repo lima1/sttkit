@@ -103,14 +103,14 @@ if (!is.null(opt$labels)) {
         filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
                         paste0("_feature_counts", name, num, ".pdf"))
         flog.info("Plotting single feature counts to %s...", filename)
-        ndata_rna <- .plot_spatial_with_image(filename, ndata_rna, features, 10, ratio, 
+        ndata_rna <- sttkit:::.plot_spatial_with_image(filename, ndata_rna, features, 10, ratio, 
                       cells = cells, pt.size.factor = opt$dot_size, zero_offset = 0,
                       png = TRUE, plot_correlations = TRUE)
 
         filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
                         paste0("_feature_scaled", name, num, ".pdf"))
         flog.info("Plotting scaled single feature counts to %s...", filename)
-        ndata <- .plot_spatial_with_image(filename, ndata, features, 10, ratio, 
+        ndata <- sttkit:::.plot_spatial_with_image(filename, ndata, features, 10, ratio, 
                       cells = cells, pt.size.factor = opt$dot_size, zero_offset = 0,
                       png = TRUE, plot_correlations = TRUE)
     }    
