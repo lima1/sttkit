@@ -153,17 +153,22 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     hc <- hclust(dist(m))
     hc$labels[hc$order]
 }
-.plot_cluster_heatmaps <- function(obj, prefix, markergenes, single_input, group.by = "ident") {
-    filename <- sttkit:::.get_sub_path(prefix, "snn", "_cluster_heatmap.pdf")
-    filename_markers <- .get_serialize_path(opt$outprefix, "_snn_markers.rds")
+.find_all_markers <- function(obj, prefix, suffix) {
+    filename_markers <- .get_serialize_path(opt$outprefix, suffix)
     if (!opt$force && file.exists(filename_markers)) {
         flog.warn("%s exists. Skipping differential expression analysis. Use --force to overwrite.", filename_markers)
         markers <- readRDS(filename_markers)
     } else {
         markers <- FindAllMarkers(obj)
         flog.info("Writing R data structure to %s...", filename_markers)
-        sttkit:::.serialize(markers, opt$outprefix, "_snn_markers.rds")
+        sttkit:::.serialize(markers, opt$outprefix, suffix)
     }
+    return(markers)
+}
+
+.plot_cluster_heatmaps <- function(obj, prefix, markergenes, single_input, group.by = "ident") {
+    filename <- sttkit:::.get_sub_path(prefix, "snn", "_cluster_heatmap.pdf")
+    markers <- .find_all_markers(obj, prefix, "_snn_markers.rds")
     m <- GetAssayData(obj, slot="scale.data")
     genes <- unique(unlist(lapply(split(markers, markers$cluster), function(x) 
         head(x[which(x$avg_logFC > 0 & x$gene %in% rownames(m)), "gene"], markergenes))))
@@ -241,13 +246,13 @@ if (grepl("list$",opt$infile)) {
     Idents(ndata) <- ndata$label
 
     filename <- sttkit:::.get_sub_path(prefix, "advanced", "_labels_diff.csv") 
-    markers <- FindAllMarkers(ndata)
+    markers <- .find_all_markers(ndata, prefix, "_snn_labels_markers.rds")
     write.csv(markers, file = filename, row.names = FALSE)
     # in case labels contain a suffix, e.g. trt_1, trt_2, ctl_1, ctl_2 
     if (length(grep("_\\d+$", levels(ndata)))) {
         Idents(ndata) <- gsub("_.*$", "", ndata$label)
         filename <- sttkit:::.get_sub_path(prefix, "advanced", "_labels_diff_2.csv") 
-        markers <- FindAllMarkers(ndata)
+        markers <- .find_all_markers(ndata, prefix, "_snn_labels_2_markers.rds")
         write.csv(markers, file = filename, row.names = FALSE)
     }
 }    
