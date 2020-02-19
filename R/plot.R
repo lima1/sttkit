@@ -899,6 +899,7 @@ plot_spatially_variable <- function(ndata, labels = NULL, spatial_features, meth
         d <- dist(t(m1))
     }
     hc <- hclust(d, method = "ward.D2")
+    hc$height <- round(hc$height, 6) # sometimes encounter rounding error
     ct <- cutree(hc, h = median(hc$height))
     ct <- split(features, ct[features])
     ranking <- seq_along(features)
