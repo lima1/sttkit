@@ -473,9 +473,13 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
 .plot_correlation_labels <- function(obj, cluster_labels, prefix, subdir, suffix) {
     if (!requireNamespace("corrplot")) {
         flog.warn("Package corrplot not installed.")
-    } else {
-        chisq <- chisq.test( table(cluster_labels, obj$label))
-        contrib <- 100*chisq$residuals^2/chisq$statistic
+    } else if ("library" %in% colnames(obj@meta.data)) {
+        sample_labels <- obj$library
+        if ("label" %in% colnames(obj@meta.data)) {
+            sample_labels <- obj$label
+        }    
+        chisq <- chisq.test( table(cluster_labels, sample_labels))
+        contrib <- 100 * chisq$residuals^2 / chisq$statistic
         filename <- .get_sub_path(prefix, subdir, suffix)
         pdf(filename, height = 8, width = 3)
         corrplot::corrplot(contrib, is.cor = FALSE)
