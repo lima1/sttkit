@@ -59,7 +59,6 @@ PIPELINE="standard"
 Rscript $STTKIT/st_snormalize.R --infile $SAMPLE/${PIPELINE}_pipeline/${SAMPLE}_${PIPELINE}_ensembl_adjusted.tsv \
      --sampleid $SAMPLE \ 
      --hejpeg {SAMPLE}_HE_bw_scaled.jpg \
-     --regressout nFeature_RNA \
      --outprefix OUTDIR/${PIPELINE}/$SAMPLE/normalize/$SAMPLE \
 ```
 
@@ -68,7 +67,6 @@ Rscript $STTKIT/st_snormalize.R --infile $SAMPLE/${PIPELINE}_pipeline/${SAMPLE}_
 PIPELINE="standard"
 Rscript $STTKIT/st_normalize.R --spaceranger_dir $SAMPLE/${PIPELINE}_pipeline/ \
      --sampleid $SAMPLE \ 
-     --regressout nFeature_RNA \
      --outprefix OUTDIR/${PIPELINE}/$SAMPLE/normalize/$SAMPLE 
 ```
 
@@ -102,7 +100,6 @@ mpirun --mca mpi_warn_on_fork 0 -v -np \$NSLOTS  R --slave \
     --infile lists/${SAMPLE}_${NORMALIZATION_METHOD}_spatial.list \
     --labels lists/${SAMPLE}_labels.list \
     --outprefix $OUTDIR/${NORMALIZATION_METHOD}/${PIPELINE}/$SAMPLE/cluster/$SAMPLE \
-    --regressout $REGRESS \
     --gmt ../../signatures/all.gmt \
     --extra_gmt ../../signatures/pathways_kegg.gmt \
     --min_features $MIN_FEATURES \
