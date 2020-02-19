@@ -313,6 +313,11 @@ if (single_input) {
             paste0(num, ".rds"))
     }
     plot_clusters(ndata, opt$outprefix)
+    if (!is.null(labels)) {
+        sttkit:::.plot_correlation_labels(ndata, cluster_labels = Idents(ndata), 
+                prefix = opt$outprefix, file.path("snn", "advanced"), 
+                suffix = paste0("_snn_cluster_label_correlations.pdf")) 
+    }
     if (!is.null(gmt)) {
         filename <- sttkit:::.get_sub_path(opt$outprefix, "signatures", "_signatures_normalized_counts.pdf") 
         flog.info("Plotting normalized signature counts...")

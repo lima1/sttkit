@@ -72,8 +72,8 @@ Rscript $STTKIT/st_normalize.R --spaceranger_dir $SAMPLE/${PIPELINE}_pipeline/ \
      --outprefix OUTDIR/${PIPELINE}/$SAMPLE/normalize/$SAMPLE 
 ```
 
-This script will generate a few files with outprefix as filename prefix. Note that
-hejpeg is ignored for Visium data. 
+This script will generate a few files with `--outprefix` as filename prefix.
+Note that `--hejpeg` is ignored for Visium data. 
 
 ### st_cluster.R
 
@@ -114,12 +114,12 @@ Since NMF clustering is slow, we may need to use the doMPI package to run in in
 parallel (provide the `--mpi` flag).  This example shows that for multi-sample,
 we provide `--infile` a text file with suffix .list containing multiple input
 files.  For the non-default `seurat2` or `scran` normalizations, use the unscaled
-`${SAMPLE}_unscaled` RDS to normalize all samples jointly before clustering.
+`${SAMPLE}_unscaled.rds` files to normalize all samples jointly before clustering.
 
 We provide a `--gmt` file with signatures of interest to make sure that the
 corresponding genes are not filtered out for lower variance than other genes.
 Gene signatures in `--extra_gmt` are not forced to be included and instead
-broadly tested against NMF cluster markers.  This is useful for providing large
+broadly tested against NMF cluster markers. This is useful for providing large
 pathway databases such as KEGG or REACTOME.
 
 We use the nsNMF algorithm instead of the default to get a more sparse solution

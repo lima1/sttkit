@@ -379,7 +379,7 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
             dev.off()
             
             .plot_correlation_labels(obj, cluster_labels = predict(nmf_obj_f), 
-                rank = k, prefix = prefix, file.path(subdir, "advanced", k), 
+                prefix = prefix, file.path(subdir, "advanced", k), 
                 suffix = paste0("_nmf_cluster_", k, "_label_correlations.pdf")) 
         }
         write_nmf_features(obj, rank = rank, k = k, prefix = prefix)
@@ -470,7 +470,7 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
     }
 }    
 
-.plot_correlation_labels <- function(obj, cluster_labels, rank, prefix, subdir, suffix) {
+.plot_correlation_labels <- function(obj, cluster_labels, prefix, subdir, suffix) {
     if (!requireNamespace("corrplot")) {
         flog.warn("Package corrplot not installed.")
     } else {
@@ -478,7 +478,7 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
         contrib <- 100*chisq$residuals^2/chisq$statistic
         filename <- .get_sub_path(prefix, subdir, suffix)
         pdf(filename, height = 8, width = 3)
-        corrplot(contrib, is.cor = FALSE)
+        corrplot::corrplot(contrib, is.cor = FALSE)
         dev.off()
     }
 }
