@@ -286,6 +286,7 @@ write_nmf_features <- function(obj, rank, k, min_features = 20, method = "kim", 
         lapply(seq_along(features)[idx], 
             function(i) data.frame(Gene = rownames(features[[i]]), 
                                features[[i]], K = i)))
+    tmp <- .get_sub_path(prefix, file.path("nmf", "advanced"), "") # make sure that advanced directory exists
     filename <- .get_sub_path(prefix, "nmf", paste0("_nmf_cluster_", k, ".csv"))
     write.csv(features_all, file = filename, row.names = FALSE)
     filename <- .get_sub_path(prefix, file.path("nmf", "advanced", k), paste0("_nmf_cluster_", k, "_all_basis.csv"))
