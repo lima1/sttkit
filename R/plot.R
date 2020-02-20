@@ -368,6 +368,19 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
                 filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, libs_label, ".pdf"))
                 .plot_spatial_with_image (filename, obj_split, features, width, ratio, 
                               plot_correlations = TRUE, plot_violin = TRUE, png = TRUE, ...)
+
+                Idents(obj_split) <- predict(nmf_obj_f)
+                sd.plot <- SpatialDimPlot(obj_split, label = TRUE, image = 
+                                          sttkit:::.get_image_slice(obj_split), label.size = 3)
+                filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_discrete_cluster_", k, label, libs_label, ".pdf"))
+                pdf(filename, width = 4, height = 3.9)
+                print(sd.plot)
+                dev.off()
+                if(png) {
+                    png(sub(".pdf$", ".png", filename), width = 4, height = 3.9, units = "in", res = 150)
+                    print(sd.plot)
+                    dev.off()
+                }
             }
         }
         if (length(features) > 2 & length(libs) > 1) {
