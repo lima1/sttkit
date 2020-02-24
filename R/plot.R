@@ -477,7 +477,7 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
         filename <- .get_sub_path(prefix, subdir,
             paste0("_he_nmf_cluster_", feature_suffix, "_", libs[i], ".pdf"))
         obj_split <- obj[,obj$library == libs[i]]
-        obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
+        #obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
         .plot_spatial_with_image (filename, obj_split, features, width, ratio, plot_violin = TRUE, png = TRUE, ...)
     #        labels = waiver(), labels_title = sprintf("%12s", labels_title), ...)
     }
@@ -850,7 +850,8 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
         flog.warn("Too many features for correlation plot. Skipping...")
     } else {
         pdf(filename, width = width, height = width * ratio)
-        print(SpatialFeaturePlot(object_resized, features = features, combine = TRUE, ...))
+        print(SpatialFeaturePlot(object_resized, image = .get_image_slice(object_resized), 
+              features = features, combine = TRUE, ...))
         if (length(features) > 1) {
             if (plot_violin && length(levels(object_resized)) > 1)
                 print(plot_violin(object_resized, features, cells, zero_offset))
