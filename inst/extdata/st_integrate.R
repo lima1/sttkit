@@ -1,6 +1,7 @@
 suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(futile.logger))
 suppressPackageStartupMessages(library(reshape2))
+suppressPackageStartupMessages(library(dplyr))
 
 ### Parsing command line ------------------------------------------------------
 
@@ -20,8 +21,8 @@ option_list <- list(
     make_option(c("--simulation"), action = "store_true", 
         default = FALSE, 
         help="Subcluster the reference cells, specified by the call attribute [default %default]"),
-    make_option(c("--hejpeg"), action = "store", type = "character", default = NULL,
-        help="Optional path to a JPEG containing cropped HE image."),
+    make_option(c("--serialize"), action = "store_true", default = FALSE, 
+        help="Serialize infile RDS objects. Can become large with large references."),
     make_option(c("--verbose"), action = "store_true", default = FALSE, 
         help="Verbose output"),
     make_option(c("-f", "--force"), action = "store_true", default = FALSE, 
@@ -65,9 +66,18 @@ if (!is.null(opt$labels_singlecell)) {
     labels <- paste0("reference_", seq(length(singlecell)))
 }    
 
-flog.info("Reading --infile and --singlecell...")
+flog.info("Reading --infile (%s) and --singlecell (%s)...",
+    basename(opt$infile), basename(opt$singlecell))
 infile <- readRDS(opt$infile)
 singlecell <- lapply(singlecell, readRDS)
+
+singlecell <- lapply(singlecell, function(x) {
+    if ("umap" %in% Reductions(x) &&
+        "pca" %in% Reductions(x)) return(x)
+    flog.info("Running PCA and UMAP on --singlecell...")
+    RunPCA(x, verbose = TRUE) %>% RunUMAP(dims = 1:30)
+})
+singlecell <- lapply(singlecell, FindNeighbors, verbose = FALSE)
 
 filename_anchors <- sttkit:::.get_serialize_path(opt$outprefix, "_transfer_anchors.rds")
 
@@ -79,8 +89,10 @@ if (!opt$force && file.exists(filename_anchors)) {
     anchors <- lapply(singlecell, function(x)
         FindTransferAnchors(reference = x, query = infile,
             normalization.method = "SCT"))
-    flog.info("Writing R data structure to %s...", filename_anchors)
-    saveRDS(anchors, filename_anchors)
+    if (opt$serialize) {
+        flog.info("Writing R data structure to %s...", filename_anchors)
+        saveRDS(anchors, filename_anchors)
+    }
 }
 
 filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix, "_transfer_predictions.rds")
@@ -92,8 +104,10 @@ if (!opt$force && file.exists(filename_predictions)) {
     prediction.assay <- lapply(seq_along(anchors), function(i)
         TransferData(anchorset = anchors[[i]], refdata = singlecell[[i]][[opt$refdata]][,1],
             prediction.assay = TRUE, weight.reduction = infile[["pca"]]))
-    flog.info("Writing R data structure to %s...", filename_predictions)
-    saveRDS(prediction.assay, filename_predictions)
+    if (opt$serialize) {
+        flog.info("Writing R data structure to %s...", filename_predictions)
+        saveRDS(prediction.assay, filename_predictions)
+    }
 }
 
 .plot_he <- function(x, i) {

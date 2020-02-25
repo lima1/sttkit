@@ -160,6 +160,17 @@ files (see `st_cluster.R`).
 
 Integrates SpatialTranscriptomics with a (matched) scRNA reference. ALPHA.
 
+```
+Rscript $STTKIT/st_integrate.R \
+   --infile $OUTDIR/$SAMPLE/cluster/serialize/${SAMPLE}.rds \
+   --outprefix $OUTDIR/$SAMPLE/integrate/$SAMPLE \
+   --singlecell breast_cancer/GSE114725/cells_seurat3.RDS \
+   --labels_singlecell gse114725
+```
+
+Here, the reference scRNA-seq dataset is expected to be normalized by `sctransform` and 
+contains cell type annotation in a `type` meta data column (the column can be changed
+with `-refdata`). Again, `--singlecell` can be a list of reference datasets. 
 
 ## Example workflow
 
