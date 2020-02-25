@@ -121,6 +121,13 @@ pathway databases such as KEGG or REACTOME.
 
 We use the nsNMF algorithm instead of the default to get a more sparse solution
 at the cost of a significantly longer runtime.
+
+Here the results of NMF clustering on the 10X mouse brain example data:
+
+![all_he_nmf_cluster_9_ex_sagittal_1](https://user-images.githubusercontent.com/364466/75266489-6a7aee00-57c0-11ea-834d-f1998a607321.png)
+![all_he_nmf_cluster_9_ex_sagittal_a1](https://user-images.githubusercontent.com/364466/75266513-723a9280-57c0-11ea-81a5-633b06457e3c.png)
+
+Note that the clusters ids are consistent across sections.
   
 ### st_score.R
 
@@ -170,7 +177,7 @@ Rscript $STTKIT/st_integrate.R \
 
 Here, the reference scRNA-seq dataset is expected to be normalized by `sctransform` and 
 contains cell type annotation in a `type` meta data column (the column can be changed
-with `-refdata`). Again, `--singlecell` can be a list of reference datasets. 
+with `--refdata`). Again, `--singlecell` can be a list of reference datasets. 
 
 ## Example workflow
 
