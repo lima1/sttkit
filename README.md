@@ -124,8 +124,9 @@ at the cost of a significantly longer runtime.
 
 Here the results of NMF clustering on the 10X mouse brain example data:
 
-![all_he_nmf_cluster_9_ex_sagittal_1](https://user-images.githubusercontent.com/364466/75266489-6a7aee00-57c0-11ea-834d-f1998a607321.png)
-![all_he_nmf_cluster_9_ex_sagittal_a1](https://user-images.githubusercontent.com/364466/75266513-723a9280-57c0-11ea-81a5-633b06457e3c.png)
+![all_he_nmf_cluster_9_ex_sagittal_1_small](https://user-images.githubusercontent.com/364466/75268883-1410ae00-57c6-11ea-9adf-00bef6b05fef.png)
+![all_he_nmf_cluster_9_ex_sagittal_a1_small](https://user-images.githubusercontent.com/364466/75268894-17a43500-57c6-11ea-9dcd-ea44cb1a85ad.png)
+
 
 Note that the clusters ids are consistent across sections.
   
