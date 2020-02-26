@@ -21,8 +21,6 @@ option_list <- list(
     make_option(c("--simulation"), action = "store_true", 
         default = FALSE, 
         help="Subcluster the reference cells, specified by the call attribute [default %default]"),
-    make_option(c("--serialize"), action = "store_true", default = FALSE, 
-        help="Serialize infile RDS objects. Can become large with large references."),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.6,
         help="Size of dots on H&E [default %default]"),
     make_option(c("--png"), action = "store_true", default = FALSE, 
@@ -70,54 +68,43 @@ if (!is.null(opt$labels_singlecell)) {
     labels <- paste0("reference_", seq(length(singlecell)))
 }    
 
-flog.info("Reading --infile (%s) and --singlecell (%s)...",
-    basename(opt$infile), basename(opt$singlecell))
+flog.info("Reading --infile (%s)...",
+    basename(opt$infile))
 infile <- readRDS(opt$infile)
-singlecell <- lapply(singlecell, readRDS)
 
-singlecell <- lapply(singlecell, function(x) {
-    if ("SCT" %in% Assays(x)) return(x)
-    flog.info("Running sctransform --singlecell...")
-    SCTransform(x, ncells = opt$num_integration_features, verbose = FALSE)
-})
-
-singlecell <- lapply(singlecell, function(x) {
-    if ("umap" %in% Reductions(x) &&
-        "pca" %in% Reductions(x)) return(x)
-    flog.info("Running PCA and UMAP on --singlecell...")
-    RunPCA(x, verbose = TRUE) %>% RunUMAP(dims = 1:30)
-})
-singlecell <- lapply(singlecell, FindNeighbors, verbose = FALSE)
-
-filename_anchors <- sttkit:::.get_serialize_path(opt$outprefix, "_transfer_anchors.rds")
-
-if (!opt$force && file.exists(filename_anchors)) {
-    flog.warn("%s exists. Skipping finding transfer anchors. Use --force to overwrite.", filename_anchors)
-    anchors <- readRDS(filename_anchors)
+filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix, "_transfer_predictions.rds")
+if (!opt$force && file.exists(filename_predictions)) {
+    flog.warn("%s exists. Skipping finding transfer predictions. Use --force to overwrite.", filename_predictions)
+    prediction.assay <- readRDS(filename_predictions)
 } else {
+    flog.info("Reading --singlecell (%s)...",
+        basename(opt$singlecell))
+    singlecell <- lapply(singlecell, readRDS)
+
+    singlecell <- lapply(singlecell, function(x) {
+        if ("SCT" %in% Assays(x)) return(x)
+        flog.info("Running sctransform --singlecell...")
+        SCTransform(x, ncells = opt$num_integration_features, verbose = FALSE)
+    })
+
+    singlecell <- lapply(singlecell, function(x) {
+        if ("umap" %in% Reductions(x) &&
+            "pca" %in% Reductions(x)) return(x)
+        flog.info("Running PCA and UMAP on --singlecell...")
+        RunPCA(x, verbose = TRUE) %>% RunUMAP(dims = 1:30)
+    })
+    singlecell <- lapply(singlecell, FindNeighbors, verbose = FALSE)
+
     flog.info("Calculating transfer anchors...")
     anchors <- lapply(singlecell, function(x)
         FindTransferAnchors(reference = x, query = infile,
             normalization.method = "SCT"))
-    if (opt$serialize) {
-        flog.info("Writing R data structure to %s...", filename_anchors)
-        saveRDS(anchors, filename_anchors)
-    }
-}
-
-filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix, "_transfer_predictions.rds")
-if (!opt$force && file.exists(filename_predictions)) {
-    flog.warn("%s exists. Skipping finding transfer anchors. Use --force to overwrite.", filename_anchors)
-    prediction.assay <- readRDS(filename_predictions)
-} else {
     flog.info("Calculating transfer predictions....")
     prediction.assay <- lapply(seq_along(anchors), function(i)
         TransferData(anchorset = anchors[[i]], refdata = singlecell[[i]][[opt$refdata]][,1],
             prediction.assay = TRUE, weight.reduction = infile[["pca"]]))
-    if (opt$serialize) {
-        flog.info("Writing R data structure to %s...", filename_predictions)
-        saveRDS(prediction.assay, filename_predictions)
-    }
+    flog.info("Writing R data structure to %s...", filename_predictions)
+    saveRDS(prediction.assay, filename_predictions)
 }
 
 .plot_he <- function(x, i) {
@@ -134,4 +121,4 @@ if (!opt$force && file.exists(filename_predictions)) {
 }
 for (i in seq_along(singlecell)) {
     .plot_he(infile, i)
-}    
+}
