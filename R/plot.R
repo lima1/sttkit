@@ -352,6 +352,7 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
         obj <- .extract_nmf_r2(obj, rank, k)
         obj <- .extract_nmf_rss(obj, rank, k)
         nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
+        Idents(obj) <- predict(nmf_obj_f)
 
         #obj <- .rescale_features(obj, features)
         ratio <- .get_image_ratio(k)
@@ -366,13 +367,13 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
                 obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
 
                 filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, libs_label, ".pdf"))
-                .plot_spatial_with_image (filename, obj_split, features, width, ratio, 
+                .plot_spatial_with_image(filename, obj_split, features, width, ratio, 
                               plot_correlations = TRUE, plot_violin = TRUE, png = TRUE, ...)
 
-                Idents(obj_split) <- predict(nmf_obj_f)
                 sd.plot <- SpatialDimPlot(obj_split, label = TRUE, image = 
                                           sttkit:::.get_image_slice(obj_split), label.size = 3)
-                filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_discrete_cluster_", k, label, libs_label, ".pdf"))
+                filename <- .get_sub_path(prefix, file.path(subdir, "he", k),
+                    paste0("_he_nmf_discrete_cluster_", k, label, libs_label, ".pdf"))
                 pdf(filename, width = 4, height = 3.9)
                 print(sd.plot)
                 dev.off()
@@ -477,7 +478,7 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
         filename <- .get_sub_path(prefix, subdir,
             paste0("_he_nmf_cluster_", feature_suffix, "_", libs[i], ".pdf"))
         obj_split <- obj[,obj$library == libs[i]]
-        #obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
+        obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
         .plot_spatial_with_image (filename, obj_split, features, width, ratio, plot_violin = TRUE, png = TRUE, ...)
     #        labels = waiver(), labels_title = sprintf("%12s", labels_title), ...)
     }
@@ -494,8 +495,10 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
         chisq <- chisq.test( table(cluster_labels, sample_labels))
         contrib <- 100 * chisq$residuals^2 / chisq$statistic
         filename <- .get_sub_path(prefix, subdir, suffix)
-        pdf(filename, height = 8, width = 3)
+        pdf(filename, height = 8, width = 7)
+        par(mfrow = c(1, 2))
         corrplot::corrplot(contrib, is.cor = FALSE)
+        corrplot::corrplot(chisq$residuals, is.cor = FALSE)
         dev.off()
     }
 }

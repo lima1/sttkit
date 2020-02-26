@@ -72,6 +72,12 @@ infile <- readRDS(opt$infile)
 singlecell <- lapply(singlecell, readRDS)
 
 singlecell <- lapply(singlecell, function(x) {
+    if ("SCT" %in% Assays(x)) return(x)
+    flog.info("Running sctransform --singlecell...")
+    SCTransform(x, ncells = opt$num_integration_features, verbose = FALSE)
+})
+
+singlecell <- lapply(singlecell, function(x) {
     if ("umap" %in% Reductions(x) &&
         "pca" %in% Reductions(x)) return(x)
     flog.info("Running PCA and UMAP on --singlecell...")
