@@ -173,12 +173,15 @@ Rscript $STTKIT/st_integrate.R \
    --infile $OUTDIR/$SAMPLE/cluster/serialize/${SAMPLE}.rds \
    --outprefix $OUTDIR/$SAMPLE/integrate/$SAMPLE \
    --singlecell breast_cancer/GSE114725/cells_seurat3.RDS \
-   --labels_singlecell gse114725
+   --labels_singlecell gse114725 
 ```
 
 Here, the reference scRNA-seq dataset is expected to be normalized by `sctransform` and 
 contains cell type annotation in a `type` meta data column (the column can be changed
 with `--refdata`). Again, `--singlecell` can be a list of reference datasets. 
+
+![ex_sagittal_1_he_labels_allen_cortex_Page_1_small](https://user-images.githubusercontent.com/364466/75368503-df692900-588f-11ea-898d-77b544e2669c.png)
+![ex_sagittal_a1_he_labels_allen_cortex_Page_1_small](https://user-images.githubusercontent.com/364466/75368499-de37fc00-588f-11ea-80fa-f935b7b5840d.png)
 
 ## Example workflow
 
