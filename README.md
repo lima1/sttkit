@@ -128,7 +128,7 @@ Here the results of NMF clustering on the 10X mouse brain example data:
 ![all_he_nmf_cluster_9_ex_sagittal_a1_small](https://user-images.githubusercontent.com/364466/75268894-17a43500-57c6-11ea-9dcd-ea44cb1a85ad.png)
 
 
-Note that the clusters ids are consistent across sections.
+Note that the cluster ids are consistent across sections.
   
 ### st_score.R
 
@@ -180,8 +180,8 @@ Here, the reference scRNA-seq dataset is expected to be normalized by `sctransfo
 contains cell type annotation in a `type` meta data column (the column can be changed
 with `--refdata`). Again, `--singlecell` can be a list of reference datasets. 
 
-![ex_sagittal_1_he_labels_allen_cortex_Page_1_small](https://user-images.githubusercontent.com/364466/75368503-df692900-588f-11ea-898d-77b544e2669c.png)
-![ex_sagittal_a1_he_labels_allen_cortex_Page_1_small](https://user-images.githubusercontent.com/364466/75368499-de37fc00-588f-11ea-80fa-f935b7b5840d.png)
+![ex_sagittal_1_he_labels_allen_cortex_1_small](https://user-images.githubusercontent.com/364466/75380489-21e93080-58a5-11ea-8d1a-75950b0dd104.png)
+![ex_sagittal_a1_he_labels_allen_cortex_1_small](https://user-images.githubusercontent.com/364466/75380495-2281c700-58a5-11ea-97d7-efa00e79914e.png)
 
 ## Example workflow
 
