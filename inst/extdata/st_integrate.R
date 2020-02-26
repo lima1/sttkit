@@ -23,6 +23,10 @@ option_list <- list(
         help="Subcluster the reference cells, specified by the call attribute [default %default]"),
     make_option(c("--serialize"), action = "store_true", default = FALSE, 
         help="Serialize infile RDS objects. Can become large with large references."),
+    make_option(c("--dot_size"), action = "store", type = "double", default = 1.6,
+        help="Size of dots on H&E [default %default]"),
+    make_option(c("--png"), action = "store_true", default = FALSE, 
+        help="Generate PNG version of output plots."),
     make_option(c("--verbose"), action = "store_true", default = FALSE, 
         help="Verbose output"),
     make_option(c("-f", "--force"), action = "store_true", default = FALSE, 
@@ -125,7 +129,8 @@ if (!opt$force && file.exists(filename_predictions)) {
     flog.info("Generating output plots for %s ...", label)
     filename <- sttkit:::.get_sub_path(opt$outprefix, "he", 
         paste0("_he_labels", label, ".pdf"))
-    sttkit:::.plot_spatial_with_image(filename, x, features, width = 10, ratio = ratio)
+    sttkit:::.plot_spatial_with_image(filename, x, features, width = 10,
+        ratio = ratio, png = opt$png, pt.size.factor = opt$dot_size)
 }
 for (i in seq_along(singlecell)) {
     .plot_he(infile, i)

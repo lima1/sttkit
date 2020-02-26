@@ -290,7 +290,7 @@ plot_signatures <- function(obj_spatial, file, gmt, nbin = 24,
     sig_names <- .get_signature_names(obj_spatial, sigs)
     ratio <- .get_image_ratio(length(sig_names))
     obj_spatial <- .plot_spatial_with_image(file, obj_spatial, sig_names, width, ratio, cells = cells,
-                  zero_offset = 0, png = TRUE, ...)
+                  zero_offset = 0, png = png, ...)
     obj_spatial
 }
 
@@ -368,7 +368,7 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
 
                 filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, libs_label, ".pdf"))
                 .plot_spatial_with_image(filename, obj_split, features, width, ratio, 
-                              plot_correlations = TRUE, plot_violin = TRUE, png = TRUE, ...)
+                              plot_correlations = TRUE, plot_violin = TRUE, png = png, ...)
 
                 sd.plot <- SpatialDimPlot(obj_split, label = TRUE, image = 
                                           sttkit:::.get_image_slice(obj_split), label.size = 3)
@@ -479,7 +479,7 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
             paste0("_he_nmf_cluster_", feature_suffix, "_", libs[i], ".pdf"))
         obj_split <- obj[,obj$library == libs[i]]
         obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
-        .plot_spatial_with_image (filename, obj_split, features, width, ratio, plot_violin = TRUE, png = TRUE, ...)
+        .plot_spatial_with_image (filename, obj_split, features, width, ratio, plot_violin = TRUE, png = png, ...)
     #        labels = waiver(), labels_title = sprintf("%12s", labels_title), ...)
     }
 }    
@@ -847,8 +847,14 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
         glist <- SpatialFeaturePlot(object_resized, image = .get_image_slice(object_resized), 
             features = features, combine = FALSE, ...)
         glist <- lapply(glist, ggplotGrob)
-        ggsave(filename, marrangeGrob(glist, ncol = ncol, nrow = nrow), 
+        glist <- marrangeGrob(glist, ncol = ncol, nrow = nrow)
+        ggsave(filename, glist,
                width = width, height = width * ratio)
+        if (png) {
+            invisible(mapply(ggsave, filename = paste0(gsub(".pdf$", "", filename), "_", seq_along(glist),".png"),
+                   plot = glist, 
+                   MoreArgs = list(width = width, height = width * ratio, units = "in", dpi = 150)))
+        }    
         flog.warn("Too many features for violin plot. Skipping...")
         flog.warn("Too many features for correlation plot. Skipping...")
     } else {
@@ -867,7 +873,8 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
 
         if(png) {
             png(gsub(".pdf$", ".png", filename), width = width, height = width * ratio, units = "in", res = 150)
-            print(SpatialFeaturePlot(object_resized, features = features, combine = TRUE, ...))
+            print(SpatialFeaturePlot(object_resized, image = .get_image_slice(object_resized),
+                features = features, combine = TRUE, ...))
             dev.off()
         }
     }

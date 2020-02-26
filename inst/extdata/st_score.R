@@ -33,7 +33,7 @@ option_list <- list(
         help="The color palette for dots on H&E plots. Can be either viridis, brewer_single_hue_red/blue/green/grey/orange/purple or color1:color2 [default %default]"),
     make_option(c("--palette_inverse"), action = "store_true", default = FALSE, 
         help="Flip the low:high colors in --palette"),
-    make_option(c("--dot_size"), action = "store", type = "double", default = 1.5,
+    make_option(c("--dot_size"), action = "store", type = "double", default = 1.6,
         help="Size of dots on H&E [default %default]"),
     make_option(c("--png"), action = "store_true", default = FALSE, 
         help="Generate PNG version of output plots."),
@@ -105,14 +105,14 @@ if (!is.null(opt$labels)) {
         flog.info("Plotting single feature counts to %s...", filename)
         ndata_rna <- sttkit:::.plot_spatial_with_image(filename, ndata_rna, features, 10, ratio, 
                       cells = cells, pt.size.factor = opt$dot_size, zero_offset = 0,
-                      png = TRUE, plot_correlations = TRUE)
+                      png = opt$png, plot_correlations = TRUE)
 
         filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
                         paste0("_feature_scaled", name, num, ".pdf"))
         flog.info("Plotting scaled single feature counts to %s...", filename)
         ndata <- sttkit:::.plot_spatial_with_image(filename, ndata, features, 10, ratio, 
                       cells = cells, pt.size.factor = opt$dot_size, zero_offset = 0,
-                      png = TRUE, plot_correlations = TRUE)
+                      png = opt$png, plot_correlations = TRUE)
     }    
     ndata
 }
