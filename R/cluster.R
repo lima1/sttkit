@@ -90,14 +90,12 @@ plot_clusters <- function(obj, prefix) {
     lapply(names(tbl[tbl>1]), function(x) which(labels == x)) 
 }
     
-.plot_cluster_library <- function(obj, field = "library", prefix, reference_technology) {
+.plot_cluster_library <- function(obj, field = "library", prefix, subdir = "snn/umap", reference_technology) {
     flog.info("UMAP %s...", field)
-    filename <- .get_sub_path(prefix, "snn/umap", paste0("_", reference_technology, "_cluster_", field, ".pdf"))
+    filename <- .get_sub_path(prefix, subdir, paste0("_", reference_technology, "_cluster_", field, ".pdf"))
 
     pdf(filename, width = 10, height = 5)
-    print(DimPlot(obj, reduction = "umap", 
-        split.by = "new.idents", group.by = field) 
-    )
+    print(DimPlot(obj, reduction = "umap", split.by = field))
     df <- melt(table(obj@meta.data[[field]], Idents(obj)))
     print(ggplot(df, aes_string("Var1", "value")) + geom_col() + 
         facet_wrap(~Var2) +

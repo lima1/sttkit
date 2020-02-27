@@ -354,11 +354,22 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
         nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
         Idents(obj) <- predict(nmf_obj_f)
 
+        if ("label" %in% colnames(obj@meta.data)) {
+            .plot_cluster_library(obj, field = "label", prefix = prefix, 
+                subdir = file.path(subdir, "umap", k),
+                reference_technology = "spatial")
+        } else if ("library" %in% colnames(obj@meta.data)) {
+            .plot_cluster_library(obj, field = "library", prefix = prefix, 
+                subdir = file.path(subdir, "umap", k),
+                reference_technology = "spatial")
+        }
+
         #obj <- .rescale_features(obj, features)
         ratio <- .get_image_ratio(k)
         if (plot_he) {
             flog.info("Generating output plots for k = %i...", k)
             tmp <- .get_sub_path(prefix, file.path(subdir, "he"), "") # make sure that HE directory exists
+            tmp <- .get_sub_path(prefix, file.path(subdir, "umap"), "") # make sure that umap directory exists
 
             for (i in seq_along(libs)) {
                 label <- if (is.null(labels[i])) "" else paste0("_",labels[i])

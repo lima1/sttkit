@@ -110,7 +110,7 @@ if (!opt$force && file.exists(filename_predictions)) {
 .plot_he <- function(x, i) {
     x$predictions <- prediction.assay[[i]]
     DefaultAssay(x) <- "predictions"
-    features <- rownames(x)
+    features <- names(Matrix::rowSums(GetAssayData(x)) > 0)
     ratio <- sttkit:::.get_image_ratio(length(features))
     label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
     flog.info("Generating output plots for %s ...", label)
