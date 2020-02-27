@@ -15,6 +15,7 @@
 #' @export plot_features
 #' @import ggplot2
 #' @importFrom stats quantile
+#' @importFrom patchwork wrap_plots
 #' @examples
 #' plot_features()
 
@@ -354,6 +355,7 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
         nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
         Idents(obj) <- predict(nmf_obj_f)
 
+        tmp <- .get_sub_path(prefix, file.path(subdir, "umap"), "") # make sure that umap directory exists
         if ("label" %in% colnames(obj@meta.data)) {
             .plot_cluster_library(obj, field = "label", prefix = prefix, 
                 subdir = file.path(subdir, "umap", k),
@@ -369,7 +371,6 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
         if (plot_he) {
             flog.info("Generating output plots for k = %i...", k)
             tmp <- .get_sub_path(prefix, file.path(subdir, "he"), "") # make sure that HE directory exists
-            tmp <- .get_sub_path(prefix, file.path(subdir, "umap"), "") # make sure that umap directory exists
 
             for (i in seq_along(libs)) {
                 label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
@@ -822,6 +823,23 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
             for (i in seq_len(n_pages)) {
                 print(gp + ggforce::facet_wrap_paginate(~Signature, scales = "free_y", ncol = 4, nrow = 4, page = i))
             }
+        }
+        dev.off()
+        nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
+        Idents(obj) <- predict(nmf_obj_f)
+        filename <- .get_sub_path(prefix, file.path(subdir, k), paste0("_nmf_signature_heatmap_", k, gmt_name, ".pdf"))
+        pdf(filename, width = width, height = width * 0.5)
+        field <- if ("label" %in% colnames(obj@meta.data)) "label" else "library"
+        cells <- sapply(sort(unique(gsub("_\\d+$","", obj[[field]][,1]))), function(i) 
+            Cells(obj)[grep(i, obj[[field]][,1], fixed = TRUE)])
+
+
+        for (i in seq_along(sigs)) {
+            gp <- lapply(seq_along(cells), function(j) DoHeatmap(obj, features = sigs[[i]], cells = cells[[j]]) + 
+                theme(legend.position = "none") + 
+                ggtitle(paste(names(sigs)[[i]], names(cells)[j]))
+            )
+            print(wrap_plots(gp, ncol = 1))
         }
         dev.off()
     }    

@@ -11,6 +11,7 @@ Imports: data.table (>= 1.12.4),
          utils, 
          RANN,
          gridExtra,
+         patchwork,
          viridis
 Suggests: CellMix,
           GGally,
