@@ -371,7 +371,7 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
                               plot_correlations = TRUE, plot_violin = TRUE, png = png, ...)
 
                 sd.plot <- SpatialDimPlot(obj_split, label = TRUE, image = 
-                                          sttkit:::.get_image_slice(obj_split), label.size = 3)
+                                          sttkit:::.get_image_slice(obj_split), label.size = 3, ...)
                 filename <- .get_sub_path(prefix, file.path(subdir, "he", k),
                     paste0("_he_nmf_discrete_cluster_", k, label, libs_label, ".pdf"))
                 pdf(filename, width = 4, height = 3.9)
@@ -783,9 +783,6 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
         if (is.null(gmt_name)) gmt_name <- ""
     }    
     if (gmt_name != "") gmt_name <- paste0("_", gmt_name)
-    filename <- .get_sub_path(prefix, subdir, paste0("_nmf_signature", gmt_name, ".pdf"))
-    ratio <- .get_image_ratio(length(sigs))
-    pdf(filename, width = width, height = width * ratio)
     d_f <- do.call(rbind, lapply(rank, function(k) {
         nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
         b <- NMF::basis(nmf_obj_f)
@@ -797,16 +794,26 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
                                    K = b[sigsf[[i]],,drop = FALSE]))),
             id.vars=c("Signature", "Rank"))
     }))
+    ratio <- .get_image_ratio(length(sigs))
     for (k in rank) {
+        filename <- .get_sub_path(prefix, file.path(subdir, k), paste0("_nmf_signature_", k, gmt_name, ".pdf"))
+        pdf(filename, width = width, height = width * ratio)
         gp <- ggplot(d_f[d_f$Rank == k,], 
             aes(as.character(variable), value)) + geom_boxplot() + 
-            facet_wrap(~Signature, scales = "free_y") +
             xlab("") +
             ylab("NMF basis") +
             ggtitle(sig)
-        print(gp)
+        if (length(sigs) <= 16) {
+            print(gp + facet_wrap(~Signature, scales = "free_y"))
+        } else {
+            flog.info("More than 16 signatures, paginate plot.")
+            n_pages <- ceiling(length(sigs) / 16)
+            for (i in seq_len(n_pages)) {
+                print(gp + ggforce::facet_wrap_paginate(~Signature, scales = "free_y", ncol = 4, nrow = 4, page = i))
+            }
+        }
+        dev.off()
     }    
-    dev.off()
 }    
 
 .get_palette <- function(x) {

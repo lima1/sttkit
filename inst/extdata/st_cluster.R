@@ -101,13 +101,15 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     filename <- sttkit:::.get_sub_path(prefix, "snn/he", paste0("_he_cluster", num, ".pdf"))
     flog.info("Plotting clusters on H&E for %s...", ndata$library[1])
     pdf(filename, width = 4, height = 3.9)
-    print(SpatialDimPlot(ndata, label = TRUE, image = sttkit:::.get_image_slice(ndata), label.size = 3))
+    print(SpatialDimPlot(ndata, label = TRUE, image = sttkit:::.get_image_slice(ndata), 
+        pt.size.factor = opt$dot_size, label.size = 3))
     .plot_clustering_overlap(ndata)
     dev.off()
     if (opt$png) {
         filename <- sttkit:::.get_sub_path(prefix, "snn/he", paste0("_he_cluster", num, ".png"))
         png(filename, width = 4, height = 3.9, units = "in", res = 150)
-        print(SpatialDimPlot(ndata, label = TRUE, image = sttkit:::.get_image_slice(ndata), label.size = 3))
+        print(SpatialDimPlot(ndata, label = TRUE, image = sttkit:::.get_image_slice(ndata),
+            pt.size.factor = opt$dot_size, label.size = 3))
         dev.off()
     }
 }
@@ -362,7 +364,8 @@ if (single_input) {
          if (all(x_df[[i]]$Description %in% c("NULL", "", "NA", NA))) {
              x_df[[i]]$Description <- NULL
          }    
-         filename <- sttkit:::.get_sub_path(opt$outprefix, "nmf/signatures", 
+         filename <- sttkit:::.get_sub_path(opt$outprefix, 
+            file.path("nmf", "signatures", ks[i]),
             paste0("_nmf_", gse_method, suffix, ks[i], ".csv"))
          write.csv(x_df[[i]], file = filename, row.names = FALSE)
      }
