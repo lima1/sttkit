@@ -79,7 +79,10 @@ if (!opt$force && file.exists(filename_predictions)) {
 } else {
     flog.info("Reading --singlecell (%s)...",
         basename(opt$singlecell))
-    singlecell <- lapply(singlecell, readRDS)
+    singlecell <- lapply(singlecell, function(x) {
+        if(grepl(".rds$", tolower(x))) readRDS(x)
+        else if(grepl("h5ad$", tolower(x))) ReadH5AD(x)
+    })
 
     singlecell <- lapply(singlecell, function(x) {
         if ("SCT" %in% Assays(x)) return(x)
