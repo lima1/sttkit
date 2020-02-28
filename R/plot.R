@@ -385,7 +385,8 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
                 sd.plot <- SpatialDimPlot(obj_split, label = TRUE, image = 
                                           sttkit:::.get_image_slice(obj_split), label.size = 3, ...)
 
-                if (requireNamespace("ggthemes", quietly = TRUE)) {
+                if (requireNamespace("ggthemes", quietly = TRUE) &&
+                    length(levels(Idents(obj_split))) <= 8) {
                     sd.plot <- sd.plot + ggthemes::scale_fill_colorblind()
                 }    
                 filename <- .get_sub_path(prefix, file.path(subdir, "he", k),

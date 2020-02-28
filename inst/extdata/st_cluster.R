@@ -103,7 +103,8 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     pdf(filename, width = 4, height = 3.9)
     gp <- SpatialDimPlot(ndata, label = TRUE, image = sttkit:::.get_image_slice(ndata), 
         pt.size.factor = opt$dot_size, label.size = 3)
-    if (requireNamespace("ggthemes", quietly = TRUE)) {
+    if (requireNamespace("ggthemes", quietly = TRUE) &&
+        length(levels(Idents(ndata))) <= 8) {
         gp <- gp + ggthemes::scale_fill_colorblind()
     }
     print(gp)

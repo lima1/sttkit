@@ -100,7 +100,8 @@ plot_clusters <- function(obj, prefix) {
 
     pdf(filename, width = 10, height = 5)
     gp <- DimPlot(obj, reduction = "umap", split.by = field)
-    if (requireNamespace("ggthemes", quietly = TRUE)) {
+    if (requireNamespace("ggthemes", quietly = TRUE) &&
+        nrow(unique(obj[[field]])) <= 8) {
         gp <- gp + ggthemes::scale_colour_colorblind()
     }
     print(gp)
@@ -116,7 +117,8 @@ plot_clusters <- function(obj, prefix) {
         geom_bar(position="fill") + 
         scale_y_continuous(labels = scales::percent) + 
         ylab("Label")
-    if (requireNamespace("ggthemes", quietly = TRUE)) {
+    if (requireNamespace("ggthemes", quietly = TRUE) &&
+        nrow(unique(obj[[field]])) <= 8) {
         gp <- gp + ggthemes::scale_fill_colorblind()
     }
     print(gp)
@@ -126,7 +128,8 @@ plot_clusters <- function(obj, prefix) {
         geom_bar(position="fill") + 
         scale_y_continuous(labels = scales::percent) + 
         ylab("Label")
-    if (requireNamespace("ggthemes", quietly = TRUE)) {
+    if (requireNamespace("ggthemes", quietly = TRUE) && 
+        length(unique(dfx$Label)) <= 8) {
         gp <- gp + ggthemes::scale_fill_colorblind()
     }
     print(gp)
