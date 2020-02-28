@@ -50,7 +50,11 @@ plot_clusters <- function(obj, prefix) {
     } else {
         flog.info("UMAP idents...")
     }
-    print(DimPlot(obj, reduction = "umap", label = label))
+    gp <- DimPlot(obj, reduction = "umap", label = label)
+    if (requireNamespace("ggthemes", quietly = TRUE)) {
+        gp <- gp + ggthemes::scale_colour_colorblind()
+    }
+    print(gp)
     dev.off()
     flog.info("UMAP splitted...")
     if ("call" %in% colnames(obj@meta.data)) {
@@ -95,7 +99,12 @@ plot_clusters <- function(obj, prefix) {
     filename <- .get_sub_path(prefix, subdir, paste0("_", reference_technology, "_cluster_", field, ".pdf"))
 
     pdf(filename, width = 10, height = 5)
-    print(DimPlot(obj, reduction = "umap", split.by = field))
+    gp <- DimPlot(obj, reduction = "umap", split.by = field)
+    if (requireNamespace("ggthemes", quietly = TRUE)) {
+        gp <- gp + ggthemes::scale_colour_colorblind()
+    }
+    print(gp)
+    
     df <- melt(table(obj@meta.data[[field]], Idents(obj)))
     print(ggplot(df, aes_string("Var1", "value")) + geom_col() + 
         facet_wrap(~Var2) +
@@ -103,16 +112,24 @@ plot_clusters <- function(obj, prefix) {
         ylab("Counts") + xlab("")
     )
     dfx <- data.frame(Label=obj@meta.data[[field]], Cluster=Idents(obj))
-    print(ggplot(dfx, aes_string("Cluster", fill = "Label")) +
+    gp <- ggplot(dfx, aes_string("Cluster", fill = "Label")) +
         geom_bar(position="fill") + 
         scale_y_continuous(labels = scales::percent) + 
-        ylab("Label"))
+        ylab("Label")
+    if (requireNamespace("ggthemes", quietly = TRUE)) {
+        gp <- gp + ggthemes::scale_fill_colorblind()
+    }
+    print(gp)
     # collapse technical replicates
     dfx$Label <- gsub("_\\d+$","", dfx$Label)
-    print(ggplot(dfx, aes_string("Cluster", fill = "Label")) +
+    gp <- ggplot(dfx, aes_string("Cluster", fill = "Label")) +
         geom_bar(position="fill") + 
         scale_y_continuous(labels = scales::percent) + 
-        ylab("Label"))
+        ylab("Label")
+    if (requireNamespace("ggthemes", quietly = TRUE)) {
+        gp <- gp + ggthemes::scale_fill_colorblind()
+    }
+    print(gp)
     dev.off()
 }
 

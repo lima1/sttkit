@@ -101,15 +101,18 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     filename <- sttkit:::.get_sub_path(prefix, "snn/he", paste0("_he_cluster", num, ".pdf"))
     flog.info("Plotting clusters on H&E for %s...", ndata$library[1])
     pdf(filename, width = 4, height = 3.9)
-    print(SpatialDimPlot(ndata, label = TRUE, image = sttkit:::.get_image_slice(ndata), 
-        pt.size.factor = opt$dot_size, label.size = 3))
+    gp <- SpatialDimPlot(ndata, label = TRUE, image = sttkit:::.get_image_slice(ndata), 
+        pt.size.factor = opt$dot_size, label.size = 3)
+    if (requireNamespace("ggthemes", quietly = TRUE)) {
+        gp <- gp + ggthemes::scale_fill_colorblind()
+    }
+    print(gp)
     .plot_clustering_overlap(ndata)
     dev.off()
     if (opt$png) {
         filename <- sttkit:::.get_sub_path(prefix, "snn/he", paste0("_he_cluster", num, ".png"))
         png(filename, width = 4, height = 3.9, units = "in", res = 150)
-        print(SpatialDimPlot(ndata, label = TRUE, image = sttkit:::.get_image_slice(ndata),
-            pt.size.factor = opt$dot_size, label.size = 3))
+        print(gp)
         dev.off()
     }
 }
@@ -360,6 +363,7 @@ if (single_input) {
             }
             ret
         })))
+     tmp <- sttkit:::.get_sub_path(opt$outprefix, file.path("nmf", "signatures"),"")
      for (i in seq_along(x_df)){
          if (all(x_df[[i]]$Description %in% c("NULL", "", "NA", NA))) {
              x_df[[i]]$Description <- NULL
@@ -436,7 +440,7 @@ if (opt$nmf) {
                     png = opt$png, subdir = "nmf/signatures/advanced")
              }   
          }
-         plot_signatures_nmf(ndata, gmt, gmt_name = gsub(".gmt", "", basename(opt$gmt)),
+         plot_signatures_nmf(ndata, gmt, gmt_name = "",
             rank = ks,
             prefix = opt$outprefix,
             subdir = "nmf/signatures")

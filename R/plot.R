@@ -384,6 +384,10 @@ plot_nmf <- function(obj, libs, labels = NULL, rank, prefix,
 
                 sd.plot <- SpatialDimPlot(obj_split, label = TRUE, image = 
                                           sttkit:::.get_image_slice(obj_split), label.size = 3, ...)
+
+                if (requireNamespace("ggthemes", quietly = TRUE)) {
+                    sd.plot <- sd.plot + ggthemes::scale_fill_colorblind()
+                }    
                 filename <- .get_sub_path(prefix, file.path(subdir, "he", k),
                     paste0("_he_nmf_discrete_cluster_", k, label, libs_label, ".pdf"))
                 pdf(filename, width = 4, height = 3.9)
@@ -614,6 +618,8 @@ plot_gmt_availability <- function(objs, gmt, assay = "Spatial") {
             facet_wrap(~Signature) + 
             theme(axis.text.x = element_text(angle = 90, hjust = 1))
     } else{
+        x_df$Signature <- factor(x_df$Signature,
+            levels = unique(x_df$Signature[order(x_df$Available)]))
         gp <- ggplot(x_df, aes_string("Signature", "Available")) + 
             geom_bar(stat = "identity") + 
             theme(axis.text.x = element_text(angle = 90, hjust = 1))
@@ -744,13 +750,21 @@ plot_signatures_fake_bulk <- function(objs, gmt, assay = "Spatial", log_trans = 
         x <- data.frame(Id=unique(gg_data$Id), x)
         x_melt <- melt(x)
         x_melt$Id <- factor(x_melt$Id, levels=sort(levels(x_melt$Id)))
-        print(ggplot(x_melt,aes(Id, value))+
+        gp <- ggplot(x_melt,aes(Id, value))+
             geom_col()+
-            facet_wrap(~variable, scale="free_y")+
             xlab("")+
             ylab("Median counts per M") +
-            theme(axis.text.x = element_text(angle = 90, hjust = 1)))
-            
+            theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+        if (length(gmt) <= 16) {
+            print(gp + facet_wrap(~variable, scales = "free_y"))
+        } else {
+            flog.info("More than 16 signatures, paginate plot.")
+            n_pages <- ceiling(length(gmt) / 16)
+            for (i in seq_len(n_pages)) {
+                print(gp + ggforce::facet_wrap_paginate(~variable, scales = "free_y", ncol = 4, nrow = 4, page = i))
+            }
+        }
     }
     if (plot_heatmaps && requireNamespace("pheatmap", quietly = TRUE) && ncol(gg_data_casted)>=2) {
         if (is.null(gmt)) stop("plot_heatmaps requires gmt.")
@@ -813,8 +827,7 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
         gp <- ggplot(d_f[d_f$Rank == k,], 
             aes(as.character(variable), value)) + geom_boxplot() + 
             xlab("") +
-            ylab("NMF basis") +
-            ggtitle(sig)
+            ylab("NMF basis") 
         if (length(sigs) <= 16) {
             print(gp + facet_wrap(~Signature, scales = "free_y"))
         } else {
@@ -828,7 +841,7 @@ plot_signatures_nmf <- function(obj, gmt, gmt_name = NULL, rank, prefix,
         nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
         Idents(obj) <- predict(nmf_obj_f)
         filename <- .get_sub_path(prefix, file.path(subdir, k), paste0("_nmf_signature_heatmap_", k, gmt_name, ".pdf"))
-        pdf(filename, width = width, height = width * 0.5)
+        pdf(filename, width = width, height = width)
         field <- if ("label" %in% colnames(obj@meta.data)) "label" else "library"
         cells <- sapply(sort(unique(gsub("_\\d+$","", obj[[field]][,1]))), function(i) 
             Cells(obj)[grep(i, obj[[field]][,1], fixed = TRUE)])
