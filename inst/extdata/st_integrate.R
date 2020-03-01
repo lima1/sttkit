@@ -91,6 +91,7 @@ if (!opt$force && file.exists(filename_predictions)) {
     })
 
     singlecell <- lapply(singlecell, function(x) {
+        DefaultAssay(x) <- "SCT"
         if ("umap" %in% Reductions(x) &&
             "pca" %in% Reductions(x)) return(x)
         flog.info("Running PCA and UMAP on --singlecell...")

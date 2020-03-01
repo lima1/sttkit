@@ -8,11 +8,22 @@ plot_features(
   obj,
   features,
   cells = NULL,
-  undetected_NA = FALSE,
-  plot_correlations = TRUE,
-  plot_violin = TRUE,
-  plot_map = FALSE,
-  zero_offset = NULL,
+  labels = NULL,
+  labels_title = "",
+  palette = NULL,
+  palette_inverse = FALSE,
+  trans = NULL,
+  ggcode = NULL,
+  prefix,
+  suffix,
+  subdir = "",
+  width = 10,
+  height = NULL,
+  png = FALSE,
+  ncol = 4,
+  nrow = 4,
+  plot_correlations = FALSE,
+  plot_violin = FALSE,
   slot = "data",
   ...
 )
@@ -24,23 +35,48 @@ plot_features(
 
 \item{cells}{Plot only specified cells}
 
-\item{undetected_NA}{Remove spots with low value by setting them to \code{NA}}
+\item{labels}{transformation of the labels, e.g. \code{scales::percent}}
+
+\item{labels_title}{Title, shown in the legend}
+
+\item{palette}{Color palette. Can be two colors in format "low:high",
+brewer_single_hue_x (x = red, green, blue, orange, gray, purple) for
+single hue palettes from colorbrewer2.org}
+
+\item{palette_inverse}{Flip the low and high colors in \code{palette}}
+
+\item{trans}{Transform values, currently only log2 is implemented when this 
+parameter is set to a different value than \code{NULL}.}
+
+\item{ggcode}{Extra code added to \code{ggplot} call.}
+
+\item{prefix}{Output file prefix}
+
+\item{suffix}{Output file suffix}
+
+\item{subdir}{Put files in a subdirectory}
+
+\item{width}{Output PDF width}
+
+\item{height}{Output PDF height}
+
+\item{png}{Create, in addition to PDF, PNG files}
+
+\item{ncol}{Number of columns to plot genes for multi-page plots}
+
+\item{nrow}{Number of rows to plot genes for multi-page plots}
 
 \item{plot_correlations}{Plot pairwise correlations of feature scores}
 
 \item{plot_violin}{Plot distribution of feature scores across idents}
 
-\item{plot_map}{Plots features in \code{facet_wrap} for colorblind creatures.
-Requires that features are \code{factors}, like cluster labels.}
-
-\item{zero_offset}{If zero values were set to a low value, specify the offset here.}
-
 \item{slot}{Slot to pull feature data for}
 
-\item{...}{Arguments passed to \code{\link{plot_spots}}.}
+\item{...}{Arguments passed to \code{SpatialFeaturePlot}.}
 }
 \description{
-Plots features in a Seurat object on HE slides
+Plots features in a Seurat object on HE slides. Supports multi-page
+plot when lots of features are requested.
 }
 \examples{
 plot_features()

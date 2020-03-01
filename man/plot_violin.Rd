@@ -4,15 +4,7 @@
 \alias{plot_violin}
 \title{plot_violin}
 \usage{
-plot_violin(
-  obj,
-  features,
-  cells = NULL,
-  zero_offset = NULL,
-  pt_size = 0.25,
-  slot = "data",
-  ...
-)
+plot_violin(obj, features, cells = NULL, pt_size = 0.25, slot = "data", ...)
 }
 \arguments{
 \item{obj}{Seurat object}
@@ -20,8 +12,6 @@ plot_violin(
 \item{features}{\code{character(n)} of features to be plotted}
 
 \item{cells}{Plot only specified cells}
-
-\item{zero_offset}{If zero values were set to a low value, specify the offset here.}
 
 \item{pt_size}{Size of overlayed dots}
 

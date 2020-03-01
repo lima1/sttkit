@@ -47,8 +47,8 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
             min_features, spots_passing, ncol(raw_data))
     }
     if (sum(grepl("^mm|^hs", rownames(raw_data))) > nrow(raw_data)*0.9) { 
-        rownames(raw_data) <- gsub("^mm", "mm10", rownames(raw_data))
-        rownames(raw_data) <- gsub("^hs", "hg19", rownames(raw_data))
+        rownames(raw_data) <- gsub("^mm_|^mm-", "mm10-", rownames(raw_data))
+        rownames(raw_data) <- gsub("^hs_|^hs-", "hg19-", rownames(raw_data))
     }
     if (!is.null(required_features)) {
         required_features <- required_features[!make.names(required_features) %in% make.names(rownames(raw_data))]

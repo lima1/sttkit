@@ -12,9 +12,6 @@ plot_spatially_variable(
   number_features = 80,
   prefix,
   subdir = "spatial_variation",
-  width = 10,
-  ncol = 4,
-  nrow = 4,
   ...
 )
 }
@@ -31,15 +28,15 @@ plot_spatially_variable(
 
 \item{subdir}{Put files in a subdirectory}
 
+\item{...}{Arguments passed to \code{\link{plot_features}}}
+
+\item{obj}{Seurat object}
+
 \item{width}{Output PDF width}
 
 \item{ncol}{Number of columns to plot genes}
 
 \item{nrow}{Number of rows to plot genes}
-
-\item{...}{Arguments passed to \code{\link{plot_features}}}
-
-\item{obj}{Seurat object}
 }
 \description{
 Plots results of spatial differential expression analysis

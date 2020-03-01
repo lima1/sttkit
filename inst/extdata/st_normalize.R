@@ -59,34 +59,29 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 .plot_he_ptx <- function(ndata, prefix, assay = "Spatial") {
     flog.info("Plotting counts on H&E...")
     if (sum(grep("^hg19", rownames(ndata)))) {
-        filename <- paste0(prefix, "_he_ptx.pdf")
-        pdf(filename, width=8, height=3.9)
-        print( SpatialFeaturePlot(ndata, features = c("mm10", "hg19"), 
-            pt.size.factor = opt$dot_size) +
-            theme(legend.position = "right") + 
-            scale_color_continuous(labels = scales::percent))
-
+        features <- c("mm10", "hg19")
         if (paste0("nFeature_", assay, "_mm10") %in% colnames(ndata@meta.data)) {
-            print(SpatialFeaturePlot(ndata, 
-                    features = c(paste0("nFeature_", assay, "_mm10"), 
-                                 paste0("nFeature_", assay, "_hg19")),
-                    pt.size.factor = opt$dot_size) + 
-                    theme(legend.position = "right"))
-        }    
-        dev.off()
-    }     
-    filename <- paste0(prefix, "_he_counts.pdf")
-    pdf(filename, width = 4, height = 3.6)
-    print(SpatialFeaturePlot(ndata, features = paste0("nCount_", assay) ) + theme(legend.position = "right"))
-    print(SpatialFeaturePlot(ndata, features = paste0("nFeature_", assay) ) + theme(legend.position = "right"))
+            features <- c(features, 
+                          paste0("nFeature_", assay, "_mm10"), 
+                          paste0("nFeature_", assay, "_hg19"))
+        }
 
-    if ("percent.mito" %in% colnames(ndata@meta.data)) {
-        print(SpatialFeaturePlot(ndata, features = "percent.mito" ) + theme(legend.position = "right"))
-    }
-    if ("percent.ribo" %in% colnames(ndata@meta.data)) {
-        print(SpatialFeaturePlot(ndata, features = "percent.ribo" ) + theme(legend.position = "right"))
-    }
-    dev.off()
+        plot_features(ndata, features = features, 
+            pt.size.factor = opt$dot_size,
+            prefix = prefix, suffix = "_he_ptx.pdf",
+            ggcode = theme(legend.position = "right"),
+            labels = scales::percent, width = 8, height = 4)
+    }     
+    
+    features <- c(paste0("nCount_", assay),
+                  paste0("nFeature_", assay),
+                  "percent.mito",
+                  "percent.ribo")
+    plot_features(ndata, features = features, 
+        pt.size.factor = opt$dot_size,
+        prefix = prefix, suffix = "_he_counts.pdf",
+        ggcode = theme(legend.position = "right"),
+        labels = scales::percent, width = 8, height = 4)
 }
 .get_serialize_path <- function(prefix, suffix) {
     s_dir <- file.path(dirname(prefix), "serialize")

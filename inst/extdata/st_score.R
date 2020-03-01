@@ -98,21 +98,24 @@ if (!is.null(opt$labels)) {
         DefaultAssay(ndata_rna) <- names(ndata@assays)[1]
         features <- unique(unlist(gmt))
         features <- features[features %in% rownames(ndata_rna)]
-        ratio <- sttkit:::.get_image_ratio(length(features))
 
-        filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
-                        paste0("_feature_counts", name, num, ".pdf"))
-        flog.info("Plotting single feature counts to %s...", filename)
-        ndata_rna <- sttkit:::.plot_spatial_with_image(filename, ndata_rna, features, 10, ratio, 
-                      cells = cells, pt.size.factor = opt$dot_size, zero_offset = 0,
-                      png = opt$png, plot_correlations = TRUE)
+        flog.info("Plotting single feature counts...")
+        plot_features(filename, object = ndata_rna, 
+              features = features, 
+              prefix = prefix, 
+              suffix = paste0("_feature_counts", name, num, ".pdf"),
+              subdir = file.path("he", name_no_dash),
+              cells = cells, pt.size.factor = opt$dot_size, 
+              png = opt$png, plot_correlations = TRUE)
 
-        filename <- sttkit:::.get_sub_path(prefix, file.path("he", name_no_dash),
-                        paste0("_feature_scaled", name, num, ".pdf"))
-        flog.info("Plotting scaled single feature counts to %s...", filename)
-        ndata <- sttkit:::.plot_spatial_with_image(filename, ndata, features, 10, ratio, 
-                      cells = cells, pt.size.factor = opt$dot_size, zero_offset = 0,
-                      png = opt$png, plot_correlations = TRUE)
+        flog.info("Plotting scaled single feature counts...", filename)
+        plot_features(filename, object = ndata, 
+              features = features, 
+              prefix = prefix, 
+              suffix = paste0("_feature_scaled", name, num, ".pdf"),
+              subdir = file.path("he", name_no_dash),
+              cells = cells, pt.size.factor = opt$dot_size, 
+              png = opt$png, plot_correlations = TRUE)
     }    
     ndata
 }
@@ -155,7 +158,7 @@ if (single_input) {
     flog.info("Plotting signature/library associations...")
     filename <- sttkit:::.get_advanced_path(opt$outprefix, paste0("_signature_scores_library", name, ".pdf"))
     pdf(filename, width = 12, height= 12 * sttkit:::.get_image_ratio(length(sig_names)))
-    print(plot_violin(ndata_merged, features = sig_names, group.by = group.term, zero_offset = -1000, pt_size = 0))
+    print(plot_violin(ndata_merged, features = sig_names, group.by = group.term, pt_size = 0))
     print(DotPlot(ndata_merged, features = sig_names, group.by = group.term)+
         theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)))
     dev.off()
@@ -213,7 +216,7 @@ if (single_input) {
 flog.info("Plotting signature/cluster associations...")
 filename <- sttkit:::.get_advanced_path(opt$outprefix, paste0("_signature_scores_cluster", name, ".pdf"))
 pdf(filename, width = 12, height= 12 * sttkit:::.get_image_ratio(length(sig_names)))
-print(plot_violin(ndata_merged, features = sig_names, group.by = group.term, zero_offset = -1000, pt_size = 0))
+print(plot_violin(ndata_merged, features = sig_names, group.by = group.term, pt_size = 0))
 dev.off()
 
 filename <- sttkit:::.get_advanced_path(opt$outprefix, paste0("_score", name, ".csv"))
