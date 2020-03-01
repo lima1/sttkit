@@ -6,7 +6,7 @@
 \usage{
 find_markers(
   obj,
-  references,
+  references = NULL,
   resolution,
   max_markers = NULL,
   merged = FALSE,
@@ -14,6 +14,7 @@ find_markers(
   force = FALSE,
   serialize = TRUE,
   prefix,
+  label = NULL,
   verbose = TRUE,
   ...
 )

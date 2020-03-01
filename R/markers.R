@@ -12,6 +12,7 @@
 #' @param force Recalculate, even when serialized objects are available
 #' @param serialize Serialize output objects
 #' @param prefix Prefix of output files
+#; @param label Label of \code{obj}
 #' @param verbose Verbose Seurat output
 #' @param ... Additional parameters passed to \code{Seurat::FindMarkers}
 #' @export find_markers
@@ -19,9 +20,17 @@
 #' find_markers()
 #' @import ggplot2
 #' @importFrom utils head
-find_markers <- function(obj, references, resolution, max_markers = NULL, merged = FALSE, write = TRUE, force = FALSE,
-    serialize = TRUE, prefix, verbose = TRUE, ...) {
+find_markers <- function(obj, references = NULL, resolution, max_markers = NULL, merged = FALSE, write = TRUE, force = FALSE,
+    serialize = TRUE, prefix, label = NULL, verbose = TRUE, ...) {
     merged <- ifelse(merged, "merged_", "")
+    label <- if (is.null(label)) "" else paste0(label, "_")
+
+    if (!"reference" %in% colnames(obj@meta.data)) {
+        obj$reference <- TRUE
+    }    
+    if (!"technology" %in% colnames(obj@meta.data)) {
+        obj$technology <- "single_cell"
+    }    
     reference_technology <- obj$technology[obj$reference][1]
     if (serialize || !force) { 
         filename <- .get_serialize_path(prefix, paste0("_", reference_technology, 
@@ -48,7 +57,11 @@ find_markers <- function(obj, references, resolution, max_markers = NULL, merged
     }
          
     n_before <- nrow(all_markers)
-    all_markers <- .filter_markers_maxref(references, all_markers)
+    if (is.null(references)) {
+        all_markers <- .filter_markers_maxref(list(obj), all_markers)
+    } else {    
+        all_markers <- .filter_markers_maxref(references, all_markers)
+    }    
     if (nrow(all_markers) < n_before) {
         flog.info("Removing %i markers with low counts in references.", n_before - nrow(all_markers))
     } 
@@ -73,11 +86,14 @@ find_markers <- function(obj, references, resolution, max_markers = NULL, merged
         saveRDS(obj_sc_sig, filename)
     }    
     if (write) {
-        filename <- paste0(prefix, "_singlecell_cluster_signature_", merged, resolution, ".csv")
+        filename <- sttkit:::.get_sub_path(prefix, "markers",
+            paste0(prefix, "_singlecell_cluster_signature_", merged, resolution, ".csv"))
         write.csv(all_markers, filename, row.names = FALSE)
-        filename <- paste0(prefix, "_singlecell_cluster_signature_unfiltered_", merged, resolution, ".csv")
+        filename <- sttkit:::.get_sub_path(prefix, "markers",
+            paste0(prefix, "_singlecell_cluster_signature_unfiltered_", merged, resolution, ".csv"))
         write.csv(all_markers_unfiltered, filename, row.names = FALSE)
-        filename <- paste0(prefix, "_singlecell_cluster_signature_", merged, resolution, ".pdf")
+        filename <- sttkit:::.get_sub_path(prefix, "markers",
+            paste0(prefix, "_singlecell_cluster_signature_", merged, resolution, ".pdf"))
         flog.info("Plotting signature heatmap to %s...", filename)
         pdf(filename, width = 10, height = 5)
         p <- DoHeatmap(obj, features = rownames(obj_sc_sig), label = FALSE) + 

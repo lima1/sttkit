@@ -5,7 +5,7 @@
 \title{plot_nmf}
 \usage{
 plot_nmf(
-  obj,
+  object,
   libs,
   labels = NULL,
   rank,
@@ -21,10 +21,10 @@ plot_nmf(
 )
 }
 \arguments{
-\item{obj}{Seurat object that contains a \code{NMF} object after
+\item{object}{Seurat object that contains a \code{NMF} object after
 running \code{\link{cluster_nmf}}}
 
-\item{libs}{Library ids, must be stored in \code{obj$library}}
+\item{libs}{Library ids, must be stored in \code{object$library}}
 
 \item{labels}{Optional \code{character(n)} with sample labels}
 

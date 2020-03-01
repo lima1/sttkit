@@ -5,7 +5,7 @@
 \title{plot_nmf_gse}
 \usage{
 plot_nmf_gse(
-  obj,
+  object,
   sig,
   binwidth = 0.025,
   rank,
@@ -17,10 +17,10 @@ plot_nmf_gse(
 )
 }
 \arguments{
-\item{obj}{Results of \code{\link{calculate_nmf_gse}}}
+\item{object}{Results of \code{\link{calculate_nmf_gse}}}
 
 \item{sig}{The name of the signature to plot. Must match a row name
-in \code{obj}.}
+in \code{object}.}
 
 \item{binwidth}{P-value histogram binwidth}
 

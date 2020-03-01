@@ -5,7 +5,7 @@
 \title{plot_signatures_nmf}
 \usage{
 plot_signatures_nmf(
-  obj,
+  object,
   gmt,
   gmt_name = NULL,
   rank,
@@ -15,7 +15,7 @@ plot_signatures_nmf(
 )
 }
 \arguments{
-\item{obj}{Seurat object that contains a \code{NMF} object after
+\item{object}{Seurat object that contains a \code{NMF} object after
 running \code{\link{cluster_nmf}}}
 
 \item{gmt}{GMT file with gene signatures or gene signature read by

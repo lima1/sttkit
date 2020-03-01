@@ -30,7 +30,7 @@ plot_spatially_variable(
 
 \item{...}{Arguments passed to \code{\link{plot_features}}}
 
-\item{obj}{Seurat object}
+\item{object}{Seurat object}
 
 \item{width}{Output PDF width}
 

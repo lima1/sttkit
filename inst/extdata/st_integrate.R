@@ -18,6 +18,12 @@ option_list <- list(
         help="Outfile."),
     make_option(c("--num_integration_features"), action="store", type = "integer", default = 3000, 
         help="Integration: Use that many features [default %default]"),
+    make_option(c("--resolution"), action = "store", type = "double", 
+        default = 0.8, 
+        help="Resolution values for clustering [default %default]"),
+    make_option(c("--skip_markers"), action = "store_true", 
+        default = FALSE, 
+        help="Skipping finding markers for --singlecell clusters."),
     make_option(c("--simulation"), action = "store_true", 
         default = FALSE, 
         help="Subcluster the reference cells, specified by the call attribute [default %default]"),
@@ -25,6 +31,8 @@ option_list <- list(
         help="Size of dots on H&E [default %default]"),
     make_option(c("--png"), action = "store_true", default = FALSE, 
         help="Generate PNG version of output plots."),
+    make_option(c("--serialize"), action = "store_true", default = FALSE, 
+        help="Serialize processed --singlecell object. Can be large."),
     make_option(c("--verbose"), action = "store_true", default = FALSE, 
         help="Verbose output"),
     make_option(c("-f", "--force"), action = "store_true", default = FALSE, 
@@ -77,28 +85,42 @@ if (!opt$force && file.exists(filename_predictions)) {
     flog.warn("%s exists. Skipping finding transfer predictions. Use --force to overwrite.", filename_predictions)
     prediction.assay <- readRDS(filename_predictions)
 } else {
-    flog.info("Reading --singlecell (%s)...",
-        basename(opt$singlecell))
-    singlecell <- lapply(singlecell, function(x) {
-        if(grepl(".rds$", tolower(x))) readRDS(x)
-        else if(grepl("h5ad$", tolower(x))) ReadH5AD(x)
-    })
+    filename_singlecell <- sttkit:::.get_serialize_path(opt$outprefix, "_singlecell.rds")
+    if (!opt$force && file.exists(filename_singlecell)) {
+        flog.warn("%s exists. Skipping normalization and clustering. Use --force to overwrite.",
+            filename_singlecell)
+        singlecell <- readRDS(filename_singlecell)
+    } else {
+        flog.info("Reading --singlecell (%s)...",
+            basename(opt$singlecell))
+        singlecell <- lapply(singlecell, function(x) {
+            if(grepl(".rds$", tolower(x))) readRDS(x)
+            else if(grepl("h5ad$", tolower(x))) ReadH5AD(x)
+        })
 
-    singlecell <- lapply(singlecell, function(x) {
-        if ("SCT" %in% Assays(x)) return(x)
-        flog.info("Running sctransform --singlecell...")
-        SCTransform(x, ncells = opt$num_integration_features, verbose = FALSE)
-    })
+        singlecell <- lapply(singlecell, function(x) {
+            if ("SCT" %in% Assays(x)) return(x)
+            flog.info("Running sctransform --singlecell...")
+            SCTransform(x, ncells = opt$num_integration_features, verbose = FALSE)
+        })
 
-    singlecell <- lapply(singlecell, function(x) {
-        DefaultAssay(x) <- "SCT"
-        if ("umap" %in% Reductions(x) &&
-            "pca" %in% Reductions(x)) return(x)
-        flog.info("Running PCA and UMAP on --singlecell...")
-        RunPCA(x, verbose = TRUE) %>% RunUMAP(dims = 1:30)
-    })
-    singlecell <- lapply(singlecell, FindNeighbors, verbose = FALSE)
+        singlecell <- lapply(singlecell, function(x) {
+            DefaultAssay(x) <- "SCT"
+            if ("umap" %in% Reductions(x) &&
+                "pca" %in% Reductions(x)) return(x)
+            flog.info("Running PCA and UMAP on --singlecell...")
+            RunPCA(x, verbose = TRUE) %>% RunUMAP(dims = 1:30)
+        })
+        flog.info("Clustering --singlecell...")
+        singlecell <- lapply(singlecell, FindNeighbors, verbose = FALSE)
+        singlecell <- lapply(singlecell, FindClusters,
+            resolution = opt$resolution, verbose = FALSE)
 
+        if (opt$serialize) {
+            flog.info("Writing R data structure to %s...", filename_singlecell)
+            sttkit:::.serialize(singlecell, opt$outprefix, "_singlecell.rds")
+        }
+    }
     flog.info("Calculating transfer anchors...")
     anchors <- lapply(singlecell, function(x)
         FindTransferAnchors(reference = x, query = infile,
@@ -109,8 +131,17 @@ if (!opt$force && file.exists(filename_predictions)) {
             prediction.assay = TRUE, weight.reduction = infile[["pca"]]))
     flog.info("Writing R data structure to %s...", filename_predictions)
     saveRDS(prediction.assay, filename_predictions)
-}
 
+    if (!opt$skip_markers) {
+        flog.info("Finding single cell cluster markers...")
+        invisible(lapply(seq_along(singlecell), function(i) {
+            Idents(singlecell[[i]]) <- singlecell[[i]][[opt$refdata]][,1]
+            find_markers(singlecell[[i]], label = labels[[i]], prefix = opt$outprefix,
+                resolution = opt$resolution, force = opt$force)
+        }))
+    }
+}
+ 
 .plot_he <- function(x, i) {
     x$predictions <- prediction.assay[[i]]
     DefaultAssay(x) <- "predictions"

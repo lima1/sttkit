@@ -4,10 +4,10 @@
 \alias{plot_violin}
 \title{plot_violin}
 \usage{
-plot_violin(obj, features, cells = NULL, pt_size = 0.25, slot = "data", ...)
+plot_violin(object, features, cells = NULL, pt_size = 0.25, slot = "data", ...)
 }
 \arguments{
-\item{obj}{Seurat object}
+\item{object}{Seurat object}
 
 \item{features}{\code{character(n)} of features to be plotted}
 

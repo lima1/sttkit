@@ -5,7 +5,7 @@
 \title{plot_features}
 \usage{
 plot_features(
-  obj,
+  object,
   features,
   cells = NULL,
   labels = NULL,
@@ -29,7 +29,7 @@ plot_features(
 )
 }
 \arguments{
-\item{obj}{Seurat object}
+\item{object}{Seurat object}
 
 \item{features}{\code{character(n)} of features to be plotted}
 
