@@ -668,8 +668,9 @@ plot_signatures_nmf <- function(object, gmt, gmt_name = NULL, rank, prefix,
     for (k in rank) {
         filename <- .get_sub_path(prefix, file.path(subdir, k), paste0("_nmf_signature_", k, gmt_name, ".pdf"))
         pdf(filename, width = width, height = width * ratio)
+        d_f$variable <- as.character(d_f$variable)
         gp <- ggplot(d_f[d_f$Rank == k,], 
-            aes(as.character(variable), value)) + geom_boxplot() + 
+            aes(variable, value)) + geom_boxplot() + 
             xlab("") +
             ylab("NMF basis") 
         if (length(sigs) <= 16) {
@@ -779,8 +780,7 @@ plot_signatures_nmf <- function(object, gmt, gmt_name = NULL, rank, prefix,
 
         if(png) {
             png(gsub(".pdf$", ".png", filename), width = width, height = width * ratio, units = "in", res = 150)
-            print(SpatialFeaturePlot(object_resized, image = .get_image_slice(object_resized),
-                features = features, combine = TRUE, ...))
+            print(wrap_plots(glist))
             dev.off()
         }
     }

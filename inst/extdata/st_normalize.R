@@ -33,6 +33,8 @@ option_list <- list(
     make_option(c("--gmt"), action = "store", type = "character", 
         default = NULL, 
         help="GMT file including genes of interest"),
+    make_option(c("--png"), action = "store_true", default = FALSE, 
+        help="Generate PNG version of output plots."),
     make_option(c("-f", "--force"), action = "store_true", default = FALSE, 
         help="Overwrite existing files")
 )
@@ -70,6 +72,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
             pt.size.factor = opt$dot_size,
             prefix = prefix, suffix = "_he_ptx.pdf",
             ggcode = theme(legend.position = "right"),
+            png = opt$png,
             labels = scales::percent, width = 8, height = 4)
     }     
     
@@ -81,6 +84,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
         pt.size.factor = opt$dot_size,
         prefix = prefix, suffix = "_he_counts.pdf",
         ggcode = theme(legend.position = "right"),
+        png = opt$png,
         labels = scales::percent, width = 8, height = 4)
 }
 .get_serialize_path <- function(prefix, suffix) {
@@ -144,13 +148,14 @@ if (!opt$force && file.exists(filename)) {
 m <- .write_tsv(ndata, opt$outprefix)
 
 .plot_he_scran_cluster <- function(ndata, prefix) {
-    filename <- paste0(prefix, "_he_scran_cluster.pdf")
     flog.info("Plotting clusters on H&E...")
-    pdf(filename, width = 4, height = 3.9)
     plot_features(ndata, features = "scran.cluster",  
         labels = waiver(), labels_title = "", 
-        reorder_clusters = FALSE, size = opt$dot_size)
-    dev.off()
+        prefix = prefix,
+        suffix = "_he_scran_cluster.pdf",
+        png = opt$png,
+        width = 4,
+        pt.size.factor = opt$dot_size)
 }
 
 if (opt$normalization_method == "scran") {
