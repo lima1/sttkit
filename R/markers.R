@@ -41,7 +41,9 @@ find_markers <- function(obj, references = NULL, resolution, max_markers = NULL,
         return(readRDS(filename))
     }
     flog.info("Finding all markers of integrated and clustered scRNA data...")
-    all_markers_unfiltered <- FindAllMarkers(obj, only.pos = TRUE, verbose = verbose, ...)
+    all_markers_unfiltered <- sttkit:::.find_all_markers(obj, prefix = prefix,
+        suffix = paste0("_", reference_technology, "_", merged, resolution, "_markers.rds"),
+        only.pos = TRUE, verbose = verbose, ...)
     all_markers <- all_markers_unfiltered
 
     n_before <- nrow(all_markers)
@@ -66,12 +68,6 @@ find_markers <- function(obj, references = NULL, resolution, max_markers = NULL,
         flog.info("Removing %i markers with low counts in references.", n_before - nrow(all_markers))
     } 
     
-    n_before <- nrow(all_markers)
-    all_markers <- .filter_markers_cellmix(obj, all_markers)
-    if (nrow(all_markers) < n_before) {
-        flog.info("Removing %i markers that are present in other cell types.", n_before - nrow(all_markers))
-    }
-
     obj_sc_average <- AverageExpression(obj, verbose = verbose)
     all_markers <- all_markers[rownames(all_markers) 
         %in% rownames(obj_sc_average[[1]]),]
@@ -87,13 +83,13 @@ find_markers <- function(obj, references = NULL, resolution, max_markers = NULL,
     }    
     if (write) {
         filename <- sttkit:::.get_sub_path(prefix, "markers",
-            paste0(prefix, "_singlecell_cluster_signature_", merged, resolution, ".csv"))
+            paste0("_single_cell_cluster_signature_", merged, resolution, ".csv"))
         write.csv(all_markers, filename, row.names = FALSE)
         filename <- sttkit:::.get_sub_path(prefix, "markers",
-            paste0(prefix, "_singlecell_cluster_signature_unfiltered_", merged, resolution, ".csv"))
+            paste0("_single_cell_cluster_signature_unfiltered_", merged, resolution, ".csv"))
         write.csv(all_markers_unfiltered, filename, row.names = FALSE)
         filename <- sttkit:::.get_sub_path(prefix, "markers",
-            paste0(prefix, "_singlecell_cluster_signature_", merged, resolution, ".pdf"))
+            paste0("_single_cell_cluster_signature_", merged, resolution, ".pdf"))
         flog.info("Plotting signature heatmap to %s...", filename)
         pdf(filename, width = 10, height = 5)
         p <- DoHeatmap(obj, features = rownames(obj_sc_sig), label = FALSE) + 
@@ -139,3 +135,17 @@ find_markers <- function(obj, references = NULL, resolution, max_markers = NULL,
     do.call(rbind, lapply(markers, function(x) 
         head(x[order(!x$em3, !x$em2, x$p_val),], max_markers)))
 }        
+
+.find_all_markers <- function(obj, prefix, suffix, ...) {
+    filename_markers <- .get_serialize_path(opt$outprefix, suffix)
+    if (!opt$force && file.exists(filename_markers)) {
+        flog.warn("%s exists. Skipping differential expression analysis. Use --force to overwrite.", filename_markers)
+        markers <- readRDS(filename_markers)
+    } else {
+        markers <- FindAllMarkers(obj, ...)
+        flog.info("Writing R data structure to %s...", filename_markers)
+        sttkit:::.serialize(markers, opt$outprefix, suffix)
+    }
+    return(markers)
+}
+

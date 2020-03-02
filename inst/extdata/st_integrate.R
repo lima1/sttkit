@@ -21,9 +21,9 @@ option_list <- list(
     make_option(c("--resolution"), action = "store", type = "double", 
         default = 0.8, 
         help="Resolution values for clustering [default %default]"),
-    make_option(c("--skip_markers"), action = "store_true", 
+    make_option(c("--markers"), action = "store_true", 
         default = FALSE, 
-        help="Skipping finding markers for --singlecell clusters."),
+        help="Find markers for --singlecell clusters."),
     make_option(c("--simulation"), action = "store_true", 
         default = FALSE, 
         help="Subcluster the reference cells, specified by the call attribute [default %default]"),
@@ -132,12 +132,17 @@ if (!opt$force && file.exists(filename_predictions)) {
     flog.info("Writing R data structure to %s...", filename_predictions)
     saveRDS(prediction.assay, filename_predictions)
 
-    if (!opt$skip_markers) {
+    if (opt$markers) {
         flog.info("Finding single cell cluster markers...")
         invisible(lapply(seq_along(singlecell), function(i) {
             Idents(singlecell[[i]]) <- singlecell[[i]][[opt$refdata]][,1]
-            find_markers(singlecell[[i]], label = labels[[i]], prefix = opt$outprefix,
-                resolution = opt$resolution, force = opt$force)
+            features <- VariableFeatures(singlecell[[i]])
+            find_markers(singlecell[[i]][features, ],
+                label = labels[[i]], prefix = opt$outprefix,
+                resolution = opt$resolution, force = opt$force,
+                min.pct = 0.5,  min.diff.pct = 0.25,
+                logfc.threshold = 0.5, test.use = "roc"
+                )
         }))
     }
 }
