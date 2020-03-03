@@ -2,6 +2,7 @@ suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(futile.logger))
 suppressPackageStartupMessages(library(reshape2))
 suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(digest))
 
 ### Parsing command line ------------------------------------------------------
 
@@ -78,7 +79,14 @@ flog.info("Reading --infile (%s)...",
     basename(opt$infile))
 infile <- readRDS(opt$infile)
 
-filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix, "_transfer_predictions.rds")
+filename_predictions_old <- sttkit:::.get_serialize_path(opt$outprefix, "_transfer_predictions.rds")
+
+filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix, paste0("_", digest(labels), "_transfer_predictions.rds"))
+#TODO remove
+if (file.exists(filename_predictions_old)) {
+    file.copy(filename_predictions_old, filename_predictions)
+    file.remove(filename_predictions_old)
+}    
 if (!opt$force && file.exists(filename_predictions)) {
     flog.warn("%s exists. Skipping finding transfer predictions. Use --force to overwrite.", filename_predictions)
     prediction.assay <- readRDS(filename_predictions)
@@ -91,10 +99,10 @@ if (!opt$force && file.exists(filename_predictions)) {
     } else {
         flog.info("Reading --singlecell (%s)...",
             basename(opt$singlecell))
-        singlecell <- lapply(singlecell, function(x) {
+        singlecell <- unlist(lapply(singlecell, function(x) {
             if(grepl(".rds$", tolower(x))) readRDS(x)
             else if(grepl("h5ad$", tolower(x))) ReadH5AD(x)
-        })
+        }))
 
         singlecell <- lapply(singlecell, function(x) {
             if ("SCT" %in% Assays(x)) return(x)

@@ -196,7 +196,7 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
         object <- .extract_nmf_r2(object, rank, k)
         object <- .extract_nmf_rss(object, rank, k)
         nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
-        Idents(object) <- predict(nmf_obj_f)
+        object <- set_idents_nmf(object, k, rank)
 
         tmp <- .get_sub_path(prefix, file.path(subdir, "umap"), "") # make sure that umap directory exists
         if ("label" %in% colnames(object@meta.data)) {
@@ -252,7 +252,7 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
             plot_correlation_heatmap(lapply(libs, function(i) object[, object$library == i]), features)
             dev.off()
             
-            .plot_correlation_labels(object, cluster_labels = predict(nmf_obj_f), 
+            .plot_correlation_labels(object, cluster_labels = Idents(object), 
                 prefix = prefix, file.path(subdir, "advanced", k), 
                 suffix = paste0("_nmf_cluster_", k, "_label_correlations.pdf")) 
         }
@@ -683,8 +683,7 @@ plot_signatures_nmf <- function(object, gmt, gmt_name = NULL, rank, prefix,
             }
         }
         dev.off()
-        nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
-        Idents(object) <- predict(nmf_obj_f)
+        object <- set_idents_nmf(object, k, rank)
         filename <- .get_sub_path(prefix, file.path(subdir, k), paste0("_nmf_signature_heatmap_", k, gmt_name, ".pdf"))
         pdf(filename, width = width, height = width)
         field <- if ("label" %in% colnames(object@meta.data)) "label" else "library"

@@ -429,3 +429,27 @@ init_nmf_seed <- function(obj, b) {
     m <- as.matrix(m) - min(m)
 
 }
+
+#' set_idents_nmf 
+#'
+#' Sets \code{Idents} to a discrete NMF clustering
+#' @param object Object, clustered by \code{\link{cluster_nmf}}.
+#' @param k Features of rank to be written (must be a single k, not a range)
+#' @param rank Number of clusters (the one used in \code{\link{cluster_nmf}})
+#' If \code{NULL}, use first available.
+#' @return object with new \code{Idents}
+#' @export set_idents_nmf
+#' @examples
+#' set_idents_nmf
+set_idents_nmf <- function(object, k, rank = NULL) {
+    if (is.null(rank)) {
+        available_misc <- names(object@misc)
+        available_misc <- available_misc[grep("^nmf", available_misc)]
+        available_misc <- available_misc[!grepl("_random", available_misc)]
+        rank <- as.numeric(names(object@misc[[available_misc]]$fit))
+    }    
+    nmf_obj <- .extract_nmf_obj(object, rank)
+    nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
+    Idents(object) <- predict(nmf_obj_f)
+    return(object)
+}    

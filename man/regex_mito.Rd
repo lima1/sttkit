@@ -4,12 +4,14 @@
 \alias{regex_mito}
 \title{regex_mito}
 \usage{
-regex_mito(hg = "hg19.", mm = "mm10.")
+regex_mito(hg = "hg19.", mm = "mm10.", rn = "rn6.")
 }
 \arguments{
 \item{hg}{Gene symbol prefix for human genes in hybrid references}
 
 \item{mm}{Gene symbol prefix for mouse genes in hybrid references}
+
+\item{rn}{Gene symbol prefix for rat genes in hybrid references}
 }
 \description{
 Regular expression to robustly find mitochondria genes
