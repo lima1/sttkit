@@ -41,9 +41,7 @@ option_list <- list(
 
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
-
 opt <- parse_args(OptionParser(option_list=option_list))
-
 
 if (is.null(opt$infile)) {
     stop("Need --infile")
@@ -106,15 +104,15 @@ if (!opt$force && file.exists(filename_predictions)) {
 
         singlecell <- lapply(singlecell, function(x) {
             DefaultAssay(x) <- "SCT"
-            if ("umap" %in% Reductions(x) &&
-                "pca" %in% Reductions(x)) return(x)
+            if ("umap" %in% Reductions(x) && "pca" %in% Reductions(x))
+                if( DefaultAssay(x[["pca"]]) == "SCT" && DefaultAssay(x[["umap"]]) == "SCT")
+                    return(x)
             flog.info("Running PCA and UMAP on --singlecell...")
             RunPCA(x, verbose = TRUE) %>% RunUMAP(dims = 1:30)
         })
         flog.info("Clustering --singlecell...")
         singlecell <- lapply(singlecell, FindNeighbors, verbose = FALSE)
-        singlecell <- lapply(singlecell, FindClusters,
-            resolution = opt$resolution, verbose = FALSE)
+        singlecell <- lapply(singlecell, FindClusters, resolution = opt$resolution, verbose = FALSE)
 
         if (opt$serialize) {
             flog.info("Writing R data structure to %s...", filename_singlecell)
