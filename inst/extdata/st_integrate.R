@@ -102,21 +102,22 @@ if (!opt$force && file.exists(filename_predictions)) {
     } else {
         flog.info("Reading --singlecell (%s)...",
             basename(opt$singlecell))
+
         singlecell <- unlist(lapply(singlecell, function(x) {
             if(grepl(".rds$", tolower(x))) readRDS(x)
             else if(grepl("h5ad$", tolower(x))) ReadH5AD(x)
         }))
-        if (!is.null(names(singlecell))) {
-            flog.info("--singlecell contains labels, ignoring --labels_singlecell.")
-            labels <- names(singlecell)
-        }
         if (!is.null(opt$condition)) {
             singlecell <- lapply(singlecell, SplitObject, opt$condition)
-            labels <- lapply(seq_along(labels), function(i) 
+            labels_new <- lapply(seq_along(labels), function(i) 
                 paste0(labels[[i]], "_", names(singlecell[[i]])))
             singlecell <- unlist(singlecell)
-            labels <- unlist(labels)
+            labels <- unlist(labels_new)
         }
+        if (!is.null(names(singlecell))) {
+            flog.warn("--singlecell already contains labels.")
+            labels <- names(singlecell)
+        } 
 
         singlecell <- lapply(singlecell, function(x) {
             if ("SCT" %in% Assays(x)) return(x)
