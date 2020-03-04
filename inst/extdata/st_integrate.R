@@ -15,6 +15,8 @@ option_list <- list(
         help="Optional list of labels --singlecell"),
     make_option(c("--refdata"), action = "store", type = "character", default = "type",
         help="Meta data column with prediction labels in --singlecell"),
+    make_option(c("--condition"), action = "store", type = "character", default = NULL,
+        help="Optional meta data column with conditions in --singlecell. If provided, will split by condition."),
     make_option(c("--outprefix"), action = "store", type = "character", default = NULL,
         help="Outfile."),
     make_option(c("--num_integration_features"), action="store", type = "integer", default = 3000, 
@@ -96,6 +98,7 @@ if (!opt$force && file.exists(filename_predictions)) {
         flog.warn("%s exists. Skipping normalization and clustering. Use --force to overwrite.",
             filename_singlecell)
         singlecell <- readRDS(filename_singlecell)
+        labels <- names(singlecell)
     } else {
         flog.info("Reading --singlecell (%s)...",
             basename(opt$singlecell))
@@ -103,6 +106,17 @@ if (!opt$force && file.exists(filename_predictions)) {
             if(grepl(".rds$", tolower(x))) readRDS(x)
             else if(grepl("h5ad$", tolower(x))) ReadH5AD(x)
         }))
+        if (!is.null(names(singlecell))) {
+            flog.info("--singlecell contains labels, ignoring --labels_singlecell.")
+            labels <- names(singlecell)
+        }
+        if (!is.null(opt$condition)) {
+            singlecell <- lapply(singlecell, SplitObject, opt$condition)
+            labels <- lapply(seq_along(labels), function(i) 
+                paste0(labels[[i]], "_", names(singlecell[[i]])))
+            singlecell <- unlist(singlecell)
+            labels <- unlist(labels)
+        }
 
         singlecell <- lapply(singlecell, function(x) {
             if ("SCT" %in% Assays(x)) return(x)
@@ -121,9 +135,9 @@ if (!opt$force && file.exists(filename_predictions)) {
         flog.info("Clustering --singlecell...")
         singlecell <- lapply(singlecell, FindNeighbors, verbose = FALSE)
         singlecell <- lapply(singlecell, FindClusters, resolution = opt$resolution, verbose = FALSE)
-
         if (opt$serialize) {
             flog.info("Writing R data structure to %s...", filename_singlecell)
+            names(singlecell) <- labels
             sttkit:::.serialize(singlecell, opt$outprefix, "_singlecell.rds")
         }
     }
