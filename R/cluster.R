@@ -101,7 +101,7 @@ plot_clusters <- function(obj, prefix) {
     pdf(filename, width = 10, height = 5)
     gp <- DimPlot(obj, reduction = "umap", split.by = field)
     if (requireNamespace("ggthemes", quietly = TRUE) &&
-        nrow(unique(obj[[field]])) <= 8) {
+        length(levels(Idents(obj))) <= 8) {
         gp <- gp + ggthemes::scale_colour_colorblind()
     }
     print(gp)
@@ -113,26 +113,32 @@ plot_clusters <- function(obj, prefix) {
         ylab("Counts") + xlab("")
     )
     dfx <- data.frame(Label=obj@meta.data[[field]], Cluster=Idents(obj))
-    gp <- ggplot(dfx, aes_string("Cluster", fill = "Label")) +
-        geom_bar(position="fill") + 
-        scale_y_continuous(labels = scales::percent) + 
-        ylab("Label")
-    if (requireNamespace("ggthemes", quietly = TRUE) &&
-        nrow(unique(obj[[field]])) <= 8) {
-        gp <- gp + ggthemes::scale_fill_colorblind()
+    num_labels <- length(unique(dfx$Label))
+    if (num_labels > 1) {
+        gp <- ggplot(dfx, aes_string("Cluster", fill = "Label")) +
+            geom_bar(position="fill") + 
+            scale_y_continuous(labels = scales::percent) + 
+            ylab("Label")
+        if (requireNamespace("ggthemes", quietly = TRUE) &&
+            nrow(unique(obj[[field]])) <= 8) {
+            gp <- gp + ggthemes::scale_fill_colorblind()
+        }
+        print(gp)
     }
-    print(gp)
     # collapse technical replicates
     dfx$Label <- gsub("_\\d+$","", dfx$Label)
-    gp <- ggplot(dfx, aes_string("Cluster", fill = "Label")) +
-        geom_bar(position="fill") + 
-        scale_y_continuous(labels = scales::percent) + 
-        ylab("Label")
-    if (requireNamespace("ggthemes", quietly = TRUE) && 
-        length(unique(dfx$Label)) <= 8) {
-        gp <- gp + ggthemes::scale_fill_colorblind()
+    num_labels_2 <- length(unique(dfx$Label))
+    if (num_labels_2 < num_labels && num_labels_2 > 1) {
+        gp <- ggplot(dfx, aes_string("Cluster", fill = "Label")) +
+            geom_bar(position="fill") + 
+            scale_y_continuous(labels = scales::percent) + 
+            ylab("Label")
+        if (requireNamespace("ggthemes", quietly = TRUE) && 
+            length(unique(dfx$Label)) <= 8) {
+            gp <- gp + ggthemes::scale_fill_colorblind()
+        }
+        print(gp)
     }
-    print(gp)
     dev.off()
 }
 

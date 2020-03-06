@@ -142,6 +142,17 @@ find_markers <- function(obj, references = NULL, resolution, max_markers = NULL,
         flog.warn("%s exists. Skipping differential expression analysis. Use --force to overwrite.", filename_markers)
         markers <- readRDS(filename_markers)
     } else {
+        wrong_assays <- c("SCT", "integrated")
+        preferred_assays <- c("Spatial", "RNA") 
+        if (DefaultAssay(obj) %in% wrong_assays) {
+            for (assay in Assays(obj)) {
+                if (assay %in% preferred_assays) {
+                    DefaultAssay(obj) <- assay
+                    flog.info("Setting default assay to %s for FindMarkers...", assay)
+                    break
+                }
+            }
+        }
         markers <- FindAllMarkers(obj, ...)
         flog.info("Writing R data structure to %s...", filename_markers)
         sttkit:::.serialize(markers, opt$outprefix, suffix)

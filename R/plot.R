@@ -357,8 +357,8 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
         filename <- .get_sub_path(prefix, subdir, suffix)
         pdf(filename, height = 8, width = 7)
         par(mfrow = c(1, 2))
-        corrplot::corrplot(contrib, is.cor = FALSE)
-        corrplot::corrplot(chisq$residuals, is.cor = FALSE)
+        corrplot::corrplot(contrib, is.cor = FALSE, col = "black", cl.pos="n")
+        corrplot::corrplot(chisq$residuals, is.cor = FALSE, col = Seurat:::FeaturePalettes$Spatial)
         dev.off()
     }
 }
