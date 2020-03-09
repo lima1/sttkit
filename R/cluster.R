@@ -296,6 +296,7 @@ cluster_nmf <- function(obj, rank, randomize = FALSE, variable_features = TRUE,
 #' in case \code{method} returns less.
 #' @param method Parameter of \code{NMF::extractFeatures}
 #' @param prefix Prefix of output files
+#' @returns \code{data.frame} with features.
 #' @export write_nmf_features
 #' @examples
 #' write_nmf_features
@@ -317,6 +318,7 @@ write_nmf_features <- function(obj, rank, k, min_features = 20, method = "kim", 
     write.csv(NMF::basis(nmf_obj_f), file = filename)
     filename <- .get_sub_path(prefix, file.path("nmf", "advanced", k), paste0("_nmf_cluster_", k, "_all_coef.csv"))
     write.csv(t(NMF::coef(nmf_obj_f)), file = filename)
+    return(features_all)
 }
 
 #' export_nmf_loupe

@@ -287,6 +287,42 @@ cluster_reference <- function(integrated, resolution = 0.8, sub = FALSE,
     obj_ref
 }    
 
+
+#' find_nearest_neighbors
+#'
+#' Shows the correlation of spots across multiple samples,
+#' after integration
+#' @param object Seurat object containing integrated 
+#' spatial data
+#' @param split.by Split \code{object} by this feature.
+#' @export find_nearest_neighbors
+#' @examples
+#' find_nearest_neighbors()
+find_nearest_neighbors <- function(object, split.by = "library") {
+    x <- SplitObject(object, split.by = split.by)
+    if (length(x) < 2) {
+        flog.info("Cannot find multiple samples in this object.")
+        return(object)
+    }    
+    idx_ref <- which.max(sapply(x, ncol))
+    m_ref <- Matrix::as.matrix(GetAssayData(x[[idx_ref]]))
+    pos <- x[[idx_ref]]@images[[.get_image_slice(x[[idx_ref]])]]@coordinates[,c("row", "col")]
+    x[[idx_ref]]$nn <- rank(apply(pos^2, 1, sum))
+    for (i in seq_along(x)[-idx_ref]) {
+        m <- Matrix::as.matrix(GetAssayData(x[[i]]))
+        nn <- apply(m,2,function(x) which.max(cor(x, m_ref)))
+        x[[i]]$nn <- x[[idx_ref]]$nn[nn]
+    }
+
+    md <- do.call(c, c(lapply(x, function(y) y$nn), list(use.names=FALSE)))
+    names(md) <- Cells(object)
+
+    AddMetaData(object,
+        metadata = md,
+        col.name = "int.nearest.neighbor"
+    )
+}
+
 .get_ident_label <- function(i, obj_ref) {
     md <- obj_ref@meta.data[which(Idents(obj_ref) == i),]
     label <- names(sort(table(md$predicted.id[ md$prediction.score.max>0.9]),decreasing=TRUE)[1])

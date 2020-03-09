@@ -49,8 +49,8 @@ option_list <- list(
         help="Integration: Merge samples with fewer detected spots [default %default]"),
     make_option(c("--nmf"), action = "store_true", default = FALSE, 
         help="Do additional NMF clustering"),
-    make_option(c("--nmf_ranks"), action = "store", type = "character", default = "4:9",
-        help="List of ranks (clusters) to test with --nmf"),
+    make_option(c("--nmf_ranks"), action = "store", type = "character", default = NULL,
+        help="List of ranks (clusters) to test with --nmf. Default will check from min(6, #idents) to 12."),
     make_option(c("--nmf_nruns"), action = "store", type = "integer", default = 5,
         help="Number of runs with --nmf"),
     make_option(c("--nmf_max_features"), action = "store", type = "integer", default = NULL,
@@ -63,6 +63,8 @@ option_list <- list(
         help="Method(s) to find top spatially variable features [default %default]."),
     make_option(c("--spatially_variable_nfeatures"), action = "store", type = "integer", default = 80,
         help="Plot the specified number of top spatially variable features"),
+    make_option(c("--nearest_neighbors"), action = "store_true", default = FALSE, 
+        help="For multi-sample analyses, visualizes the similarity of slides."),
     make_option(c("--mpi"), action = "store_true", default = FALSE, 
         help="Use doMPI package for parallel NMF."),
     make_option(c("--png"), action = "store_true", default = FALSE, 
@@ -109,12 +111,12 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     }
     print(gp)
     .plot_clustering_overlap(ndata)
-    dev.off()
+    invisible(dev.off())
     if (opt$png) {
         filename <- sttkit:::.get_sub_path(prefix, "snn/he", paste0("_he_cluster", num, ".png"))
         png(filename, width = 4, height = 3.9, units = "in", res = 150)
         print(gp)
-        dev.off()
+        invisible(dev.off())
     }
 }
 
@@ -151,7 +153,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 	      geom_boxplot()+
 	      xlab("Cluster Id")+
 	      facet_wrap(~variable, scales="free_y"))
-	dev.off()
+    invisible(dev.off())
 }
 .order_features <- function(obj, features) {
     m <- GetAssayData(obj, "scale.data")
@@ -173,12 +175,12 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     if (!single_input) {
         print(DoHeatmap(ndata, features = genes, group.by = "library"))
     }
-    dev.off()
+    invisible(dev.off())
     flog.info("Plotting PCA heatmap...")
     filename <- sttkit:::.get_sub_path(prefix, "pca", "_pca_heatmap.pdf") 
     pdf(filename, height = 6, width = 8)
     print(DimHeatmap(ndata, dims=1:6, reduction="pca"))
-    dev.off()
+    invisible(dev.off())
     filename <- sttkit:::.get_sub_path(prefix, "snn/advanced", "_cluster_markers.csv") 
     write.csv(markers, file = filename, row.names = FALSE)
 }
@@ -222,7 +224,7 @@ if (grepl("list$",opt$infile)) {
     filename <- sttkit:::.get_sub_path(prefix, "signatures", "_signatures_availability.pdf") 
     pdf(filename, height = 10, width = 10)
     print(gp)
-    dev.off()
+    invisible(dev.off())
     # if GMT is provided, add requested genes if present in at least one sample    
     flog.info("Adding additional features provided in --gmt.")
     all_features <- Reduce(intersect, lapply(reference_list, rownames))
@@ -317,18 +319,34 @@ if (single_input) {
         pdf(filename, width = 10, height = 10 * sttkit:::.get_image_ratio(length(gmt)))
         plot_signatures_fake_bulk(reference_list, plot_pairs = FALSE, 
             plot_bar = TRUE, plot_heatmaps = FALSE, log_trans = FALSE, gmt = gmt)
-        dev.off()
+        invisible(dev.off())
         filename <- sttkit:::.get_sub_path(opt$outprefix, "signatures", "_signatures_normalized_counts_heatmaps.pdf") 
         pdf(filename, width = 10, height = 10)
         plot_signatures_fake_bulk(reference_list, plot_pairs = FALSE, 
             plot_bar = FALSE, plot_heatmaps = TRUE, log_trans = TRUE, gmt = gmt)
-        dev.off()
+        invisible(dev.off())
         gp <- plot_gmt_availability(list(ndata), gmt)
         filename <- sttkit:::.get_sub_path(opt$outprefix, "signatures", "_signatures_availability_after_integration.pdf") 
         pdf(filename, height = 10, width = 10)
         print(gp)
-        dev.off()
+        invisible(dev.off())
     }
+    if (!is.null(opt$nearest_neighbors)) {
+        flog.info("Finding nearest neighbors. This will probably take a while...")
+       ndata <- find_nearest_neighbors(ndata)
+       gp <-SpatialFeaturePlot(ndata, features = "int.nearest.neighbor",
+            combine = FALSE)
+       filename <- sttkit:::.get_sub_path(opt$outprefix, "advanced", suffix = paste0("_he_nearest_neighbors.pdf")) 
+       ratio <- sttkit:::.get_image_ratio(length(libs))
+       pdf(filename, height = 10 * ratio, width = 10)
+       print(patchwork::wrap_plots(gp))
+       invisible(dev.off())
+       if (opt$png) {
+           png(gsub(".pdf$", ".png", filename), width = 10, height = 10 * ratio, units = "in", res = 150)
+           print(patchwork::wrap_plots(gp))
+           invisible(dev.off())
+       }    
+    }    
 }
 
 .write_gse_results <- function(gse, gse_method, gse_perm_n, ks, 
@@ -373,7 +391,11 @@ if (opt$nmf) {
 
     suppressPackageStartupMessages(library(NMF))
     filename <- .get_serialize_path(opt$outprefix, "_nmf.rds")
-    ks <- sort(as.numeric(strsplit(opt$nmf_ranks, ":")[[1]]))
+    if (is.null(opt$nmf_ranks)) {
+        ks <- seq(min(6, length(levels(Idents(ndata)))), 12)
+    } else {    
+        ks <- sort(as.numeric(strsplit(opt$nmf_ranks, ":")[[1]]))
+    }    
     if (length(ks) > 1) ks <- seq(ks[1], ks[2])
 
     .run_nmf <- function(randomize = FALSE) {

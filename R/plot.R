@@ -199,6 +199,7 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
         object <- set_idents_nmf(object, k, rank)
 
         tmp <- .get_sub_path(prefix, file.path(subdir, "umap"), "") # make sure that umap directory exists
+        tmp <- .get_sub_path(prefix, file.path(subdir, "heatmap"), "") # make sure that umap directory exists
         if ("label" %in% colnames(object@meta.data)) {
             .plot_cluster_library(object, field = "label", prefix = prefix, 
                 subdir = file.path(subdir, "umap", k),
@@ -211,6 +212,8 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
 
         #object <- .rescale_features(object, features)
         ratio <- .get_image_ratio(k)
+        features_nmf <- write_nmf_features(object, rank = rank, k = k, prefix = prefix)
+        features_nmf <- unique(features_nmf$Gene[features_nmf$Gene %in% rownames(object)])
         if (plot_he) {
             flog.info("Generating output plots for k = %i...", k)
             tmp <- .get_sub_path(prefix, file.path(subdir, "he"), "") # make sure that HE directory exists
@@ -236,11 +239,22 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
                     paste0("_he_nmf_discrete_cluster_", k, label, libs_label, ".pdf"))
                 pdf(filename, width = 4, height = 3.9)
                 print(sd.plot)
-                dev.off()
+                invisible(dev.off())
                 if(png) {
                     png(sub(".pdf$", ".png", filename), width = 4, height = 3.9, units = "in", res = 150)
                     print(sd.plot)
-                    dev.off()
+                    invisible(dev.off())
+                }
+                filename <- .get_sub_path(prefix, file.path(subdir, "heatmap", k),
+                    paste0("_heatmap_nmf_discrete_cluster_", k, label, libs_label, ".pdf"))
+                pdf(filename)
+                gp <- DoHeatmap(obj_split, features = features_nmf)
+                print(gp)
+                invisible(dev.off())
+                if(png) {
+                    png(sub(".pdf$", ".png", filename), width = 7, height = 7, units = "in", res = 150)
+                    print(gp)
+                    invisible(dev.off())
                 }
             }
         }
@@ -256,7 +270,6 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
                 prefix = prefix, file.path(subdir, "advanced", k), 
                 suffix = paste0("_nmf_cluster_", k, "_label_correlations.pdf")) 
         }
-        write_nmf_features(object, rank = rank, k = k, prefix = prefix)
         if (plot_qc) {
             x <- object@meta.data
             xm <- melt(x[,grep("library|nmf|nFeature", colnames(x))], id.vars=c("library", paste0("nFeature_", assay)))

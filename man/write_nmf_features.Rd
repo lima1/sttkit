@@ -20,6 +20,9 @@ in case \code{method} returns less.}
 
 \item{prefix}{Prefix of output files}
 }
+\value{
+\code{data.frame} with features.
+}
 \description{
 Output metagenes to a CSV file
 }
