@@ -143,7 +143,7 @@ if (!opt$force && file.exists(filename)) {
                          prefix = opt$outprefix)
 }
 
-.plot_he_ptx(ndata, opt$outprefix, assay = names(ndata@assays)[1])
+.plot_he_ptx(ndata, opt$outprefix, assay = Assays(ndata)[1])
 
 m <- .write_tsv(ndata, opt$outprefix)
 

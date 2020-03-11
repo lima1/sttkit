@@ -172,14 +172,25 @@ if (!opt$force && file.exists(filename_predictions)) {
     x$predictions <- prediction.assay[[i]]
     DefaultAssay(x) <- "predictions"
     features <- names(Matrix::rowSums(GetAssayData(x)) > 0)
-    ratio <- sttkit:::.get_image_ratio(length(features))
     label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
     flog.info("Generating output plots for %s ...", label)
-    filename <- sttkit:::.get_sub_path(opt$outprefix, "he", 
-        paste0("_he_labels", label, ".pdf"))
-    sttkit:::.plot_spatial_with_image(filename, x, features, width = 10,
-        ratio = ratio, png = opt$png, pt.size.factor = opt$dot_size)
+
+    plot_features(object = x, features = features,
+        prefix = opt$outprefix, subdir = "he",
+        suffix = paste0("_he_labels", label, ".pdf"),
+        png = opt$png, pt.size.factor = opt$dot_size)
 }
 for (i in seq_along(singlecell)) {
     .plot_he(infile, i)
+}
+
+if (length(prediction.assay) > 1) {
+    common_labels <- Reduce(intersect, lapply(prediction.assay, function(x) rownames(GetAssayData(x))))
+    if (length(common_labels)) {
+        m <- Reduce("+", lapply(prediction.assay, function(x) GetAssayData(x)[common_labels,]))/length(prediction.assay)
+        common_assay <- CreateAssayObject(data = m)
+        prediction.assay <- c(prediction.assay, common_assay)
+        labels <- c(labels, "consensus")
+        .plot_he(infile, length(singlecell) + 1)
+    }
 }

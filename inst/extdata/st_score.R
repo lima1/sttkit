@@ -105,7 +105,8 @@ if (!is.null(opt$labels)) {
               prefix = prefix, 
               suffix = paste0("_feature_counts", name, num, ".pdf"),
               subdir = file.path("he", name_no_dash),
-              cells = cells, pt.size.factor = opt$dot_size, 
+              cells = cells, pt.size.factor = opt$dot_size,
+              image.alpha = 0,
               png = opt$png, plot_correlations = TRUE)
 
         flog.info("Plotting scaled single feature counts...", filename)
@@ -115,6 +116,7 @@ if (!is.null(opt$labels)) {
               suffix = paste0("_feature_scaled", name, num, ".pdf"),
               subdir = file.path("he", name_no_dash),
               cells = cells, pt.size.factor = opt$dot_size, 
+              image.alpha = 0,
               png = opt$png, plot_correlations = TRUE)
     }    
     ndata

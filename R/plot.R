@@ -762,7 +762,7 @@ plot_signatures_nmf <- function(object, gmt, gmt_name = NULL, rank, prefix,
     object_resized <- .resize_slice_images(object)
     if (is.null(cells)) cells <- colnames(object_resized)
 
-    glist <- SpatialFeaturePlot(object_resized, image = .get_image_slice(object_resized), 
+    glist <- SpatialPlot(object_resized, images = .get_image_slice(object_resized), 
         features = features, combine = FALSE, ...)
     glist <- lapply(glist, .format_gp)
     if (length(features) > ncol * nrow) {
