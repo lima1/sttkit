@@ -96,7 +96,7 @@ if (!is.null(opt$labels)) {
     if (opt$single_features) {
         ndata_rna <- ndata
         DefaultAssay(ndata_rna) <- names(ndata@assays)[1]
-        features <- unique(unlist(gmt))
+        features <- sort(unique(unlist(gmt)))
         features <- features[features %in% rownames(ndata_rna)]
 
         flog.info("Plotting single feature counts...")

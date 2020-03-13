@@ -204,6 +204,14 @@ if (grepl("list$",opt$infile)) {
             reference_list[[i]]$label <- labels[i]
             reference_list[[i]]})
     }    
+    libs <- sapply(reference_list, function(x) x$library[1])
+    if (any(duplicated(libs))) {
+        flog.warn("Found duplicated library ids, appending indices to ids.")
+        reference_list <- lapply(seq_along(reference_list), function(i) {
+            reference_list[[i]]$library <- paste(reference_list[[i]]$library, i, sep = "_")
+            reference_list[[i]]
+        })
+    }
     if (!is.null(opt$gmt)) {
         ndata_merged <- Reduce(merge, reference_list)
         gmt <- read_signatures(opt$gmt, ndata_merged)
