@@ -222,7 +222,7 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
                 label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
                 libs_label <- if (length(libs) < 2) "" else paste0("_",libs[i])
                 obj_split <- object[,object$library == libs[i]]
-                obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
+                #obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
 
                 filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, libs_label, ".pdf"))
                 .plot_spatial_with_image(filename, obj_split, features, width, ratio, 
@@ -351,7 +351,7 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
         filename <- .get_sub_path(prefix, subdir,
             paste0("_he_nmf_cluster_", feature_suffix, "_", libs[i], ".pdf"))
         obj_split <- object[,object$library == libs[i]]
-        obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
+        #obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
         .plot_spatial_with_image (filename, obj_split, features, width, ratio, plot_violin = TRUE, png = png, ...)
     #        labels = waiver(), labels_title = sprintf("%12s", labels_title), ...)
     }
