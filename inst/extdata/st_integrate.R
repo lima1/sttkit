@@ -174,11 +174,25 @@ if (!opt$force && file.exists(filename_predictions)) {
     features <- names(Matrix::rowSums(GetAssayData(x)) > 0)
     label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
     flog.info("Generating output plots for %s ...", label)
-
-    plot_features(object = x, features = features,
-        prefix = opt$outprefix, subdir = "he",
-        suffix = paste0("_he_labels", label, ".pdf"),
-        png = opt$png, pt.size.factor = opt$dot_size)
+    if (length(Images(x)) > 1 && "library" %in% colnames(x@meta.data)) {
+        x_split <- SplitObject(x, split.by = "library")
+        libs <- sapply(x_split, function(y) y$library[1])
+        libs_label <- rep("", length(libs)) 
+        if ("label" %in% colnames(x@meta.data)) {
+            libs_label <- paste0("_", sapply(x_split, function(y) y$label[1]))
+        }
+        for (j in seq_along(libs)) {
+            plot_features(object = x_split[[j]], features = features,
+                prefix = opt$outprefix, subdir = "he",
+                suffix = paste0("_he_labels", label, "_", libs[j], libs_label[j],".pdf"),
+                png = opt$png, pt.size.factor = opt$dot_size)
+        }
+    } else {    
+        plot_features(object = x, features = features,
+            prefix = opt$outprefix, subdir = "he",
+            suffix = paste0("_he_labels", label, ".pdf"),
+            png = opt$png, pt.size.factor = opt$dot_size)
+    }
 }
 for (i in seq_along(singlecell)) {
     .plot_he(infile, i)
