@@ -178,8 +178,10 @@ if (!opt$force && file.exists(filename_predictions)) {
         x_split <- SplitObject(x, split.by = "library")
         libs <- sapply(x_split, function(y) y$library[1])
         libs_label <- rep("", length(libs)) 
+        field <- "library"
         if ("label" %in% colnames(x@meta.data)) {
             libs_label <- paste0("_", sapply(x_split, function(y) y$label[1]))
+            field <- "label"
         }
         for (j in seq_along(libs)) {
             plot_features(object = x_split[[j]], features = features,
@@ -187,6 +189,18 @@ if (!opt$force && file.exists(filename_predictions)) {
                 suffix = paste0("_he_labels", label, "_", libs[j], libs_label[j],".pdf"),
                 png = opt$png, pt.size.factor = opt$dot_size)
         }
+        filename <- sttkit:::.get_sub_path(opt$outprefix, "advanced", 
+                suffix = paste0("_labels", label, "_", libs[j], libs_label[j],".pdf"))
+        ratio <- sttkit:::.get_image_ratio(min(6,length(features)))
+        glist <- VlnPlot(x, features = features, group.by = field, combine = FALSE)
+        glist <- lapply(glist, function(p) ggplotGrob( p + theme(legend.position = "none") ))
+        if (length(features) > 6) {
+            glist <- gridExtra::marrangeGrob(glist, ncol = 3, nrow = 2)
+        } else {
+            glist <- wrap_plots(glist)
+        }    
+        ggsave(filename, glist,
+               width = 10, height = 10 * ratio)
     } else {    
         plot_features(object = x, features = features,
             prefix = opt$outprefix, subdir = "he",
