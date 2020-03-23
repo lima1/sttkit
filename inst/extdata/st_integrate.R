@@ -171,6 +171,7 @@ if (!opt$force && file.exists(filename_predictions)) {
 .plot_he <- function(x, i) {
     x$predictions <- prediction.assay[[i]]
     DefaultAssay(x) <- "predictions"
+    Idents(x) <- GetTransferPredictions(x)
     features <- names(Matrix::rowSums(GetAssayData(x)) > 0)
     label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
     flog.info("Generating output plots for %s ...", label)
@@ -188,16 +189,30 @@ if (!opt$force && file.exists(filename_predictions)) {
                 prefix = opt$outprefix, subdir = "he",
                 suffix = paste0("_he_labels", label, "_", libs[j], libs_label[j],".pdf"),
                 png = opt$png, pt.size.factor = opt$dot_size)
+            filename <- sttkit:::.get_sub_path(opt$outprefix, "he", 
+                    suffix = paste0("_he_labels_call", label, "_", libs[j], libs_label[j],".pdf"))
+            gp <- SpatialDimPlot(x_split[[j]], label = TRUE, 
+                image = sttkit:::.get_image_slice(x_split[[j]]), 
+                pt.size.factor = opt$dot_size, label.size = 3)
+            pdf(filename, width = 4, height = 3.9)
+            print(gp)
+            invisible(dev.off())
+            if (opt$png) {
+                png(gsub("pdf$", "png", filename), width = 4,
+                    height = 3.9, units = "in", res = 150)
+                print(gp)
+                invisible(dev.off())
+            }
         }
         filename <- sttkit:::.get_sub_path(opt$outprefix, "advanced", 
                 suffix = paste0("_labels", label, "_", libs[j], libs_label[j],".pdf"))
         ratio <- sttkit:::.get_image_ratio(min(6,length(features)))
-        glist <- VlnPlot(x, features = features, group.by = field, combine = FALSE)
+        glist <- VlnPlot(x, features = features, group.by = field, pt.size = 0.25, combine = FALSE)
         glist <- lapply(glist, function(p) ggplotGrob( p + theme(legend.position = "none") ))
         if (length(features) > 6) {
             glist <- gridExtra::marrangeGrob(glist, ncol = 3, nrow = 2)
         } else {
-            glist <- wrap_plots(glist)
+            glist <- patchwork::wrap_plots(glist)
         }    
         ggsave(filename, glist,
                width = 10, height = 10 * ratio)
