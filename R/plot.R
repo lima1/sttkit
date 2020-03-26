@@ -700,9 +700,11 @@ plot_signatures_nmf <- function(object, gmt, gmt_name = NULL, rank, prefix,
         filename <- .get_sub_path(prefix, file.path(subdir, k), paste0("_nmf_signature_heatmap_", k, gmt_name, ".pdf"))
         pdf(filename, width = width, height = width)
         field <- if ("label" %in% colnames(object@meta.data)) "label" else "library"
-        cells <- sapply(sort(unique(gsub("_\\d+$","", object[[field]][,1]))), function(i) 
+        # collapse replicates in heatmap
+        field_prefix <- sort(unique(gsub("_\\d+$","", object[[field]][,1])))
+        cells <- lapply(field_prefix, function(i) 
             Cells(object)[grep(i, object[[field]][,1], fixed = TRUE)])
-
+        names(cells) <- field_prefix
 
         for (i in seq_along(sigs)) {
             gp <- lapply(seq_along(cells), function(j) DoHeatmap(object, features = sigs[[i]], cells = cells[[j]]) + 
