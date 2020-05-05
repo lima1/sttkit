@@ -111,7 +111,7 @@ if (!is.null(opt$gtf)) {
     list(normalized = log(2^bulk_norm), counts = bulk_counts)
 }
 
-.plot_spots_bulk <- function(obj, bulk_norm) {
+.plot_spots_bulk <- function(obj, bulk_norm, prefix, suffix) {
     ncounts <- as.matrix(GetAssayData(obj))
     # make sure we don't miss genes because of make.names
     names(ncounts) <- make.names(names(ncounts))
@@ -119,14 +119,14 @@ if (!is.null(opt$gtf)) {
     isc <- intersect(rownames(ncounts), 
                      rownames(bulk_norm))
     cor_bulk <- cor(ncounts[isc,], bulk_norm[isc,1])
-    obj <- AddMetaData(obj, cor_bulk, "Correlation Bulk")
-    plot_features(obj, features = "Correlation Bulk",  
-        size = opt$dot_size, labels = waiver(), labels_title = "R")
+    obj <- AddMetaData(obj, cor_bulk, "Correlation.Bulk")
+    plot_features(obj, features = "Correlation.Bulk",  
+        pt.size.factor = opt$dot_size, labels = waiver(), labels_title = "R", prefix = prefix, suffix = suffix)
     obj
 }
 
 .plot_venn_bulk <- function(obj, bulk_counts, prefix_csv) {
-    counts <- as.matrix(GetAssayData(obj, slot.name = "counts"))
+    counts <- as.matrix(GetAssayData(obj, slot = "counts"))
     # make sure we don't miss genes because of make.names
     names(counts) <- make.names(names(counts))
     rownames(bulk_counts) <- make.names(rownames(bulk_counts))
@@ -165,7 +165,7 @@ if (!is.null(opt$gtf)) {
 
     gg_data <- do.call(rbind, lapply(seq_along(objs), function(i) {
         obj <- objs[[i]]
-        counts <- Matrix::rowSums(GetAssayData(obj, slot.name = "counts"))
+        counts <- Matrix::rowSums(GetAssayData(obj, slot = "counts"))
         # make sure we don't miss genes because of make.names
         names(counts) <- make.names(names(counts))
         rownames(bulk_norm) <- make.names(rownames(bulk_norm))
@@ -211,10 +211,8 @@ if (!is.null(opt$gmt)) {
 }
 
 .plot_benchmark <- function(ndata, j, num1, num2) {
-    filename <- paste0(opt$outprefix, "_he_benchmark", num1, num2, ".pdf")
-    pdf(filename, width = 4, height = 3.6)
-    .plot_spots_bulk(ndata, bdata[[j]]$normalized)
-    dev.off()
+    suffix <- paste0("_he_benchmark", num1, num2, ".pdf")
+    .plot_spots_bulk(ndata, bdata[[j]]$normalized, prefix = opt$outprefix, suffix = suffix)
     filename <- paste0(opt$outprefix, "_benchmark", num1, num2, ".pdf")
     pdf(filename, width = 4, height = 3.6)
     print(.plot_fake_bulk(list(ndata), bdata[[j]]$normalized, hide_r2 = opt$hide_r2))
