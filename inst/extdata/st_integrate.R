@@ -9,6 +9,8 @@ suppressPackageStartupMessages(library(digest))
 option_list <- list(
     make_option(c("--infile"), action = "store", type = "character", default = NULL,
         help="Infile Seurat RDS of st_normalize. Should be unscaled unless normalization is sctransform"),
+    make_option(c("--infile_raw"), action = "store", type = "character", default = NULL,
+        help="Infile Seurat RDS of st_normalize. Expects the not normalized RDS file containing raw counts."),
     make_option(c("--singlecell"), action = "store", type = "character", default = NULL,
         help="Path to a RDS file containing a (list of) Seurat single cell object(s) for spot deconvolution."),
     make_option(c("--labels_singlecell"), action = "store", type = "character", default = NULL,
@@ -24,6 +26,9 @@ option_list <- list(
     make_option(c("--resolution"), action = "store", type = "double", 
         default = 0.8, 
         help="Resolution values for clustering [default %default]"),
+    make_option(c("--nmf_ident"), action = "store", type = "integer", 
+        default = NULL, 
+        help="Set Idents(infile) to NMF of specified rank [default %default]"),
     make_option(c("--markers"), action = "store_true", 
         default = FALSE, 
         help="Find markers for --singlecell clusters."),
@@ -32,6 +37,10 @@ option_list <- list(
         help="Subcluster the reference cells, specified by the call attribute [default %default]"),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.6,
         help="Size of dots on H&E [default %default]"),
+    make_option(c("--infer_cna"), action = "store_true", default = FALSE, 
+        help="Try to infer copy number alterations to label tumor clusters."),
+    make_option(c("--cna_cutoff"), action = "store", type = "double", default = 1,
+        help="Default infercnv cutoff, requires --infer_cna [default %default]"),
     make_option(c("--png"), action = "store_true", default = FALSE, 
         help="Generate PNG version of output plots."),
     make_option(c("--serialize"), action = "store_true", default = FALSE, 
@@ -46,7 +55,7 @@ cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2",
 
 opt <- parse_args(OptionParser(option_list=option_list))
 
-if (is.null(opt$infile)) {
+if (is.null(opt[["infile"]])) {
     stop("Need --infile")
 }
 if (is.null(opt$outprefix)) {
@@ -78,8 +87,13 @@ if (!is.null(opt$labels_singlecell)) {
 }    
 
 flog.info("Reading --infile (%s)...",
-    basename(opt$infile))
-infile <- readRDS(opt$infile)
+    basename(opt[["infile"]]))
+infile <- readRDS(opt[["infile"]])
+
+if (!is.null(opt$nmf_ident)) {
+    library(NMF)
+    infile <- set_idents_nmf(infile, k = opt$nmf_ident)
+}
 
 filename_predictions_old <- sttkit:::.get_serialize_path(opt$outprefix, "_transfer_predictions.rds")
 
@@ -167,7 +181,65 @@ if (!opt$force && file.exists(filename_predictions)) {
         }))
     }
 }
- 
+
+.run_infer <- function(seurat_obj, seurat_raw_obj = seurat_obj, ref_group_names=NULL, out_dir = tempfile(), feature="ident", HMM=FALSE, cutoff=0.4) {
+    if (!file.exists(out_dir)) {
+        out_dir <- gsub(" ", "_", out_dir)
+        dir.create(out_dir)
+    }
+
+    count_matrix <- GetAssayData(seurat_raw_obj, slot= "counts")[, colnames(seurat_obj)]
+    annotations <- FetchData(seurat_obj, feature)
+    types <- unique(annotations[,1])
+    if (is.null(ref_group_names)) {
+        ref_group_names <- types[!types %in% c("Tumor", "?", "Unassigned")]
+    }
+    if (is.na(ref_group_names)) ref_group_names <- NULL
+    message("Refgroups: ", paste(ref_group_names, collapse=","))
+    infercnv_obj <- CreateInfercnvObject(
+        raw_counts_matrix = count_matrix,
+        gene_order_file=genes,
+        annotations_file = annotations,
+        ref_group_names = ref_group_names
+    )
+
+    infercnv_obj <- infercnv::run(infercnv_obj,
+                                   cutoff=cutoff,
+                                   out_dir=out_dir,
+                                   cluster_by_groups=TRUE,
+                                   denoise=TRUE,
+                                   HMM=HMM,
+                                   num_threads=2,
+                                   )
+    saveRDS(infercnv_obj, file = file.path(out_dir, "infercnv_obj.rds"))
+    infercnv_obj
+}
+
+.infer_cna <- function(x, tumor_ps = c("Unassigned", "Tumor", "?")) {
+     p <- lapply(prediction.assay, function(pa) {
+        x$predictions <- pa
+        GetTransferPredictions(x)
+     })
+     p <- do.call(cbind,p)
+     tumor_fraction <- apply(p,1, function(x) sum(x %in% tumor_ps)/length(x))
+     tumor_fraction_mean <- sapply(split(tumor_fraction, Idents(x)), mean)
+     tumor_fraction_o <- apply(p,1, function(x) sum(x %in% "Tumor")/length(x))
+     tumor_fraction_o_mean <- sapply(split(tumor_fraction_o, Idents(x)), mean)
+     ref_group_names <- names(tumor_fraction_mean[tumor_fraction_mean < median(tumor_fraction_mean)])
+     if (max(tumor_fraction_o_mean)>0) {
+        obs_group_names <- names(tumor_fraction_o_mean[tumor_fraction_o_mean > median(tumor_fraction_o_mean)])
+        ref_group_names <- ref_group_names[!ref_group_names %in% obs_group_names]
+    }
+    if (!is.null(opt[["infile_raw"]])) {
+        flog.info("Reading --infile_raw (%s)...",
+            basename(opt[["infile_raw"]]))
+        seurat_raw_obj <- readRDS(opt[["infile_raw"]])
+    } else {
+        seurat_raw_obj <- x
+    }        
+    .run_infer(x, seurat_raw_obj = seurat_raw_obj, ref_group_names = ref_group_names, out_dir =  file.path(dirname(opt$outprefix), "infer_cna"), cutoff = opt$cna_cutoff)
+}
+
 .plot_he <- function(x, i) {
     x$predictions <- prediction.assay[[i]]
     DefaultAssay(x) <- "predictions"
@@ -227,6 +299,13 @@ for (i in seq_along(singlecell)) {
     .plot_he(infile, i)
 }
 
+if (opt$infer_cna) {
+    if (!require("infercnv")) {
+        flog.warn("--infercnv requires the infercnv package.")
+    } else {
+        .infer_cna(infile)
+    }
+}
 if (length(prediction.assay) > 1) {
     common_labels <- Reduce(intersect, lapply(prediction.assay, function(x) rownames(GetAssayData(x))))
     if (length(common_labels)) {

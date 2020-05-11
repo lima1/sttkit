@@ -33,6 +33,8 @@ option_list <- list(
     make_option(c("--gmt"), action = "store", type = "character", 
         default = NULL, 
         help="GMT file including genes of interest"),
+    make_option(c("--output_counts"), action = "store_true", default = FALSE, 
+        help="Output count matrix as TSV file."),
     make_option(c("--png"), action = "store_true", default = FALSE, 
         help="Generate PNG version of output plots."),
     make_option(c("-f", "--force"), action = "store_true", default = FALSE, 
@@ -92,10 +94,10 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     file.path(s_dir, paste0(basename(prefix), suffix))
 }
 
-.write_tsv <- function(object, prefix) {
+.write_tsv <- function(object, prefix, slot = "scale.data", suffix = "_all.tsv.gz") {
     data <- GetAssayData(object, slot = "scale.data") 
-    filename <- paste0(prefix, "_all.tsv.gz")
-    flog.info("Writing normalized data to %s...", basename(filename))
+    filename <- paste0(prefix, suffix)
+    flog.info("Writing data to %s...", basename(filename))
     m <- t(as.matrix(data))
     data.table::fwrite(data.table::as.data.table(m), file = filename,
         sep = "\t", quote = FALSE)
@@ -134,7 +136,10 @@ if (!opt$force && file.exists(filename)) {
                              sampleid = opt$sampleid,
                              prefix = opt$outprefix)
     }    
-
+    if (opt$output_counts) {
+        m <- .write_tsv(ndata, opt$outprefix, slot = "counts",
+            suffix = "_all_counts.tsv.gz")
+    }    
     ndata <- normalize_spatial(ndata, nfeatures = opt$num_features, 
                          scale = opt$normalization_method != "scran",
                          center = opt$normalization_method != "scran",

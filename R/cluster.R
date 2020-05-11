@@ -454,9 +454,17 @@ set_idents_nmf <- function(object, k, rank = NULL) {
         available_misc <- names(object@misc)
         available_misc <- available_misc[grep("^nmf", available_misc)]
         available_misc <- available_misc[!grepl("_random", available_misc)]
+        if (!length(available_misc)) return(object)
         rank <- as.numeric(names(object@misc[[available_misc]]$fit))
     }    
     nmf_obj <- .extract_nmf_obj(object, rank)
+    if (k < min(rank)) {
+        flog.warn("requested k not available.")
+        k <- min(rank)
+    } else if (k > max(rank)) {
+        flog.warn("requested k not available.")
+        k <- max(rank)
+    }
     nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
     Idents(object) <- predict(nmf_obj_f)
     return(object)
