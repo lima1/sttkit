@@ -39,8 +39,12 @@ option_list <- list(
         help="Size of dots on H&E [default %default]"),
     make_option(c("--infer_cna"), action = "store_true", default = FALSE, 
         help="Try to infer copy number alterations to label tumor clusters."),
-    make_option(c("--cna_cutoff"), action = "store", type = "double", default = 1,
+    make_option(c("--cna_cutoff"), action = "store", type = "double", default = 0.3,
         help="Default infercnv cutoff, requires --infer_cna [default %default]"),
+    make_option(c("--cna_hmm"), action = "store_true", default = FALSE, 
+        help="Run infercnv HMM."),
+    make_option(c("--cna_output_normal_counts"), action = "store_true", default = FALSE, 
+        help="Output counts of normal clusters, useful for creating a normal reference database."),
     make_option(c("--png"), action = "store_true", default = FALSE, 
         help="Generate PNG version of output plots."),
     make_option(c("--serialize"), action = "store_true", default = FALSE, 
@@ -196,6 +200,14 @@ if (!opt$force && file.exists(filename_predictions)) {
     }
     if (is.na(ref_group_names)) ref_group_names <- NULL
     message("Refgroups: ", paste(ref_group_names, collapse=","))
+    if (!is.null(opt$cna_output_normal_counts) &&
+        !is.null(ref_group_names)) {
+        filename <- file.path(out_dir, "normal_counts.tsv.gz")
+        flog.info("Writing normal count data to %s...", basename(filename))
+        idx <- annotations[,1] %in% ref_group_names
+        data.table::fwrite(data.table::as.data.table(count_matrix[,idx]), file = filename,
+            sep = "\t", quote = FALSE)
+    }    
     infercnv_obj <- CreateInfercnvObject(
         raw_counts_matrix = count_matrix,
         gene_order_file=genes,
@@ -210,6 +222,7 @@ if (!opt$force && file.exists(filename_predictions)) {
                                    denoise=TRUE,
                                    HMM=HMM,
                                    num_threads=2,
+                                   sd_amplifier=1.0
                                    )
     saveRDS(infercnv_obj, file = file.path(out_dir, "infercnv_obj.rds"))
     infercnv_obj
@@ -237,7 +250,7 @@ if (!opt$force && file.exists(filename_predictions)) {
     } else {
         seurat_raw_obj <- x
     }        
-    .run_infer(x, seurat_raw_obj = seurat_raw_obj, ref_group_names = ref_group_names, out_dir =  file.path(dirname(opt$outprefix), "infer_cna"), cutoff = opt$cna_cutoff)
+    .run_infer(x, seurat_raw_obj = seurat_raw_obj, ref_group_names = ref_group_names, out_dir =  file.path(dirname(opt$outprefix), "infer_cna"), cutoff = opt$cna_cutoff, HMM = opt$cna_hmm )
 }
 
 .plot_he <- function(x, i) {

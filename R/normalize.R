@@ -27,8 +27,13 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
                               serialize = TRUE, prefix, ...) {
     regressout <- .check_regressout(obj, regressout)
 
+    flog.info("Using standard log-normalization...")
+    obj <- NormalizeData(object = obj, ...)
+    scale_alt_assay <- NULL
+
     method <- match.arg(method)
     if (method == "sctransform" && requireNamespace("sctransform")) {
+        scale_alt_assay <- DefaultAssay(obj)
         flog.info("Using sctransform with %i features...", nfeatures)
         if (!is.null(regressout)) {
             flog.info("Regressing out %s.", paste(regressout, collapse = ", "))
@@ -38,8 +43,13 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
             vars.to.regress = regressout, do.correct.umi = correct_umi,
             return.only.var.genes = FALSE, min_cells = min_cells, ...)
         if (serialize) .serialize(obj, prefix, "_scaled.rds")
+        flog.info("Scaling alternative assay %s...", scale_alt_assay)
+        obj <- ScaleData(object = obj, vars.to.regress = regressout,
+            do.scale = scale, do.center = center, assay = scale_alt_assay)
+        flog.info("Default assay is set to %s.", DefaultAssay(obj))
         return(obj)    
     } else if (method == "scran" && requireNamespace("scran")) {
+        scale_alt_assay <- DefaultAssay(obj)
         flog.info("Using scran normalization...")
         sce <- SingleCellExperiment::SingleCellExperiment(assays = 
             list(counts = as.matrix(GetAssayData(obj, "counts")))) # read data from Seurat
@@ -59,9 +69,6 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
         obj@misc[["seurat_norm_data"]] = as.matrix(x = GetAssayData(obj)) # backup Seurat's norm data
         SetAssayData(obj, slot = "data", new.data = 
             log(x = SummarizedExperiment::assay(sce, "normcounts") + 1))
-    } else {
-        flog.info("Using standard log-normalization...")
-        obj <- NormalizeData(object = obj, ...)
     }    
     flog.info("Finding %i variable features...", nfeatures)
     obj <- FindVariableFeatures(object = obj, selection.method = "vst",
@@ -72,6 +79,12 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
     }
     obj <- ScaleData(object = obj, vars.to.regress = regressout,
         do.scale = scale, do.center = center)
+    if (!is.null(scale_alt_assay)) {
+        flog.info("Scaling alternative assay %s...", scale_alt_assay)
+        obj <- ScaleData(object = obj, vars.to.regress = regressout,
+            do.scale = scale, do.center = center, assay = scale_alt_assay)
+    }    
+    flog.info("Default assay is set to %s.", DefaultAssay(obj))
     if (serialize) {
         flog.info("Writing R data structure to %s...", paste0(prefix, "_scaled.rds"))
         .serialize(obj, prefix, "_scaled.rds")
