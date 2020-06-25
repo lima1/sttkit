@@ -65,6 +65,10 @@ option_list <- list(
         help="Plot the specified number of top spatially variable features"),
     make_option(c("--nearest_neighbors"), action = "store_true", default = FALSE, 
         help="For multi-sample analyses, visualizes the similarity of slides."),
+    make_option(c("--cellphonedb"), action = "store_true", default = FALSE, 
+        help="Generate output files for cellphonedb."),
+    make_option(c("--species"), action = "store", type = "character", default = "Hs",
+        help="Currently only used for --cellphonedb to convert symbols to EMSEMBL ids [default %default]."),
     make_option(c("--mpi"), action = "store_true", default = FALSE, 
         help="Use doMPI package for parallel NMF."),
     make_option(c("--png"), action = "store_true", default = FALSE, 
@@ -482,11 +486,12 @@ if (length(Images(ndata))) {
         } else {
             flog.info("Finding top spatially variable features. This will probably take a while...")
             ndata_split <- SplitObject(ndata, split.by = "library")
-            ndata_split <- lapply(seq_along(ndata_split), function(i) 
+            ndata_split <- lapply(seq_along(ndata_split), function(i) { 
+                flog.info("Working on %s...", ndata_split[[i]]$library[1])
                 FindSpatiallyVariableFeatures(ndata_split[[i]], 
                 selection.method = method, 
                 image = sttkit:::.get_image_slice(ndata_split[[i]]),
-                features = head(VariableFeatures(ndata), 1000)))
+                features = head(VariableFeatures(ndata), 1000))})
             spatial_features <- lapply(ndata_split, SpatiallyVariableFeatures, selection.method = method)
             libs <- as.character(sapply(ndata_split, function(x) x$library[1]))
             names(spatial_features) <- libs
@@ -503,6 +508,14 @@ if (length(Images(ndata))) {
     }
 }
 
+if (opt$cellphonedb) {
+    orgdb <- paste0("org.", opt$species, ".eg.db")
+    if (!require(orgdb, character.only = TRUE)) {
+        flog.warn("Install %s to cellphonedb output", orgdb)
+    } else {
+        cellphone_for_seurat(ndata, get(orgdb), prefix = opt$outprefix)
+    }    
+}            
 if (opt$mpi) {
     closeCluster(cl)
     mpi.quit()
