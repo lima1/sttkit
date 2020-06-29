@@ -4,10 +4,19 @@
 \alias{cellphone_for_seurat}
 \title{cell-cell interaction analysis using method CellPhoneDB}
 \usage{
-cellphone_for_seurat(obj, orgdb, prefix)
+cellphone_for_seurat(obj, orgdb, prefix, slot = "data", assay = NULL)
 }
 \arguments{
-\item{Seurat_obj}{Seurat Object}
+\item{obj}{Seurat Object}
+
+\item{orgdb}{orgdb Object}
+
+\item{prefix}{Prefix of output files}
+
+\item{slot}{Specific information to pull
+(i.e. counts, data, scale.data,...)}
+
+\item{assay}{Name of assay to pull data from}
 }
 \value{
 output tables for cell-cell interction inference
@@ -16,9 +25,6 @@ output tables for cell-cell interction inference
 This function allows you to use an CellPhoneDB on Seurat Object
 }
 \examples{
-
-
-
 
 }
 \keyword{RNA-seq,}

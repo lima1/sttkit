@@ -59,6 +59,9 @@ option_list <- list(
         help="Do additional NMF clustering on randomized data to find better rank"),
     make_option(c("--nmf_method"), action = "store", type = "character", default = NULL,
         help="If provided, will use a different than default NMF method."),
+    make_option(c("--nmf_ident"), action = "store", type = "integer", 
+        default = NULL, 
+        help="Set Idents(infile) to NMF of specified rank after NMF [default %default]"),
     make_option(c("--spatially_variable_method"), action = "store", type = "character", default = "markvariogram:moransi",
         help="Method(s) to find top spatially variable features [default %default]."),
     make_option(c("--spatially_variable_nfeatures"), action = "store", type = "integer", default = 80,
@@ -476,6 +479,16 @@ if (opt$nmf) {
     }    
 }
 
+if (!is.null(opt$nmf_ident)) {
+    library(NMF)
+    old_idents <- Idents(ndata)
+    ndata <- set_idents_nmf(ndata, k = opt$nmf_ident)
+    if (!identical(old_idents, Idents(ndata))) {
+        flog.info("Setting idents to NMF %i clustering. This is not serialized.", opt$nmf_ident)
+    }
+}
+
+
 if (length(Images(ndata))) {
     methods <- sapply(strsplit(opt$spatially_variable_method, ":")[[1]], trimws)
     for (method in methods) {
@@ -513,7 +526,7 @@ if (opt$cellphonedb) {
     if (!require(orgdb, character.only = TRUE)) {
         flog.warn("Install %s to cellphonedb output", orgdb)
     } else {
-        cellphone_for_seurat(ndata, get(orgdb), prefix = opt$outprefix)
+        cellphone_for_seurat(ndata, get(orgdb), prefix = opt$outprefix, slot = "scale.data")
     }    
 }            
 if (opt$mpi) {
