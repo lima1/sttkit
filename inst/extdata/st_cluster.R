@@ -346,7 +346,7 @@ if (single_input) {
         print(gp)
         invisible(dev.off())
     }
-    if (!is.null(opt$nearest_neighbors)) {
+    if (opt$nearest_neighbors) {
         flog.info("Finding nearest neighbors. This will probably take a while...")
        ndata <- find_nearest_neighbors(ndata)
        gp <-SpatialFeaturePlot(ndata, features = "int.nearest.neighbor",
@@ -480,6 +480,9 @@ if (opt$nmf) {
 }
 
 if (!is.null(opt$nmf_ident)) {
+    if (is.null(opt$nmf)) {
+        flog.warn("--nmf_ident requires --nmf")
+    }  
     library(NMF)
     old_idents <- Idents(ndata)
     ndata <- set_idents_nmf(ndata, k = opt$nmf_ident)
@@ -523,11 +526,20 @@ if (length(Images(ndata))) {
 
 if (opt$cellphonedb) {
     orgdb <- paste0("org.", opt$species, ".eg.db")
+    assay <- NULL
+    slot <- data
+    if ("SCT" %in% Assays(ndata)) {
+        assay <- "SCT"
+        slot <- "counts"
+    } else if ("Spatial" %in% Assays(ndata)) {
+        assay <- "Spatial"
+    }
     if (!require(orgdb, character.only = TRUE)) {
         flog.warn("Install %s to cellphonedb output", orgdb)
     } else {
-        cellphone_for_seurat(ndata, get(orgdb), prefix = opt$outprefix, slot = "scale.data")
-    }    
+        cellphone_for_seurat(ndata, get(orgdb), prefix = opt$outprefix,
+            slot = slot, assay = assay)
+    }
 }            
 if (opt$mpi) {
     closeCluster(cl)

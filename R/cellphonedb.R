@@ -21,6 +21,8 @@
 
 cellphone_for_seurat <- function(obj, orgdb, prefix, slot = "data",
     assay = NULL){
+    flog.info("Using counts from slot %s and assay %s.", slot,
+        ifelse(is.null(assay), DefaultAssay(obj),  assay))
     counts <- as.data.frame(
         GetAssayData(obj, slot = slot, assay = assay)
     )
