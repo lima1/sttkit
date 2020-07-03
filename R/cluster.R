@@ -26,11 +26,11 @@ cluster_spatial <- function(ndata, resolution = 0.8, dims = 1:30, verbose = TRUE
 #' Plot clusters
 #' @param obj Object, read by \code{\link{read_spatial}}.
 #' @param prefix Prefix of output files
-
+#' @param subdir Put files in a subdirectory
 #' @export plot_clusters
 #' @examples
 #' plot_clusters()
-plot_clusters <- function(obj, prefix) {
+plot_clusters <- function(obj, prefix, subdir = "snn") {
     reference_technology <- "spatial"
     if ("technology" %in% colnames(obj@meta.data)) {
         reference_technology <- obj$technology[obj$reference][1]
@@ -42,8 +42,9 @@ plot_clusters <- function(obj, prefix) {
         levels = .order_clusters(obj$new.idents))
     label <- "predicted.id" %in% colnames(obj@meta.data)
     # make sure than snn directory is created
-    filename <- .get_sub_path(prefix, "snn", "")
-    filename <- .get_sub_path(prefix, "snn/umap", paste0("_", reference_technology, "_cluster.pdf"))
+    filename <- .get_sub_path(prefix, subdir, "")
+    filename <- .get_sub_path(prefix, file.path(subdir, "umap"),
+        paste0("_", reference_technology, "_cluster.pdf"))
     pdf(filename, width = 10, height = 5)
     if (label) { 
         flog.info("UMAP label...")
@@ -51,37 +52,42 @@ plot_clusters <- function(obj, prefix) {
         flog.info("UMAP idents...")
     }
     gp <- DimPlot(obj, reduction = "umap", label = label)
-    if (requireNamespace("ggthemes", quietly = TRUE)) {
+    if (requireNamespace("ggthemes", quietly = TRUE) &&
+        length(levels(Idents(obj))) <= 8) {
         gp <- gp + ggthemes::scale_colour_colorblind()
     }
     print(gp)
     dev.off()
     flog.info("UMAP splitted...")
     if ("call" %in% colnames(obj@meta.data)) {
-        filename <- .get_sub_path(prefix, "snn/umap", paste0("_", reference_technology, "_cluster_call.pdf"))
+        filename <- .get_sub_path(prefix, file.path(subdir, "umap"), paste0("_", reference_technology, "_cluster_call.pdf"))
         pdf(filename, width = 10, height = 5)
         print(DimPlot(obj, reduction = "umap", group.by = "call", label = label))
         dev.off()
-        filename <- .get_sub_path(prefix, "snn/umap", paste0("_", reference_technology, "_cluster_splitted.pdf"))
+        filename <- .get_sub_path(prefix, file.path(subdir, "umap"), paste0("_", reference_technology, "_cluster_splitted.pdf"))
         pdf(filename, width = 10, height = 10)
         print(DimPlot(obj, split.by = "new.idents", group.by = "call"))
         dev.off()
     }
     if ("label" %in% colnames(obj@meta.data)) {
-        .plot_cluster_library(obj, field = "label", prefix = prefix, 
+        .plot_cluster_library(obj, field = "label", prefix = prefix,
+            subdir = file.path(subdir, "umap"),
             reference_technology = reference_technology)
     } else if ("library" %in% colnames(obj@meta.data)) {
         .plot_cluster_library(obj, field = "library", prefix = prefix, 
+            subdir = file.path(subdir, "umap"),
             reference_technology = reference_technology)
     }
     if ("hg19" %in% colnames(obj@meta.data) && 
         "mm10" %in% colnames(obj@meta.data)) {
         flog.info("Violinplot hg19 vs mm10...")
-        filename <- .get_sub_path(prefix, "snn/qc", paste0("_", reference_technology, "_cluster_violin_call.pdf"))
+        filename <- .get_sub_path(prefix, file.path(subdir, "qc"),
+            paste0("_", reference_technology, "_cluster_violin_call.pdf"))
         pdf(filename, width=10, height=5)
         print(VlnPlot(obj, features = c("hg19", "mm10"), sort = TRUE))
         dev.off()
-        filename <- .get_sub_path(prefix, "snn/qc", paste0("_", reference_technology, "_cluster_violin_qc.pdf"))
+        filename <- .get_sub_path(prefix, file.path(subdir, "qc"),
+            paste0("_", reference_technology, "_cluster_violin_qc.pdf"))
         pdf(filename, width = 10, height = 5)
         print(VlnPlot(obj, features = c("percent.mito", "percent.ribo"), sort = TRUE))
         dev.off()

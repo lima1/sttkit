@@ -312,6 +312,7 @@ if (!is.null(opt$extra_gmt)) {
 if (single_input) {
     libs <- ndata$library[1]
     .plot_he_cluster(ndata, opt$outprefix)
+    plot_clusters(ndata, opt$outprefix)
 } else {
     libs <- sapply(reference_list, function(x) x$library[1])
     for (i in seq_along(libs)) {

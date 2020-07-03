@@ -200,6 +200,16 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
 
         tmp <- .get_sub_path(prefix, file.path(subdir, "umap"), "") # make sure that umap directory exists
         tmp <- .get_sub_path(prefix, file.path(subdir, "heatmap"), "") # make sure that umap directory exists
+        filename <- .get_sub_path(prefix, file.path(subdir, "umap", k),
+            paste0("_spatial_cluster.pdf"))
+        pdf(filename, width = 10, height = 5)
+        gp <- DimPlot(object, reduction = "umap", label = TRUE)
+        if (requireNamespace("ggthemes", quietly = TRUE) &&
+            length(levels(Idents(object))) <= 8) {
+            gp <- gp + ggthemes::scale_colour_colorblind()
+        }
+        print(gp)
+        dev.off()
         if ("label" %in% colnames(object@meta.data)) {
             .plot_cluster_library(object, field = "label", prefix = prefix, 
                 subdir = file.path(subdir, "umap", k),
