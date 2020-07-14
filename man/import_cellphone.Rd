@@ -4,17 +4,10 @@
 \alias{import_cellphone}
 \title{Import cell-cell interaction analysis using CellPhoneDB}
 \usage{
-import_cellphone(cellphone_outpath, orgdb, prefix, slot = "data", assay = NULL)
+import_cellphone(cellphone_outpath, orgdb)
 }
 \arguments{
 \item{orgdb}{orgdb Object}
-
-\item{prefix}{Prefix of output files}
-
-\item{slot}{Specific information to pull
-(i.e. counts, data, scale.data,...)}
-
-\item{assay}{Name of assay to pull data from}
 
 \item{obj}{Seurat Object}
 }

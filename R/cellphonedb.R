@@ -81,10 +81,6 @@ cellphone_for_seurat <- function(obj, orgdb, prefix, slot = "data",
 #'
 #' @param obj Seurat Object
 #' @param orgdb orgdb Object
-#' @param prefix Prefix of output files
-#' @param slot Specific information to pull
-#' (i.e. counts, data, scale.data,...)
-#' @param assay Name of assay to pull data from
 #'
 #' @return interaction pairs in GMT format
 #'
@@ -92,7 +88,7 @@ cellphone_for_seurat <- function(obj, orgdb, prefix, slot = "data",
 #'
 #' @export import_cellphone
 
-import_cellphone <- function(cellphone_outpath, orgdb, prefix, slot = "data", assay = NULL) {
+import_cellphone <- function(cellphone_outpath, orgdb) {
     sig_means <- read.delim(file.path(cellphone_outpath, "significant_means.txt"), as.is = TRUE)
     col_ids <- grep("^X\\d", colnames(sig_means))
     sig_means <- sig_means[ apply(sig_means[, col_ids],1,function(x) sum(!is.na(x))) > 0, ]
@@ -100,7 +96,7 @@ import_cellphone <- function(cellphone_outpath, orgdb, prefix, slot = "data", as
     ids_a <- mapIds(orgdb, sig_means$gene_a, 'SYMBOL', 'ENSEMBL')
     ids_b <- mapIds(orgdb, sig_means$gene_b, 'SYMBOL', 'ENSEMBL')
     sig_means$symbol_a <- sapply(ids_a[sig_means$gene_a],function(x) ifelse(length(x),x,NA))
-    sig_means$symbol_b <- sapply(ids_a[sig_means$gene_b],function(x) ifelse(length(x),x,NA))
+    sig_means$symbol_b <- sapply(ids_b[sig_means$gene_b],function(x) ifelse(length(x),x,NA))
 
     pairs <- apply(sig_means[, col_ids],1,function(x) which(!is.na(x)))
     pairs <- lapply(pairs, function(x) lapply(strsplit(gsub("^X","", names(x)), "\\."), as.numeric))
