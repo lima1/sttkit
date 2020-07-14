@@ -5,7 +5,6 @@
 #' @param obj Seurat Object
 #' @param orgdb orgdb Object
 #' @param prefix Prefix of output files
-#' @param prefix Prefix of output files
 #' @param slot Specific information to pull
 #' (i.e. counts, data, scale.data,...)
 #' @param assay Name of assay to pull data from
@@ -75,3 +74,40 @@ cellphone_for_seurat <- function(obj, orgdb, prefix, slot = "data",
     rownames(counts) <- symbol.mapping[row_ids,1]
     return(counts)
 }
+
+#' Import cell-cell interaction analysis using CellPhoneDB
+#'
+#' This function allows you to read CellPhoneDB output and rerank it based on local interactions.
+#'
+#' @param obj Seurat Object
+#' @param orgdb orgdb Object
+#' @param prefix Prefix of output files
+#' @param slot Specific information to pull
+#' (i.e. counts, data, scale.data,...)
+#' @param assay Name of assay to pull data from
+#'
+#' @return interaction pairs in GMT format
+#'
+#' @examples
+#'
+#' @export import_cellphone
+
+import_cellphone <- function(cellphone_outpath, orgdb, prefix, slot = "data", assay = NULL) {
+    sig_means <- read.delim(file.path(cellphone_outpath, "significant_means.txt"), as.is = TRUE)
+    col_ids <- grep("^X\\d", colnames(sig_means))
+    sig_means <- sig_means[ apply(sig_means[, col_ids],1,function(x) sum(!is.na(x))) > 0, ]
+
+    ids_a <- mapIds(orgdb, sig_means$gene_a, 'SYMBOL', 'ENSEMBL')
+    ids_b <- mapIds(orgdb, sig_means$gene_b, 'SYMBOL', 'ENSEMBL')
+    sig_means$symbol_a <- sapply(ids_a[sig_means$gene_a],function(x) ifelse(length(x),x,NA))
+    sig_means$symbol_b <- sapply(ids_a[sig_means$gene_b],function(x) ifelse(length(x),x,NA))
+
+    pairs <- apply(sig_means[, col_ids],1,function(x) which(!is.na(x)))
+    pairs <- lapply(pairs, function(x) lapply(strsplit(gsub("^X","", names(x)), "\\."), as.numeric))
+    hood <- find_cluster_neighborhoods(obj)
+    sig_means$hood_score <- sapply(lapply(pairs, sapply, function(x) hood[x[1],x[2]]), function(y) 1/(max(y)/length(y)))
+    sig_means <- sig_means[order(sig_means$rank, sig_means$hood_score),]
+    write.csv(sig_means, file.path(cellphone_outpath, "significant_means_ranked_spatial.csv"), row.names = FALSE)
+
+    return(sig_means)
+}    

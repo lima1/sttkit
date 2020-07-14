@@ -271,3 +271,12 @@ find_signature_means <- function(obj, features, slot = "data", label = NULL, fun
     attributes(sigs)$descr <- descr
     return(sigs)
 }
+
+.write.gmt <- function (sigs, file_name) {
+    nams <- names(sigs)
+    descr <- sapply(sigs, function(x) paste(attributes(x)[[1]], collapse="_"))
+    genes <- sapply(sigs, paste, collapse = "\t")
+    gmt <- paste(nams, descr, genes, sep = "\t")
+    writeLines(gmt, con = file(file_name))
+    return(NULL)
+}

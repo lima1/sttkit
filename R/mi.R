@@ -1,3 +1,35 @@
+#' cell-cell interaction analysis using method CellPhoneDB
+#'
+#' This function allows you to use an CellPhoneDB on Seurat Object
+#'
+#' @param obj Seurat Object
+#' @param max.dist Defines neighborhood as maximum distance in number
+#' of spots
+#' @param fun.aggregate Aggregate cluster value of spot values
+#' @return output pairwise cluster neighborhood overlaps
+#'
+#' @examples
+#'
+#' @export find_cluster_neighborhoods
+find_cluster_neighborhoods <- function(obj, max.dist = 3, fun.aggregate = mean) {
+    d <- dist(obj@images[[1]]@coordinates[, c("row", "col")])
+    m <- as.matrix(d)
+    barcodes <- colnames(m)
+    .get_cluster_mean_dists <- function(labels) {
+        dist_stats <- t(sapply(barcodes, function(i) {
+            x <- m[i,]
+            xs <- split(x, labels)
+            sapply(xs, function(y) sum(y > 0 & y < max.dist))
+        }))
+        dd <- lapply(levels(labels), function(i) dist_stats[which(labels == i),])
+        sapply(dd, apply, 2, fun.aggregate)
+    }
+    labels <- Idents(obj[,barcodes])
+    dd <- .get_cluster_mean_dists(labels)
+    rownames(dd) <- levels(labels)
+    colnames(dd) <- levels(labels)
+    return(dd)
+}
 # a couple of helper functions that calculate the correlation of features
 # by taking the 4 neighors into account where available
 
@@ -47,3 +79,5 @@
     colnames(cor_nn) <- features
     cor_nn
 }    
+
+
