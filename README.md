@@ -6,10 +6,10 @@ multi-sample analyses (technical replicates and treatment/control pairs).
 
 ## Installation
 
-These scripts require the Seurat 3.2 pre-release with Visium support. 
+These scripts require Seurat 3.2 with Visium support. 
 
 ```
-devtools::install_github("satijalab/seurat", ref = "spatial")
+install.packages("Seurat")
 ```
 
 Common functionality in this toolkit are provided in an R package called
