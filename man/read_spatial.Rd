@@ -16,6 +16,7 @@ read_spatial(
   barcodes = NULL,
   image = NULL,
   slice = sampleid,
+  downsample_prob = NULL,
   assay = "Spatial",
   plot_qc = TRUE,
   serialize = TRUE,
@@ -46,6 +47,8 @@ passing \code{min_spots}}
 Can also be a JPEG for Spatial Transcriptomics data.}
 
 \item{slice}{Optional name for the stored \code{image}}
+
+\item{downsample_prob}{Downsample input matrix. Requires \code{DropletUtils}.}
 
 \item{assay}{Name of the assay corresponding to the initial input data.}
 

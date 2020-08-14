@@ -15,6 +15,7 @@ Imports: data.table (>= 1.12.4),
          viridis,
          AnnotationDbi
 Suggests: CellMix,
+          DropletUtils,
           GGally,
           EBImage,
           Matrix,

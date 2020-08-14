@@ -30,6 +30,8 @@ option_list <- list(
         help="Gene filter: Keep genes detected at that many spots or more [default %default]"),
     make_option(c("--min_features"), action="store", type = "double", default = 300, 
         help="Spot filter: Keep spots that detected that many genes or more [default %default]"),
+    make_option(c("--downsample_prob"), action="store", type = "double", default = NULL, 
+        help="Downsample count matrix. 0.2 randomly picks 20 percent of UMIs in each spot [default %default]"),
     make_option(c("--gmt"), action = "store", type = "character", 
         default = NULL, 
         help="GMT file including genes of interest"),
@@ -126,6 +128,7 @@ if (!opt$force && file.exists(filename)) {
                              image = opt$hejpeg,
                              transpose = opt$transpose,
                              sampleid = opt$sampleid,
+                             downsample_prob = opt$downsample_prob,
                              prefix = opt$outprefix)
     } else {
         ndata <- read_visium(
@@ -135,6 +138,7 @@ if (!opt$force && file.exists(filename)) {
                              required_features = required_features, 
                              transpose = opt$transpose,
                              sampleid = opt$sampleid,
+                             downsample_prob = opt$downsample_prob,
                              prefix = opt$outprefix)
     }    
     if (opt$output_counts) {

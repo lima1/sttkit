@@ -11,10 +11,11 @@
 #' passing \code{min_spots}
 #' @param transpose Transpose input matrix
 #' @param barcodes Optionally, barcodes for all spots
-#' @param assay Name of the assay corresponding to the initial input data.
 #' @param image Optional \code{VisiumV1} object containing image information.
 #' Can also be a JPEG for Spatial Transcriptomics data.
 #' @param slice Optional name for the stored \code{image}
+#' @param downsample_prob Downsample input matrix. Requires \code{DropletUtils}.
+#' @param assay Name of the assay corresponding to the initial input data.
 #' @param plot_qc Generate QC plots
 #' @param serialize Automatically serialize object
 #' @param prefix Prefix of output files
@@ -32,6 +33,7 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
                         rp_pattern = regex_ribo(), 
                         min_features = 300, min_spots = 2, required_features = NULL, 
                         transpose = FALSE, barcodes = NULL, image = NULL, slice = sampleid,
+                        downsample_prob = NULL,
                         assay = "Spatial",
                         plot_qc = TRUE, serialize = TRUE, prefix) {
     if (is(file, "character")) {
@@ -41,6 +43,13 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
         raw_data <- Matrix::t(file)
     }    
     if (transpose) raw_data <- Matrix::t(raw_data)
+    if (!is.null(downsample_prob)) {
+        if (!requireNamespace("DropletUtils")) {
+            flog.warn("downsample_prob defined but DropletUtils not installed. Ignoring.")
+        }
+        flog.info("Downsample input to %.2f...", downsample_prob) 
+        raw_data <- DropletUtils::downsampleMatrix(raw_data, prop = downsample_prob)
+    }        
     spots_passing <- sum(Matrix::rowSums(raw_data) > min_features)    
     if (spots_passing < 100) {
         flog.warn("Less than 100 spots passing min_features %i (%i out of %i).", 
@@ -164,9 +173,19 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
     filename <- file.path(filtered_feature_bc_matrix_dir, 
         "filtered_feature_bc_matrix.h5")
     raw_data <- Read10X_h5(filename = filename)
-    image <- Read10X_Image(spatial_dir)
-    DefaultAssay(object = image) <- assay
-
+    lowres <- file.path(spatial_dir, "tissue_lowres_image.png")
+    if (file.exists(lowres)) {
+        image <- Read10X_Image(spatial_dir)
+        DefaultAssay(object = image) <- assay
+    } else {
+        # check multi-sample
+        lowres <- file.path(dir(spatial_dir, full.names = TRUE), "tissue_lowres_image.png")
+        lowres <- lowres[file.exists(lowres)]
+        image <- lapply(dirname(lowres), function(d) {
+            image <- Read10X_Image(d)
+            DefaultAssay(object = image) <- assay
+        })    
+    }    
     barcodes <- colnames(raw_data)
     names(barcodes) <- colnames(raw_data)
 
