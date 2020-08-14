@@ -25,7 +25,8 @@ integrate_spatial <- function(obj_spatial = NULL, references, features = 2000,
                             max_percent_mito = 33, 
                             min_max_counts = 3,
                             min_detected = 2,
-                            reference_technology = "single_cell", force, 
+                            reference_technology = "single_cell",
+                            force, 
                             serialize = TRUE, prefix, verbose = FALSE) {
     if (serialize || !force) { 
         filename <- .get_serialize_path(prefix, 
@@ -68,6 +69,7 @@ integrate_spatial <- function(obj_spatial = NULL, references, features = 2000,
         }
     }    
     num_spots <- sapply(references, ncol)
+    .plot_pre_integration_umap(references, scale, features, prefix)
     if (min(num_spots) < min_spots) {
         poor_libs <- sapply(references[num_spots < min_spots], function(x) x$library[1])
         flog.warn("Samples with low number of cells/spots: %s", 
@@ -166,13 +168,16 @@ integrate_spatial <- function(obj_spatial = NULL, references, features = 2000,
 #' @param plot_umap Generate UMAP plot of integrated data
 #' @param serialize Serialize output objects
 #' @param prefix Prefix of output files
+#' @param umap_suffix File suffix of UMAP PDF plot
 #' @param verbose Verbose Seurat output
 #' @export cluster_integrated
 #' @examples
 #' cluster_integrated()
 cluster_integrated <- function(integrated, regressout, scale = NULL,
                                force, plot_umap = TRUE,
-                               serialize = TRUE, prefix, verbose = FALSE) {
+                               serialize = TRUE, prefix, 
+                               umap_suffix = "_umap_integration_overview.pdf",
+                               verbose = FALSE) {
     reference_technology <- integrated$technology[integrated$reference][1]
     if (serialize || !force) { 
         filename <- .get_serialize_path(prefix, 
@@ -199,7 +204,7 @@ cluster_integrated <- function(integrated, regressout, scale = NULL,
         dims = 1:30, verbose = verbose)
     if (plot_umap) {
         flog.info("Plotting UMAP...")
-        pdf(.get_advanced_path(prefix, "_umap_integration_overview.pdf"), width = 10, height = 5)
+        pdf(.get_advanced_path(prefix, umap_suffix), width = 10, height = 5)
         if ("call" %in% colnames(integrated@meta.data)) {
             print(DimPlot(integrated, reduction = "umap", split.by = "technology",
                           group.by = "call"))
@@ -358,3 +363,16 @@ find_nearest_neighbors <- function(object, split.by = "library") {
     lapply(references, function(x) x[!rownames(x) %in% undetected_features, ])
 }
     
+.plot_pre_integration_umap <- function(references, scale, features, prefix) {
+    flog.info("Plotting pre-integration UMAP...")
+    merged <- Reduce(merge, references) 
+    VariableFeatures(merged) <- features
+
+    merged <- cluster_integrated(merged, regressout = NULL,
+                               force = TRUE, plot_umap = TRUE,
+                               scale = scale,
+                               serialize = FALSE, prefix, 
+                               umap_suffix = "_umap_pre_integration_overview.pdf",
+                               verbose = FALSE) 
+    return(1)
+}    

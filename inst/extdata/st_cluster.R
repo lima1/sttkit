@@ -68,6 +68,8 @@ option_list <- list(
         help="Plot the specified number of top spatially variable features"),
     make_option(c("--nearest_neighbors"), action = "store_true", default = FALSE, 
         help="For multi-sample analyses, visualizes the similarity of slides."),
+    make_option(c("--tissue_positions_list"), action = "store", type = "character", default = NULL,
+        help = "SpaceRanger 1.1+ tissue positions list, useful in case barcode suffices differ after integretion and fixing Loupe cluster annotation files [default %default]."),
     make_option(c("--cellphonedb"), action = "store_true", default = FALSE, 
         help="Generate output files for cellphonedb."),
     make_option(c("--species"), action = "store", type = "character", default = "Hs",

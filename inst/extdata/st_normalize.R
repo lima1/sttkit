@@ -99,7 +99,8 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     filename <- paste0(prefix, suffix)
     flog.info("Writing data to %s...", basename(filename))
     m <- t(as.matrix(data))
-    data.table::fwrite(data.table::as.data.table(m), file = filename,
+    pos <- GetTissueCoordinates(object)[rownames(m),]
+    data.table::fwrite(data.table::as.data.table(data.frame(barcode = rownames(m), pos, m)), file = filename,
         sep = "\t", quote = FALSE)
     m
 }

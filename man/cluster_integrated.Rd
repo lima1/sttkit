@@ -12,6 +12,7 @@ cluster_integrated(
   plot_umap = TRUE,
   serialize = TRUE,
   prefix,
+  umap_suffix = "_umap_integration_overview.pdf",
   verbose = FALSE
 )
 }
@@ -30,6 +31,8 @@ SpatialTranscriptomics and scRNA-seq data}
 \item{serialize}{Serialize output objects}
 
 \item{prefix}{Prefix of output files}
+
+\item{umap_suffix}{File suffix of UMAP PDF plot}
 
 \item{verbose}{Verbose Seurat output}
 }

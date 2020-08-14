@@ -340,11 +340,9 @@ write_nmf_features <- function(obj, rank, k, min_features = 20, method = "kim", 
 #' @examples
 #' export_nmf_loupe
 export_nmf_loupe <- function(obj, rank, k, libs, labels = NULL, prefix) {
-    nmf_obj <- .extract_nmf_obj(obj, rank)
-    nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
-    m <- t(NMF::scoef(nmf_obj$fit[[as.character(k)]]))
+    obj <- set_idents_nmf(obj, k, rank)
     d <- data.frame( "Barcode" =  .extract_barcode(obj), 
-                     "NMF" = paste("Cluster", apply(m, 1, which.max)))
+                     "NMF" = paste("Cluster", Idents(obj)))
     colnames(d)[2] <- paste0(colnames(d)[2], "_", k)
     for (i in seq_along(libs)) {
         label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
@@ -354,13 +352,21 @@ export_nmf_loupe <- function(obj, rank, k, libs, labels = NULL, prefix) {
             paste0("_nmf_cluster_loupe_", k, label, libs_label, ".csv"))
         write.csv(d[idx, , drop = FALSE], file = filename, row.names = FALSE)
     }    
+    filename <- .get_sub_path(prefix, "nmf/loupe", 
+        paste0("_nmf_cluster_loupe_", k, "_all.csv"))
+    d$Barcode <- .extract_barcode(obj, aggr = TRUE)
+    write.csv(d, file = filename, row.names = FALSE)
 }
 
-.extract_barcode <- function(obj) {
-    barcode <- colnames(obj)
+.extract_barcode <- function(obj, aggr = FALSE) {
+    barcode <- Cells(obj)
+    # get aggregated barcode
+    if (aggr && any(grepl("-\\d+_\\d+$", barcode))) {
+        return(gsub("-\\d+_","-", barcode))
+    }
     if ("barcode" %in% colnames(obj@meta.data)) {
         # Loupe wants the barcode with number suffix
-        if (any(grepl("-1$", obj$barcode))) {
+        if (any(grepl("-\\d+$", obj$barcode))) {
             barcode <- obj$barcode
         } else {
             barcode <- paste0(obj$barcode, "-1")
@@ -368,7 +374,16 @@ export_nmf_loupe <- function(obj, rank, k, libs, labels = NULL, prefix) {
     }
     return(barcode)
 }
-    
+
+.extract_barcode_loupe <- function(obj, tissue_positions_list = NULL) {
+    if (is.null(tissue_positions_list)) return(Cells(obj))
+    barcodes1 <- strsplit(Cells(obj), "-")
+    barcodes1 <- split(sapply(barcodes1, function(x) x[1]), sapply(barcodes1, function(x) x[2]))
+    pos <- read.csv(tissue_positions_list, as.is = TRUE, header = FALSE)
+    barcodes2 <- strsplit(pos[,1], "-")
+    barcodes2 <- split(sapply(barcodes2, function(x) x[1]), sapply(barcodes2, function(x) x[2]))
+    .sdiff <- function(x,y) length(intersect(x,y))/length(union(x,y))
+}    
 #' export_snn_loupe
 #'
 #' Output SNN clustering to a CSV file loadable in Loupe
@@ -401,6 +416,10 @@ export_snn_loupe <- function(obj, libs, labels = NULL, prefix) {
             idx <- which(obj$library == libs[i]) 
             write.csv(d[idx, , drop = FALSE], file = filename, row.names = FALSE)
         }    
+        filename <- sttkit:::.get_sub_path(prefix, "snn/loupe", 
+            paste0("_snn_cluster_loupe_", sid_us, "_all.csv"))
+        d$Barcode <- .extract_barcode(obj, aggr = TRUE)
+        write.csv(d, file = filename, row.names = FALSE)
     }
 }
     

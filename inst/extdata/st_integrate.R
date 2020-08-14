@@ -8,51 +8,55 @@ suppressPackageStartupMessages(library(digest))
 
 option_list <- list(
     make_option(c("--infile"), action = "store", type = "character", default = NULL,
-        help="Infile Seurat RDS of st_normalize. Should be unscaled unless normalization is sctransform"),
+        help = "Infile Seurat RDS of st_normalize. Should be unscaled unless normalization is sctransform"),
     make_option(c("--infile_raw"), action = "store", type = "character", default = NULL,
-        help="Infile Seurat RDS of st_normalize. Expects the not normalized RDS file containing raw counts."),
+        help = "Infile Seurat RDS of st_normalize. Expects the not normalized RDS file containing raw counts."),
     make_option(c("--singlecell"), action = "store", type = "character", default = NULL,
-        help="Path to a RDS file containing a (list of) Seurat single cell object(s) for spot deconvolution."),
+        help = "Path to a RDS file containing a (list of) Seurat single cell object(s) for spot deconvolution."),
     make_option(c("--labels_singlecell"), action = "store", type = "character", default = NULL,
-        help="Optional list of labels --singlecell"),
+        help = "Optional list of labels --singlecell"),
     make_option(c("--refdata"), action = "store", type = "character", default = "type",
-        help="Meta data column with prediction labels in --singlecell"),
+        help = "Meta data column with prediction labels in --singlecell"),
     make_option(c("--condition"), action = "store", type = "character", default = NULL,
-        help="Optional meta data column with conditions in --singlecell. If provided, will split by condition."),
+        help = "Optional meta data column with conditions in --singlecell. If provided, will split by condition."),
     make_option(c("--outprefix"), action = "store", type = "character", default = NULL,
-        help="Outfile."),
+        help = "Outfile."),
     make_option(c("--num_integration_features"), action="store", type = "integer", default = 3000, 
-        help="Integration: Use that many features [default %default]"),
+        help = "Integration: Use that many features [default %default]"),
     make_option(c("--resolution"), action = "store", type = "double", 
         default = 0.8, 
-        help="Resolution values for clustering [default %default]"),
+        help = "Resolution values for clustering [default %default]"),
     make_option(c("--nmf_ident"), action = "store", type = "integer", 
         default = NULL, 
-        help="Set Idents(infile) to NMF of specified rank [default %default]"),
+        help = "Set Idents(infile) to NMF of specified rank [default %default]"),
     make_option(c("--markers"), action = "store_true", 
         default = FALSE, 
-        help="Find markers for --singlecell clusters."),
+        help = "Find markers for --singlecell clusters."),
     make_option(c("--simulation"), action = "store_true", 
         default = FALSE, 
-        help="Subcluster the reference cells, specified by the call attribute [default %default]"),
+        help = "Subcluster the reference cells, specified by the call attribute [default %default]"),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.6,
-        help="Size of dots on H&E [default %default]"),
+        help = "Size of dots on H&E [default %default]"),
     make_option(c("--infer_cna"), action = "store_true", default = FALSE, 
-        help="Try to infer copy number alterations to label tumor clusters."),
+        help = "Try to infer copy number alterations to label tumor clusters."),
     make_option(c("--cna_cutoff"), action = "store", type = "double", default = 0.3,
-        help="Default infercnv cutoff, requires --infer_cna [default %default]"),
+        help = "Default infercnv cutoff, requires --infer_cna [default %default]"),
     make_option(c("--cna_hmm"), action = "store_true", default = FALSE, 
-        help="Run infercnv HMM."),
+        help = "Run infercnv HMM."),
     make_option(c("--cna_output_normal_counts"), action = "store_true", default = FALSE, 
-        help="Output counts of normal clusters, useful for creating a normal reference database."),
+        help = "Output counts of normal clusters, useful for creating a normal reference database."),
+    make_option(c("--cna_scale_data"), action = "store_true", default = FALSE, 
+        help = "Scale data in inferCNV, useful when --cna_pool_of_normals contains very different data."),
+    make_option(c("--cna_pool_of_normals"), action = "store", type = "character", default = NULL, 
+        help = "Matrix or (matrices in .list file) used for infercnv normalization."),
     make_option(c("--png"), action = "store_true", default = FALSE, 
-        help="Generate PNG version of output plots."),
+        help = "Generate PNG version of output plots."),
     make_option(c("--serialize"), action = "store_true", default = FALSE, 
-        help="Serialize processed --singlecell object. Can be large."),
+        help = "Serialize processed --singlecell object. Can be large."),
     make_option(c("--verbose"), action = "store_true", default = FALSE, 
-        help="Verbose output"),
+        help = "Verbose output"),
     make_option(c("-f", "--force"), action = "store_true", default = FALSE, 
-        help="Overwrite existing files")
+        help = "Overwrite existing files")
 )
 
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
@@ -186,12 +190,15 @@ if (!opt$force && file.exists(filename_predictions)) {
     }
 }
 
-.run_infer <- function(seurat_obj, seurat_raw_obj = seurat_obj, ref_group_names=NULL, out_dir = tempfile(), feature="ident", HMM=FALSE, cutoff=0.4) {
+.run_infer <- function(seurat_obj, seurat_raw_obj = seurat_obj, 
+                       ref_group_names = NULL, out_dir = tempfile(),
+                       feature = "ident", HMM=FALSE, cutoff = 0.4,
+                       scale_data = opt$cna_scale_data) {
+
     if (!file.exists(out_dir)) {
         out_dir <- gsub(" ", "_", out_dir)
         dir.create(out_dir)
     }
-
     count_matrix <- GetAssayData(seurat_raw_obj, slot= "counts")[, colnames(seurat_obj)]
     annotations <- FetchData(seurat_obj, feature)
     types <- unique(annotations[,1])
@@ -199,7 +206,6 @@ if (!opt$force && file.exists(filename_predictions)) {
         ref_group_names <- types[!types %in% c("Tumor", "?", "Unassigned")]
     }
     if (is.na(ref_group_names)) ref_group_names <- NULL
-    message("Refgroups: ", paste(ref_group_names, collapse=","))
     if (!is.null(opt$cna_output_normal_counts) &&
         !is.null(ref_group_names)) {
         filename <- file.path(out_dir, "normal_counts.tsv.gz")
@@ -208,13 +214,27 @@ if (!opt$force && file.exists(filename_predictions)) {
         data.table::fwrite(data.table::as.data.table(count_matrix[,idx]), file = filename,
             sep = "\t", quote = FALSE)
     }    
+    pon_count_matrix <- .get_infer_cna_pon()
+    if (!is.null(pon_count_matrix)) {
+        isc <- intersect(rownames(count_matrix), rownames(pon_count_matrix))
+        count_matrix <- cbind(count_matrix[isc,], pon_count_matrix[isc,])
+        pon_annotations <- data.frame(
+            ident = rep("PoN", ncol(pon_count_matrix)),
+            row.names = colnames(pon_count_matrix)
+        )
+        colnames(pon_annotations) <- colnames(annotations)
+        annotations[,1] <- as.character(annotations[,1])
+        annotations <- rbind(annotations, pon_annotations)
+        annotations[,1] <- as.factor(annotations[,1])
+        ref_group_names <- c(ref_group_names, "PoN")
+    }    
+    message("Refgroups: ", paste(ref_group_names, collapse=","))
     infercnv_obj <- CreateInfercnvObject(
         raw_counts_matrix = count_matrix,
         gene_order_file=genes,
         annotations_file = annotations,
         ref_group_names = ref_group_names
     )
-
     infercnv_obj <- infercnv::run(infercnv_obj,
                                    cutoff=cutoff,
                                    out_dir=out_dir,
@@ -222,10 +242,34 @@ if (!opt$force && file.exists(filename_predictions)) {
                                    denoise=TRUE,
                                    HMM=HMM,
                                    num_threads=2,
+                                   scale_data = scale_data,
                                    sd_amplifier=1.0
                                    )
     saveRDS(infercnv_obj, file = file.path(out_dir, "infercnv_obj.rds"))
     infercnv_obj
+}
+.get_infer_cna_pon <- function() {
+    if (is.null(opt$cna_pool_of_normals)) return(NULL)
+    .load_infer_cna_pon <- function(file, i) {    
+        if (tolower(tools::file_ext(file)) == "rds") {
+            seurat_obj <- readRDS(file)
+            count_matrix <- GetAssayData(seurat_obj, slot = "counts")
+        } else {   
+            count_matrix <- data.table::fread(file)
+        }
+        colnames(count_matrix) <- gsub("-\\d$", 
+            paste0("-pon-", i), colnames(count_matrix))
+        return(count_matrix)
+    }
+    if (grepl("list$",opt$cna_pool_of_normals)) {
+        files <- cli_check_file_list(opt$cna_pool_of_normals)
+    } else {
+        files <- opt$cna_pool_of_normals
+    }
+    m <- lapply(seq_along(files), function(i) .load_infer_cna_pon(files[i], i))
+    if (length(m) < 2) return(m[[1]])
+    isc <- Reduce(intersect, lapply(m, rownames))
+    return(Reduce(cbind, lapply(m, function(x) x[isc,])))    
 }
 
 .infer_cna <- function(x, tumor_ps = c("Unassigned", "Tumor", "?")) {
