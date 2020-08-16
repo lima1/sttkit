@@ -3,6 +3,7 @@
 export(calculate_nmf_gse)
 export(cellphone_for_seurat)
 export(cli_check_file_list)
+export(cli_check_lib_ids)
 export(cluster_integrated)
 export(cluster_nmf)
 export(cluster_prediction_strength)

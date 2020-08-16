@@ -156,9 +156,9 @@ plot_clusters <- function(obj, prefix, subdir = "snn") {
 #' @param obj1 Object, clustered by \code{\link{cluster_spatial}}.
 #' @param obj2 Object, clustered by \code{\link{cluster_spatial}}.
 #' @param col1 \code{meta.data} column containing cluster labels of 
-#' \code{obj1}. Default use first available.
+#' \code{obj1}. Use \code{ident} to use spot identity classes.
 #' @param col2 \code{meta.data} column containing cluster labels of 
-#' \code{obj2}. Default use first available.
+#' \code{obj2}. Use \code{ident} to use spot identity classes.
 #' @param assay Name of the assay corresponding to the initial input data.
 #' @param prefix Prefix of output files
 
@@ -166,17 +166,10 @@ plot_clusters <- function(obj, prefix, subdir = "snn") {
 #' @examples
 #' cluster_prediction_strength
 
-cluster_prediction_strength <- function(obj1, obj2, col1 = NULL, col2 = NULL,
+cluster_prediction_strength <- function(obj1, obj2, col1 = "ident", col2 = "ident",
                                         assay = "Spatial",
                                         prefix) {
 
-    .find_cluster_col <- function(obj, label) {
-        col <- grep("snn_res", colnames(obj@meta.data))
-        if (!length(col)) stop("cannot find cluster column for %s.", label)
-        col <- colnames(obj1@meta.data)[col]
-    }    
-    if (is.null(col1)) col1 <- .find_cluster_col(obj1, "obj1")
-    if (is.null(col2)) col2 <- .find_cluster_col(obj2, "obj2")
     .transfer_cluster_labels <- function(reference, query, refdata) {
         anchors <- FindTransferAnchors(reference = reference, query = query,
             dims = 1:30, reduction = "cca")
@@ -185,7 +178,8 @@ cluster_prediction_strength <- function(obj1, obj2, col1 = NULL, col2 = NULL,
         query <- AddMetaData(object = query, metadata = predictions)
     }    
     .calc_consistency <- function(obj1, obj2, col) {
-        query <- .transfer_cluster_labels(obj1, obj2, obj1@meta.data[[col]])
+        refdata <- FetchData(obj1, vars = col[1])[Cells(obj1),]
+        query <- .transfer_cluster_labels(obj1, obj2, refdata)
         m <- .get_sample_consistency_matrix(query, "predicted.id", col)
         .plot_consistency_matrix(m, query, obj1, obj2, assay = assay, prefix = prefix)
     }
@@ -196,12 +190,13 @@ cluster_prediction_strength <- function(obj1, obj2, col1 = NULL, col2 = NULL,
 
 .get_sample_consistency_matrix <- function(query, col1, col2) {
     m <- matrix(0, ncol(query), ncol(query))
+    md <- FetchData(query, c(col1, col2))
     for (i in seq(1, ncol(query)-1)) {
         for (j in seq(i + 1, ncol(query))) {
-            if (query@meta.data[i, col1] == query@meta.data[j, col1] &&
-                query@meta.data[i, col2] == query@meta.data[j, col2]) { 
-                m[i, j] <- sum(query@meta.data[, col1] == query@meta.data[i, col1], na.rm=TRUE)
-                m[j, i] <- sum(query@meta.data[, col2] == query@meta.data[i, col2], na.rm=TRUE)
+            if (md[i, 1] == md[j, 1] &&
+                md[i, 2] == md[j, 2]) { 
+                m[i, j] <- sum(md[, 1] == md[i, 1], na.rm=TRUE)
+                m[j, i] <- sum(md[, 2] == md[i, 2], na.rm=TRUE)
             }    
         }
     }

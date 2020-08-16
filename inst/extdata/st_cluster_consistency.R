@@ -9,8 +9,9 @@ option_list <- list(
         help="List of infile RDS from st_cluster.R."),
     make_option(c("--outprefix"), action = "store", type = "character", default = NULL,
         help="Outfile."),
-    make_option(c("--hejpegs"), action = "store", type = "character", default = NULL,
-        help="List of file with JPEGs containing cropped HE image."),
+    make_option(c("--nmf_ident"), action = "store", type = "integer", 
+        default = NULL, 
+        help="Set Idents(infile) to NMF of specified rank after NMF [default %default]"),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.5,
         help="Size of dots on H&E"),
     make_option(c("--verbose"), action = "store_true", default = FALSE, 
@@ -54,17 +55,25 @@ suppressPackageStartupMessages(library(Seurat))
 suppressPackageStartupMessages(library(sttkit))
 
 infiles <- cli_check_file_list(opt$infiles)
-hejpegs <- cli_check_file_list(opt$hejpegs)
-if (length(infiles) != length(hejpegs)) {
-    stop("--infile as list requires --hejpeg as list.")    
-}
 flog.info("Loading infiles %s...", paste(sapply(infiles, basename), collapse=", "))
 ndata <- lapply(infiles, readRDS)
+ndata <- cli_check_lib_ids(ndata)
+if (!is.null(opt$nmf_ident)) {
+    library(NMF)
+    ndata <- lapply(ndata, function(x) {
+        old_idents <- Idents(x)
+        x <- set_idents_nmf(x, k = opt$nmf_ident)
+        if (!identical(old_idents, Idents(x))) {
+            flog.info("Setting idents to NMF %i clustering. This is not serialized.", opt$nmf_ident)
+        }
+        x
+    })
+}
 
 for (i in seq_along(ndata)) {
     for (j in seq_along(ndata)) {
-        if (i == j) next
+        if (i <= j) next
         cluster_prediction_strength(ndata[[i]], ndata[[j]], 
-            hejpeg1 = hejpegs[i], hejpeg2 = hejpegs[j], prefix = opt$outprefix)
+            prefix = opt$outprefix)
     }    
 }

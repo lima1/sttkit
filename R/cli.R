@@ -23,3 +23,22 @@ cli_check_file_list <- function(file, check_exists = TRUE) {
     }
     files
 }
+
+#' cli_check_lib_ids
+#'
+#' Internal function for the command line interface
+#' @param reference_list List of \code{Seurat} objects
+#' @export cli_check_lib_ids
+#' @examples
+#' cli_check_lib_ids
+cli_check_lib_ids <- function(reference_list) {
+    libs <- sapply(reference_list, function(x) x$library[1])
+    if (any(duplicated(libs))) {
+        flog.warn("Found duplicated library ids, appending indices to ids.")
+        reference_list <- lapply(seq_along(reference_list), function(i) {
+            reference_list[[i]]$library <- paste(reference_list[[i]]$library, i, sep = "_")
+            reference_list[[i]]
+        })
+    }
+    reference_list
+}    

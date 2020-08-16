@@ -7,8 +7,8 @@
 cluster_prediction_strength(
   obj1,
   obj2,
-  col1 = NULL,
-  col2 = NULL,
+  col1 = "ident",
+  col2 = "ident",
   assay = "Spatial",
   prefix
 )
@@ -19,10 +19,10 @@ cluster_prediction_strength(
 \item{obj2}{Object, clustered by \code{\link{cluster_spatial}}.}
 
 \item{col1}{\code{meta.data} column containing cluster labels of 
-\code{obj1}. Default use first available.}
+\code{obj1}. Use \code{ident} to use spot identity classes.}
 
 \item{col2}{\code{meta.data} column containing cluster labels of 
-\code{obj2}. Default use first available.}
+\code{obj2}. Use \code{ident} to use spot identity classes.}
 
 \item{assay}{Name of the assay corresponding to the initial input data.}
 
