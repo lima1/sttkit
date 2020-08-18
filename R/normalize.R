@@ -10,6 +10,7 @@
 #' @param method Use \code{sctransform} to normalize and scale data,
 #' or use \code{scran} or Seurat 2 style normalization and scaling.
 #' @param regressout Regressout these features.
+#' @param cell_cycle_score Use \code{CellCycleScoring} to add S/G1/G2M scores
 #' @param assay Name of the assay corresponding to the initial input data.
 #' @param serialize Automatically serialize object
 #' @param prefix Prefix of output files
@@ -23,6 +24,7 @@
 normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE,
                               correct_umi = TRUE,
                               method = c("sctransform", "seurat2", "scran"), 
+                              cell_cycle_score = TRUE,
                               regressout = NULL, assay = "Spatial",
                               serialize = TRUE, prefix, ...) {
     regressout <- .check_regressout(obj, regressout)
@@ -42,6 +44,7 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
         obj <- SCTransform(obj, variable.features.n = nfeatures, assay = assay,
             vars.to.regress = regressout, do.correct.umi = correct_umi,
             return.only.var.genes = FALSE, min_cells = min_cells, ...)
+        if (cell_cycle_score) obj <- .add_cc_score(obj)
         if (serialize) .serialize(obj, prefix, "_scaled.rds")
         flog.info("Scaling alternative assay %s...", scale_alt_assay)
         obj <- ScaleData(object = obj, vars.to.regress = regressout,
@@ -73,6 +76,7 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
     flog.info("Finding %i variable features...", nfeatures)
     obj <- FindVariableFeatures(object = obj, selection.method = "vst",
         nfeatures = nfeatures, verbose = FALSE)
+    if (cell_cycle_score) obj <- .add_cc_score(obj)
     if (serialize) .serialize(obj, prefix, "_unscaled.rds")
     if (!is.null(regressout)) {
         flog.info("Regressing out %s.", paste(regressout, collapse = ", "))

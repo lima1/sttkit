@@ -5,7 +5,7 @@
 \title{plot_spatially_variable}
 \usage{
 plot_spatially_variable(
-  ndata,
+  object,
   labels = NULL,
   spatial_features,
   method = "markvariogram",
@@ -16,6 +16,8 @@ plot_spatially_variable(
 )
 }
 \arguments{
+\item{object}{Seurat object}
+
 \item{labels}{Optional \code{character(n)} vector with labels}
 
 \item{spatial_features}{Results of\code{Seurat::SpatiallyVariableFeatures}.}
@@ -29,8 +31,6 @@ plot_spatially_variable(
 \item{subdir}{Put files in a subdirectory}
 
 \item{...}{Arguments passed to \code{\link{plot_features}}}
-
-\item{object}{Seurat object}
 
 \item{width}{Output PDF width}
 

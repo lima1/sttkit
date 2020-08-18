@@ -829,17 +829,17 @@ plot_signatures_nmf <- function(object, gmt, gmt_name = NULL, rank, prefix,
 #' @export plot_spatially_variable
 #' @examples
 #' plot_spatially_variable
-plot_spatially_variable <- function(ndata, labels = NULL, spatial_features, method = "markvariogram", 
+plot_spatially_variable <- function(object, labels = NULL, spatial_features, method = "markvariogram", 
     number_features = 80, prefix, subdir = "spatial_variation", ...) {
     top_features <- lapply(spatial_features, function(x) head(x, number_features))
-    top_features <- lapply(top_features, .reorder_spatially_variable_features, ndata)
-    ndata_split <- SplitObject(ndata, split.by = "library")
-    libs <- as.character(sapply(ndata_split, function(x) x$library[1]))
-    for (i in seq_along(ndata_split)) {
+    top_features <- lapply(top_features, .reorder_spatially_variable_features, object)
+    object_split <- SplitObject(object, split.by = "library")
+    libs <- as.character(sapply(object_split, function(x) x$library[1]))
+    for (i in seq_along(object_split)) {
         flog.info("Generating output plots for %s ...", libs[i])
         label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
         libs_label <- if (length(libs) < 2) "" else paste0("_",libs[i])
-        plot_features(object = ndata_split[[i]], 
+        plot_features(object = object_split[[i]], 
             features = top_features[[i]],
             prefix = prefix,
             suffix = paste0("_he_variable_", method, label, libs_label, ".pdf"),
@@ -886,3 +886,58 @@ plot_spatially_variable <- function(ndata, labels = NULL, spatial_features, meth
     object
 }
 
+#' plot_qc_read
+#'
+#' Plot QC after reading a Spatial read counts
+#' @param object Seurat object
+#' @param prefix Prefix of output files
+#' @param assay Name of the assay corresponding to the initial input data.
+#' @export plot_qc_read
+#' @examples 
+#' plot_qc_read
+plot_qc_read <- function(object, prefix, assay) {
+    pdf(paste0(prefix, "_qc.pdf"))
+    print(VlnPlot(object = object, 
+        features = c(paste0("nFeature_", assay), 
+                     paste0("nCount_", assay), 
+                     "percent.mito", "percent.ribo"),
+        ncol = 2))
+    par(mfrow = c(2, 2))
+    print(FeatureScatter(object = object, 
+        feature1 = paste0("nFeature_", assay), 
+        feature2 = paste0("nCount_", assay)))
+    print(FeatureScatter(object = object, 
+        feature1 = paste0("nFeature_", assay),, 
+        feature2 = "percent.ribo"))
+    if (length(unique(object$percent.mito))>1) { 
+        print(FeatureScatter(object = object, 
+            feature1 = paste0("nFeature_", assay),
+            feature2 = "percent.mito"))
+        print(FeatureScatter(object = object, 
+            feature1 = "percent.mito", 
+            feature2 = "percent.ribo"))
+
+    }
+    if ("S.Score" %in% colnames(object@meta.data)) {
+        par(mfrow = c(1, 1))
+        print(VlnPlot(object = object,
+            features = c("S.Score", "G2M.Score")))
+        if (length(unique(object$percent.mito))>1) { 
+            par(mfrow = c(2, 2))
+            print(FeatureScatter(object = object, 
+                feature1 = "S.Score", 
+                feature2 = "percent.ribo"))
+            print(FeatureScatter(object = object, 
+                feature1 = "G2M.Score", 
+                feature2 = "percent.ribo"))
+            print(FeatureScatter(object = object, 
+                feature1 = "S.Score", 
+                feature2 = "percent.mito"))
+            print(FeatureScatter(object = object, 
+                feature1 = "G2M.Score", 
+                feature2 = "percent.mito"))
+        }
+    }    
+    dev.off()
+    .write_qc_stats(object, prefix)
+}    

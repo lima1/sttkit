@@ -16,7 +16,6 @@
 #' @param slice Optional name for the stored \code{image}
 #' @param downsample_prob Downsample input matrix. Requires \code{DropletUtils}.
 #' @param assay Name of the assay corresponding to the initial input data.
-#' @param plot_qc Generate QC plots
 #' @param serialize Automatically serialize object
 #' @param prefix Prefix of output files
 #' @import Seurat
@@ -34,8 +33,8 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
                         min_features = 300, min_spots = 2, required_features = NULL, 
                         transpose = FALSE, barcodes = NULL, image = NULL, slice = sampleid,
                         downsample_prob = NULL,
-                        assay = "Spatial",
-                        plot_qc = TRUE, serialize = TRUE, prefix) {
+                        assay = "Spatial", 
+                        serialize = TRUE, prefix) {
     if (is(file, "character")) {
         flog.info("Loading %s...", basename(file))
         raw_data <- Matrix::t(read.delim(file, row.names=1))
@@ -78,32 +77,6 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
     ndata <- PercentageFeatureSet(object = ndata, pattern = mt_pattern, col.name = "percent.mito")
     ndata <- PercentageFeatureSet(object = ndata, pattern = rp_pattern, col.name = "percent.ribo")
 
-    if (plot_qc) {
-        pdf(paste0(prefix, "_qc.pdf"))
-        print(VlnPlot(object = ndata, 
-            features = c(paste0("nFeature_", assay), 
-                         paste0("nCount_", assay), 
-                         "percent.mito", "percent.ribo"),
-            ncol = 2))
-        par(mfrow = c(2, 2))
-        print(FeatureScatter(object = ndata, 
-            feature1 = paste0("nFeature_", assay), 
-            feature2 = paste0("nCount_", assay)))
-        print(FeatureScatter(object = ndata, 
-            feature1 = paste0("nFeature_", assay),, 
-            feature2 = "percent.ribo"))
-        if (length(unique(ndata$percent.mito))>1) { 
-            print(FeatureScatter(object = ndata, 
-                feature1 = paste0("nFeature_", assay),
-                feature2 = "percent.mito"))
-            print(FeatureScatter(object = ndata, 
-                feature1 = "percent.mito", 
-                feature2 = "percent.ribo"))
-
-        }
-        dev.off()
-        .write_qc_stats(ndata, prefix)
-    }    
     ndata@meta.data$library <- sampleid
     if (!is.null(barcodes)) {
         ndata <- AddMetaData(object = ndata, metadata = barcodes, col.name = "barcode")
@@ -132,7 +105,6 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
         key <- paste0("nFeature_", DefaultAssay(ndata), "_mm10")
         ndata[[key]] <- apply(as.matrix(cnts[grep("mm10", rownames(cnts)),]),2,function(x) length(which(x>0)))
     }
-
     if (serialize) {
         flog.info("Writing R data structure to %s...", paste0(prefix, "_raw.rds"))
         .serialize(ndata, prefix, "_raw.rds")
@@ -236,3 +208,10 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
     if (!dir.exists(s_dir)) dir.create(s_dir)
     file.path(s_dir, paste0(basename(prefix), suffix))
 }    
+.add_cc_score <- function(obj, ...) {
+    data(cc.genes.all, envir = environment())
+    id <- which.max(sapply(cc.genes.all, function(x) sum(unlist(x) %in% rownames(obj))))
+    flog.info("Adding cell cycle scoring...")
+    CellCycleScoring(obj, s.features = cc.genes.all[[id]]$s.genes,
+        g2m.features = cc.genes.all[[id]]$g2m.genes, set.ident = FALSE, ...)
+}

@@ -110,7 +110,7 @@ deconvolute_simulation <- function(simulation, references, min_features, regress
                                    resolution, idents, max_markers = NULL, 
                                    plot_qc = TRUE, 
                                    min_fraction = 0.01, verbose = FALSE) {
-    obj_sim <- read_spatial(simulation$data, sampleid = "sim", plot_qc = FALSE,
+    obj_sim <- read_spatial(simulation$data, sampleid = "sim",
         serialize = FALSE)
     obj_sim <- normalize_spatial(obj_sim, scale = FALSE, serialize = FALSE)
     obj_sim_int <- integrate_spatial(obj_spatial = obj_sim, 
