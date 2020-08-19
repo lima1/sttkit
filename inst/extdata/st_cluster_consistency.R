@@ -14,6 +14,8 @@ option_list <- list(
         help="Set Idents(infile) to NMF of specified rank after NMF [default %default]"),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.5,
         help="Size of dots on H&E"),
+    make_option(c("--png"), action = "store_true", default = FALSE, 
+        help="Generate PNG version of output plots."),
     make_option(c("--verbose"), action = "store_true", default = FALSE, 
         help="Verbose output"),
     make_option(c("-f", "--force"), action = "store_true", default = FALSE, 
@@ -33,23 +35,6 @@ if (!dir.exists(dirname(opt$outprefix))) {
     dir.create(dirname(opt$outprefix))
 }
 
-.plot_he_cluster <- function(ndata, i, j, prefix, hejpeg) {
-    num <- paste0(i, "_", j)
-    filename <- paste0(prefix, "_he_cluster_benchmark", num, ".pdf")
-    flog.info("Plotting clusters on H&E...")
-    pdf(filename, width = 4, height = 3.9)
-    ndata[[i]]$Cluster <- as.factor(paste0(
-        as.character(Idents(ndata[[i]])), "/",
-        as.character(Idents(ndata[[j]]))
-    ))
-    plot_features(ndata[[i]], features = "Cluster", hejpeg = hejpeg, 
-        labels = waiver(), labels_title = "", 
-        reorder_clusters = FALSE, size = opt$dot_size, 
-        plot_map = TRUE)
-    dev.off()
-}
-
-    
 flog.info("Loading Seurat...")
 suppressPackageStartupMessages(library(Seurat))
 suppressPackageStartupMessages(library(sttkit))
@@ -74,6 +59,6 @@ for (i in seq_along(ndata)) {
     for (j in seq_along(ndata)) {
         if (i <= j) next
         cluster_prediction_strength(ndata[[i]], ndata[[j]], 
-            prefix = opt$outprefix)
+            png = opt$png, prefix = opt$outprefix)
     }    
 }

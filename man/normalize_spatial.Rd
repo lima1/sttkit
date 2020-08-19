@@ -11,6 +11,7 @@ normalize_spatial(
   center = TRUE,
   correct_umi = TRUE,
   method = c("sctransform", "seurat2", "scran"),
+  cell_cycle_score = TRUE,
   regressout = NULL,
   assay = "Spatial",
   serialize = TRUE,
@@ -31,6 +32,8 @@ normalize_spatial(
 
 \item{method}{Use \code{sctransform} to normalize and scale data,
 or use \code{scran} or Seurat 2 style normalization and scaling.}
+
+\item{cell_cycle_score}{Use \code{CellCycleScoring} to add S/G1/G2M scores}
 
 \item{regressout}{Regressout these features.}
 

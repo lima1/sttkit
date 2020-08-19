@@ -18,7 +18,6 @@ read_spatial(
   slice = sampleid,
   downsample_prob = NULL,
   assay = "Spatial",
-  cell_cycle_score = TRUE,
   serialize = TRUE,
   prefix
 )
@@ -51,8 +50,6 @@ Can also be a JPEG for Spatial Transcriptomics data.}
 \item{downsample_prob}{Downsample input matrix. Requires \code{DropletUtils}.}
 
 \item{assay}{Name of the assay corresponding to the initial input data.}
-
-\item{cell_cycle_score}{Use \code{CellCycleScoring} to add S/G1/G2M scores}
 
 \item{serialize}{Automatically serialize object}
 

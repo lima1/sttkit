@@ -10,6 +10,7 @@ cluster_prediction_strength(
   col1 = "ident",
   col2 = "ident",
   assay = "Spatial",
+  png = FALSE,
   prefix
 )
 }
@@ -25,6 +26,8 @@ cluster_prediction_strength(
 \code{obj2}. Use \code{ident} to use spot identity classes.}
 
 \item{assay}{Name of the assay corresponding to the initial input data.}
+
+\item{png}{Create, in addition to PDF, PNG files}
 
 \item{prefix}{Prefix of output files}
 }

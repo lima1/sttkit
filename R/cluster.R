@@ -160,6 +160,7 @@ plot_clusters <- function(obj, prefix, subdir = "snn") {
 #' @param col2 \code{meta.data} column containing cluster labels of 
 #' \code{obj2}. Use \code{ident} to use spot identity classes.
 #' @param assay Name of the assay corresponding to the initial input data.
+#' @param png Create, in addition to PDF, PNG files
 #' @param prefix Prefix of output files
 
 #' @export cluster_prediction_strength
@@ -167,7 +168,7 @@ plot_clusters <- function(obj, prefix, subdir = "snn") {
 #' cluster_prediction_strength
 
 cluster_prediction_strength <- function(obj1, obj2, col1 = "ident", col2 = "ident",
-                                        assay = "Spatial",
+                                        assay = "Spatial", png = FALSE,
                                         prefix) {
 
     .transfer_cluster_labels <- function(reference, query, refdata) {
@@ -181,7 +182,7 @@ cluster_prediction_strength <- function(obj1, obj2, col1 = "ident", col2 = "iden
         refdata <- FetchData(obj1, vars = col[1])[Cells(obj1),]
         query <- .transfer_cluster_labels(obj1, obj2, refdata)
         m <- .get_sample_consistency_matrix(query, "predicted.id", col)
-        .plot_consistency_matrix(m, query, obj1, obj2, assay = assay, prefix = prefix)
+        .plot_consistency_matrix(m, query, obj1, obj2, assay = assay, png = png, prefix = prefix)
     }
    .calc_consistency(obj1, obj2, col1)
    .calc_consistency(obj2, obj1, col2)
@@ -203,7 +204,8 @@ cluster_prediction_strength <- function(obj1, obj2, col1 = "ident", col2 = "iden
     m
 }
 
-.plot_consistency_matrix <- function(m, query, obj1, obj2,  assay = "Spatial", prefix, suffix = "") {
+.plot_consistency_matrix <- function(m, query, obj1, obj2,  assay = "Spatial",
+                                     png = FALSE, prefix, suffix = "") {
     query$cluster_consistency <- apply(m, 1, function(x) sum(x > 0)) / 
         pmax(1, pmax(apply(m, 1, function(x) max(x)), 
                      apply(m, 2, function(x) max(x))))
@@ -221,6 +223,12 @@ cluster_prediction_strength <- function(obj1, obj2, col1 = "ident", col2 = "iden
     print(FeatureScatter(object = query, feature1 = "cluster_consistency",
                                          feature2 = "percent.ribo"))
     dev.off()
+    if (png) { 
+        png(paste0(prefix, "_cluster_consistency_", l1, l2, suffix, ".png"),
+        width = 4, height = 3.9, units = "in", res = 150)
+        print(SpatialFeaturePlot(query, "cluster_consistency"))         
+        dev.off()
+    }    
     query
 }
 
