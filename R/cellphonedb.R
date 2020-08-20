@@ -106,4 +106,36 @@ import_cellphone <- function(cellphone_outpath, orgdb) {
     write.csv(sig_means, file.path(cellphone_outpath, "significant_means_ranked_spatial.csv"), row.names = FALSE)
 
     return(sig_means)
+} 
+
+#' Plot cell-cell interaction analysis using CellPhoneDB
+#'
+#' This function allows you to read reranked CellPhoneDB output and plot it.
+#'
+#' @param obj Seurat Object
+#' @param id Line of significant pair in significant_means_ranked_spatial.csv file
+#' @param cellphone_outpath Path with CellPhoneDB output
+
+#' @return ggplot object
+#'
+#' @examples
+#' plot_cellphone
+#' @export plot_cellphone
+plot_cellphone <- function(obj, id = 1, cellphone_outpath) {
+    ranked <- read.csv(file.path(cellphone_outpath, "significant_means_ranked_spatial.csv"),
+        as.is = TRUE)
+    col_ids <- colnames(ranked)[grep("^X\\d+\\.\\d+$", colnames(ranked))]
+    pairs <- lapply(strsplit(gsub("X", "", col_ids), "\\."), as.numeric)
+    cluster_pairs <- apply(t(ranked[,col_ids]),2, function(x) pairs[which(!is.na(x))])
+    new_idents <- as.character(Idents(obj))
+    new_idents[!Idents(obj) %in% as.character(unlist(cluster_pairs[[id]]))] <- "NS"
+    Idents(obj) <- new_idents
+    g1 <- SpatialFeaturePlot(obj, features=unlist(ranked[id,c("symbol_a", "symbol_b")]))
+    g2 <- SpatialDimPlot(obj)
+    if (requireNamespace("ggthemes", quietly = TRUE) &&
+        length(levels(Idents(obj))) <= 8) {
+        g2 <- g2 + ggthemes::scale_fill_colorblind()
+    }
+    return(g1+g2)
 }    
+   
