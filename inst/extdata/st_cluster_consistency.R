@@ -12,6 +12,8 @@ option_list <- list(
     make_option(c("--nmf_ident"), action = "store", type = "integer", 
         default = NULL, 
         help="Set Idents(infile) to NMF of specified rank after NMF [default %default]"),
+    make_option(c("--import_clustering"), action = "store", type = "character", default = NULL,
+        help="Alternate clustering in Loupe CSV format."),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.5,
         help="Size of dots on H&E"),
     make_option(c("--png"), action = "store_true", default = FALSE, 
@@ -54,7 +56,15 @@ if (!is.null(opt$nmf_ident)) {
         x
     })
 }
-
+if (!is.null(opt$import_clustering)) {
+    if (grepl("list$",opt$import_clustering)) {
+        loupe_files <- cli_check_file_list(opt$import_clustering)
+    } else {
+        loupe_files <- rep(opt$import_clustering, length(ndata))
+    }    
+    ndata <- lapply(seq_along(ndata), function(i)
+        import_loupe(ndata[[i]], loupe_files[i]))
+}
 for (i in seq_along(ndata)) {
     for (j in seq_along(ndata)) {
         if (i <= j) next

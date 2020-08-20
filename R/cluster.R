@@ -222,6 +222,11 @@ cluster_prediction_strength <- function(obj1, obj2, col1 = "ident", col2 = "iden
                                          feature2 = "percent.mito"))
     print(FeatureScatter(object = query, feature1 = "cluster_consistency",
                                          feature2 = "percent.ribo"))
+
+    loupe_col <- colnames(query@meta.data)[grep("^import_", colnames(query@meta.data))]
+    if (length(loupe_col)) {
+        print(VlnPlot(query, features = "cluster_consistency", group.by = loupe_col))
+    }    
     dev.off()
     if (png) { 
         png(paste0(prefix, "_cluster_consistency_", l1, l2, suffix, ".png"),
@@ -361,6 +366,25 @@ export_nmf_loupe <- function(obj, rank, k, libs, labels = NULL, prefix) {
     write.csv(d, file = filename, row.names = FALSE)
 }
 
+#' import_loupe
+#'
+#' Impurt annotation from a CSV file loadable in Loupe
+#' @param obj Object, clustered by \code{\link{cluster_nmf}}.
+#' @param file CSV file loadable in Loupe 
+#' @returns Seurat object with annotation added.
+#' @export import_loupe
+#' @examples
+#' import_loupe
+import_loupe <- function(obj, file) {
+    anno <- read.csv(file, as.is = TRUE)
+    label <- paste0("import_", tolower(colnames(anno)[2]))
+    anno[,2] <- gsub("Cluster ", "", anno[,2])
+    if (any(anno$Barcode %in% Cells(obj))) {
+        obj <- AddMetaData(obj, metadata = data.frame(anno[,2], row.names=anno[,1]), col.name = label)
+    }
+    obj   
+}
+    
 .extract_barcode <- function(obj, aggr = FALSE) {
     barcode <- Cells(obj)
     # get aggregated barcode
