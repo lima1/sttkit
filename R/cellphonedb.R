@@ -80,6 +80,7 @@ cellphone_for_seurat <- function(obj, orgdb, prefix, slot = "data",
 #' This function allows you to read CellPhoneDB output and rerank it based on local interactions.
 #'
 #' @param obj Seurat Object
+#' @param cellphone_outpath CellPhoneDB output path
 #' @param orgdb orgdb Object
 #'
 #' @return interaction pairs in GMT format
@@ -88,7 +89,7 @@ cellphone_for_seurat <- function(obj, orgdb, prefix, slot = "data",
 #'
 #' @export import_cellphone
 
-import_cellphone <- function(cellphone_outpath, orgdb) {
+import_cellphone <- function(obj, cellphone_outpath, orgdb) {
     sig_means <- read.delim(file.path(cellphone_outpath, "significant_means.txt"), as.is = TRUE)
     col_ids <- grep("^X\\d", colnames(sig_means))
     sig_means <- sig_means[ apply(sig_means[, col_ids],1,function(x) sum(!is.na(x))) > 0, ]

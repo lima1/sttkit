@@ -4,12 +4,14 @@
 \alias{import_cellphone}
 \title{Import cell-cell interaction analysis using CellPhoneDB}
 \usage{
-import_cellphone(cellphone_outpath, orgdb)
+import_cellphone(obj, cellphone_outpath, orgdb)
 }
 \arguments{
-\item{orgdb}{orgdb Object}
-
 \item{obj}{Seurat Object}
+
+\item{cellphone_outpath}{CellPhoneDB output path}
+
+\item{orgdb}{orgdb Object}
 }
 \value{
 interaction pairs in GMT format

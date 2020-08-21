@@ -502,6 +502,10 @@ init_nmf_seed <- function(obj, b) {
 #' @examples
 #' set_idents_nmf
 set_idents_nmf <- function(object, k, rank = NULL) {
+    if (!requireNamespace("NMF", quietly = TRUE)) {
+        stop("This function requires the NMF library.")
+    }
+
     if (is.null(rank)) {
         available_misc <- names(object@misc)
         available_misc <- available_misc[grep("^nmf", available_misc)]
