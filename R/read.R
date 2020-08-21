@@ -210,8 +210,22 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
 }    
 .add_cc_score <- function(obj, ...) {
     data(cc.genes.all, envir = environment())
+    prefix <- .check_for_symbol_prefix(obj)
+    if (!is.null(prefix)) {
+        if (grepl("hg19|hg38", prefix[1])) {
+            cc.genes.all$Mixed <- lapply(cc.genes.all$Hs, function(x) c(paste0(prefix[1], "-", x)))
+        }     
+    }
     id <- which.max(sapply(cc.genes.all, function(x) sum(unlist(x) %in% rownames(obj))))
     flog.info("Adding cell cycle scoring...")
     CellCycleScoring(obj, s.features = cc.genes.all[[id]]$s.genes,
         g2m.features = cc.genes.all[[id]]$g2m.genes, set.ident = FALSE, ...)
 }
+
+.check_for_symbol_prefix <- function(obj) {
+    ss <- strsplit(rownames(obj), "-")
+    if (all(sapply(ss, length) > 1)) {
+        return(sort(unique(sapply(ss, function(x) x[1]))))
+    }
+    return(NULL)
+}        
