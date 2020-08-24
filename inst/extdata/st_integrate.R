@@ -49,6 +49,12 @@ option_list <- list(
         help = "Scale data in inferCNV, useful when --cna_pool_of_normals contains very different data."),
     make_option(c("--cna_pool_of_normals"), action = "store", type = "character", default = NULL, 
         help = "Matrix or (matrices in .list file) used for infercnv normalization."),
+    make_option(c("--cna_idents_ignore"), action = "store", type = "character", default = NULL, 
+        help = "(low quality) clusters ignored in infercnv [default none]."),
+    make_option(c("--cna_idents_reference"), action = "store", type = "character", default = NULL, 
+        help = "Clusters used for reference in infercnv [default auto]."),
+    make_option(c("--cna_subdir"), action = "store", type = "character", default = "", 
+        help = "Put inferCNV output in this sub-directory [default %default]."),
     make_option(c("--png"), action = "store_true", default = FALSE, 
         help = "Generate PNG version of output plots."),
     make_option(c("--serialize"), action = "store_true", default = FALSE, 
@@ -272,21 +278,32 @@ if (!opt$force && file.exists(filename_predictions)) {
     return(Reduce(cbind, lapply(m, function(x) x[isc,])))    
 }
 
-.infer_cna <- function(x, tumor_ps = c("Unassigned", "Tumor", "?")) {
-     p <- lapply(prediction.assay, function(pa) {
-        x$predictions <- pa
-        GetTransferPredictions(x)
-     })
-     p <- do.call(cbind,p)
-     tumor_fraction <- apply(p,1, function(x) sum(x %in% tumor_ps)/length(x))
-     tumor_fraction_mean <- sapply(split(tumor_fraction, Idents(x)), mean)
-     tumor_fraction_o <- apply(p,1, function(x) sum(x %in% "Tumor")/length(x))
-     tumor_fraction_o_mean <- sapply(split(tumor_fraction_o, Idents(x)), mean)
-     ref_group_names <- names(tumor_fraction_mean[tumor_fraction_mean < median(tumor_fraction_mean)])
-     if (max(tumor_fraction_o_mean)>0) {
-        obs_group_names <- names(tumor_fraction_o_mean[tumor_fraction_o_mean > median(tumor_fraction_o_mean)])
-        ref_group_names <- ref_group_names[!ref_group_names %in% obs_group_names]
-    }
+.infer_cna <- function(x, 
+                       idents_ignore = opt$cna_idents_ignore,
+                       idents_ref = opt$cna_idents_reference,
+                       tumor_ps = c("Unassigned", "Tumor", "?")) {
+     if (is.null(idents_ref)) {
+         p <- lapply(prediction.assay, function(pa) {
+            x$predictions <- pa
+            GetTransferPredictions(x)
+         })
+         p <- do.call(cbind,p)
+         tumor_fraction <- apply(p,1, function(x) sum(x %in% tumor_ps)/length(x))
+         tumor_fraction_mean <- sapply(split(tumor_fraction, Idents(x)), mean)
+         tumor_fraction_o <- apply(p,1, function(x) sum(x %in% "Tumor")/length(x))
+         tumor_fraction_o_mean <- sapply(split(tumor_fraction_o, Idents(x)), mean)
+         ref_group_names <- names(tumor_fraction_mean[tumor_fraction_mean < median(tumor_fraction_mean)])
+         if (max(tumor_fraction_o_mean)>0) {
+            obs_group_names <- names(tumor_fraction_o_mean[tumor_fraction_o_mean > median(tumor_fraction_o_mean)])
+            ref_group_names <- ref_group_names[!ref_group_names %in% obs_group_names]
+        }
+    } else {
+        ref_group_names <- idents_ref
+    }    
+     if (!is.null(idents_ignore)) {
+         x <- x[,!Idents(x) %in% strsplit(idents_ignore, ":")[[1]]]
+
+     }     
     if (!is.null(opt[["infile_raw"]])) {
         flog.info("Reading --infile_raw (%s)...",
             basename(opt[["infile_raw"]]))
@@ -294,7 +311,7 @@ if (!opt$force && file.exists(filename_predictions)) {
     } else {
         seurat_raw_obj <- x
     }        
-    .run_infer(x, seurat_raw_obj = seurat_raw_obj, ref_group_names = ref_group_names, out_dir =  file.path(dirname(opt$outprefix), "infer_cna"), cutoff = opt$cna_cutoff, HMM = opt$cna_hmm )
+    .run_infer(x, seurat_raw_obj = seurat_raw_obj, ref_group_names = ref_group_names, out_dir =  file.path(dirname(opt$outprefix), "infer_cna", opt$cna_subdir), cutoff = opt$cna_cutoff, HMM = opt$cna_hmm )
 }
 
 .plot_he <- function(x, i) {

@@ -126,6 +126,7 @@ name_no_dash <- sub("^_", "", name)
 group.term <- "library"
 
 if (single_input) {
+    flog.info("Loading infile %s...", opt$infile)
     ndata <- readRDS(opt$infile)
     gmt <- read_signatures(opt$gmt, ndata)
     ndata_merged <- .plot_signature(ndata, opt$outprefix, gmt, name)

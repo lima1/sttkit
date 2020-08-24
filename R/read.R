@@ -217,9 +217,18 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
         }     
     }
     id <- which.max(sapply(cc.genes.all, function(x) sum(unlist(x) %in% rownames(obj))))
+    s.features <- cc.genes.all[[id]]$s.genes
+    g2m.features <- cc.genes.all[[id]]$g2m.genes
+    
+    if (!length(s.features) || !length(g2m.features)) {
+        flog.warn("No cell cycle genes found.")
+        return(obj)
+    }
     flog.info("Adding cell cycle scoring...")
-    CellCycleScoring(obj, s.features = cc.genes.all[[id]]$s.genes,
-        g2m.features = cc.genes.all[[id]]$g2m.genes, set.ident = FALSE, ...)
+    objm <- try(CellCycleScoring(obj, s.features = s.features,
+        g2m.features = cc.genes.all[[id]]$g2m.genes, set.ident = FALSE, ...))
+    if (is(objm, "try-error")) return(obj)
+    objm
 }
 
 .check_for_symbol_prefix <- function(obj) {
