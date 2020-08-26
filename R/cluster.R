@@ -496,12 +496,13 @@ init_nmf_seed <- function(obj, b) {
 #' @param object Object, clustered by \code{\link{cluster_nmf}}.
 #' @param k Features of rank to be written (must be a single k, not a range)
 #' @param rank Number of clusters (the one used in \code{\link{cluster_nmf}})
+#' @param stop_if_unavail Dies when NMF clustering is not found.
 #' If \code{NULL}, use first available.
 #' @return object with new \code{Idents}
 #' @export set_idents_nmf
 #' @examples
 #' set_idents_nmf
-set_idents_nmf <- function(object, k, rank = NULL) {
+set_idents_nmf <- function(object, k, rank = NULL, stop_if_unavail = FALSE) {
     if (!requireNamespace("NMF", quietly = TRUE)) {
         stop("This function requires the NMF library.")
     }
@@ -510,7 +511,10 @@ set_idents_nmf <- function(object, k, rank = NULL) {
         available_misc <- names(object@misc)
         available_misc <- available_misc[grep("^nmf", available_misc)]
         available_misc <- available_misc[!grepl("_random", available_misc)]
-        if (!length(available_misc)) return(object)
+        if (!length(available_misc)) {
+            if (stop_if_unavail) stop("NMF clustering not found.")
+            return(object)
+        }    
         rank <- as.numeric(names(object@misc[[available_misc]]$fit))
     }    
     nmf_obj <- .extract_nmf_obj(object, rank)

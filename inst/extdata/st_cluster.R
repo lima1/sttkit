@@ -481,7 +481,7 @@ if (!is.null(opt$nmf_ident)) {
     }  
     library(NMF)
     old_idents <- Idents(ndata)
-    ndata <- set_idents_nmf(ndata, k = opt$nmf_ident)
+    ndata <- set_idents_nmf(ndata, k = opt$nmf_ident, stop_if_unavail = TRUE)
     if (!identical(old_idents, Idents(ndata))) {
         flog.info("Setting idents to NMF %i clustering. This is not serialized.", opt$nmf_ident)
     }

@@ -55,6 +55,8 @@ option_list <- list(
         help = "Clusters used for reference in infercnv [default auto]."),
     make_option(c("--cna_subdir"), action = "store", type = "character", default = "", 
         help = "Put inferCNV output in this sub-directory [default %default]."),
+    make_option(c("--cna_assay"), action = "store", type = "character", default = "Spatial", 
+        help = "Extract counts from this assay [default %default]."),
     make_option(c("--png"), action = "store_true", default = FALSE, 
         help = "Generate PNG version of output plots."),
     make_option(c("--serialize"), action = "store_true", default = FALSE, 
@@ -106,7 +108,7 @@ infile <- readRDS(opt[["infile"]])
 
 if (!is.null(opt$nmf_ident)) {
     library(NMF)
-    infile <- set_idents_nmf(infile, k = opt$nmf_ident)
+    infile <- set_idents_nmf(infile, k = opt$nmf_ident, stop_if_unavail = TRUE)
 }
 
 filename_predictions_old <- sttkit:::.get_serialize_path(opt$outprefix, "_transfer_predictions.rds")
@@ -205,7 +207,8 @@ if (!opt$force && file.exists(filename_predictions)) {
         out_dir <- gsub(" ", "_", out_dir)
         dir.create(out_dir)
     }
-    count_matrix <- GetAssayData(seurat_raw_obj, slot= "counts")[, colnames(seurat_obj)]
+    count_matrix <- GetAssayData(seurat_raw_obj, slot= "counts",
+        assay = opt$cna_assay)[, colnames(seurat_obj)]
     annotations <- FetchData(seurat_obj, feature)
     types <- unique(annotations[,1])
     if (is.null(ref_group_names)) {
@@ -259,7 +262,7 @@ if (!opt$force && file.exists(filename_predictions)) {
     .load_infer_cna_pon <- function(file, i) {    
         if (tolower(tools::file_ext(file)) == "rds") {
             seurat_obj <- readRDS(file)
-            count_matrix <- GetAssayData(seurat_obj, slot = "counts")
+            count_matrix <- GetAssayData(seurat_obj, slot = "counts", assay = opt$cna_assay)
         } else {   
             count_matrix <- data.table::fread(file)
         }
@@ -282,6 +285,12 @@ if (!opt$force && file.exists(filename_predictions)) {
                        idents_ignore = opt$cna_idents_ignore,
                        idents_ref = opt$cna_idents_reference,
                        tumor_ps = c("Unassigned", "Tumor", "?")) {
+     out_dir <- file.path(dirname(opt$outprefix), "infer_cna", opt$cna_subdir)
+     if (!file.exists(out_dir)) {
+         out_dir <- gsub(" ", "_", out_dir)
+         dir.create(out_dir)
+     }
+
      if (is.null(idents_ref)) {
          p <- lapply(prediction.assay, function(pa) {
             x$predictions <- pa
@@ -299,6 +308,12 @@ if (!opt$force && file.exists(filename_predictions)) {
         }
     } else {
         ref_group_names <- idents_ref
+        filename <- file.path(out_dir, "normal_counts.rds")
+        xx <- x[,Idents(x) %in% ref_group_names]
+        if (ncol(xx)) {
+            flog.info("Writing normal data to %s...", basename(filename))
+            saveRDS(xx, filename)
+        }
     }    
      if (!is.null(idents_ignore)) {
          x <- x[,!Idents(x) %in% strsplit(idents_ignore, ":")[[1]]]
@@ -311,7 +326,7 @@ if (!opt$force && file.exists(filename_predictions)) {
     } else {
         seurat_raw_obj <- x
     }        
-    .run_infer(x, seurat_raw_obj = seurat_raw_obj, ref_group_names = ref_group_names, out_dir =  file.path(dirname(opt$outprefix), "infer_cna", opt$cna_subdir), cutoff = opt$cna_cutoff, HMM = opt$cna_hmm )
+    .run_infer(x, seurat_raw_obj = seurat_raw_obj, ref_group_names = ref_group_names, out_dir = out_dir, cutoff = opt$cna_cutoff, HMM = opt$cna_hmm )
 }
 
 .plot_he <- function(x, i) {

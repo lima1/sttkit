@@ -4,14 +4,16 @@
 \alias{set_idents_nmf}
 \title{set_idents_nmf}
 \usage{
-set_idents_nmf(object, k, rank = NULL)
+set_idents_nmf(object, k, rank = NULL, stop_if_unavail = FALSE)
 }
 \arguments{
 \item{object}{Object, clustered by \code{\link{cluster_nmf}}.}
 
 \item{k}{Features of rank to be written (must be a single k, not a range)}
 
-\item{rank}{Number of clusters (the one used in \code{\link{cluster_nmf}})
+\item{rank}{Number of clusters (the one used in \code{\link{cluster_nmf}})}
+
+\item{stop_if_unavail}{Dies when NMF clustering is not found.
 If \code{NULL}, use first available.}
 }
 \value{
