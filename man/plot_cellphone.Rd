@@ -4,7 +4,7 @@
 \alias{plot_cellphone}
 \title{Plot cell-cell interaction analysis using CellPhoneDB}
 \usage{
-plot_cellphone(obj, id = 1, cellphone_outpath)
+plot_cellphone(obj, id = 1, cellphone_outpath, features = NULL)
 }
 \arguments{
 \item{obj}{Seurat Object}
@@ -12,6 +12,9 @@ plot_cellphone(obj, id = 1, cellphone_outpath)
 \item{id}{Line of significant pair in significant_means_ranked_spatial.csv file}
 
 \item{cellphone_outpath}{Path with CellPhoneDB output}
+
+\item{features}{alternative genes to plot (makes sense to set \code{id} to
+\code{NULL} in that case).}
 }
 \value{
 ggplot object

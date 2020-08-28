@@ -307,7 +307,7 @@ if (!opt$force && file.exists(filename_predictions)) {
             ref_group_names <- ref_group_names[!ref_group_names %in% obs_group_names]
         }
     } else {
-        ref_group_names <- idents_ref
+        ref_group_names <- idents_ref[idents_ref %in% Idents(x)]
         filename <- file.path(out_dir, "normal_counts.rds")
         xx <- x[,Idents(x) %in% ref_group_names]
         if (ncol(xx)) {
