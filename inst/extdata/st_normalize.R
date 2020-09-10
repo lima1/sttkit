@@ -90,6 +90,14 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
         ggcode = theme(legend.position = "right"),
         png = opt$png,
         labels = scales::percent, width = 8, height = 4)
+    if (sum(grep("S.Score|G2M.Score", colnames(ndata@meta.data)))) {
+        plot_features(ndata, features = c("S.Score", "G2M.Score"), 
+            pt.size.factor = opt$dot_size,
+            prefix = prefix, suffix = "_he_cell_cycle.pdf",
+            ggcode = theme(legend.position = "right"),
+            png = opt$png,
+            width = 8, height = 4)
+    }    
 }
 .get_serialize_path <- function(prefix, suffix) {
     s_dir <- file.path(dirname(prefix), "serialize")
