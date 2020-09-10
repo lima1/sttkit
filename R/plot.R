@@ -897,26 +897,29 @@ plot_spatially_variable <- function(object, labels = NULL, spatial_features, met
 #' plot_qc_read
 plot_qc_read <- function(object, prefix, assay) {
     pdf(paste0(prefix, "_qc.pdf"))
-    print(VlnPlot(object = object, 
-        features = c(paste0("nFeature_", assay), 
-                     paste0("nCount_", assay), 
-                     "percent.mito", "percent.ribo"),
-        ncol = 2))
-    par(mfrow = c(2, 2))
-    print(FeatureScatter(object = object, 
-        feature1 = paste0("nFeature_", assay), 
-        feature2 = paste0("nCount_", assay)))
-    print(FeatureScatter(object = object, 
-        feature1 = paste0("nFeature_", assay),, 
-        feature2 = "percent.ribo"))
-    if (length(unique(object$percent.mito))>1) { 
+    assays <- assay
+    for (assay in assays) {
+        print(VlnPlot(object = object, 
+            features = c(paste0("nFeature_", assay), 
+                         paste0("nCount_", assay), 
+                         "percent.mito", "percent.ribo"),
+            ncol = 2))
+        par(mfrow = c(2, 2))
         print(FeatureScatter(object = object, 
-            feature1 = paste0("nFeature_", assay),
-            feature2 = "percent.mito"))
+            feature1 = paste0("nFeature_", assay), 
+            feature2 = paste0("nCount_", assay)))
         print(FeatureScatter(object = object, 
-            feature1 = "percent.mito", 
+            feature1 = paste0("nFeature_", assay),, 
             feature2 = "percent.ribo"))
+        if (length(unique(object$percent.mito))>1) { 
+            print(FeatureScatter(object = object, 
+                feature1 = paste0("nFeature_", assay),
+                feature2 = "percent.mito"))
+            print(FeatureScatter(object = object, 
+                feature1 = "percent.mito", 
+                feature2 = "percent.ribo"))
 
+        }
     }
     if ("S.Score" %in% colnames(object@meta.data)) {
         par(mfrow = c(1, 1))

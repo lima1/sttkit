@@ -153,8 +153,8 @@ if (!opt$force && file.exists(filename)) {
                          prefix = opt$outprefix)
 }
 
-plot_qc_read(ndata, opt$outprefix, assay = Assays(ndata)[1])
-.plot_he_ptx(ndata, opt$outprefix, assay = Assays(ndata)[1])
+plot_qc_read(ndata, opt$outprefix, assay = Assays(ndata))
+.plot_he_ptx(ndata, opt$outprefix, assay = Assays(ndata))
 
 m <- .write_tsv(ndata, opt$outprefix)
 
