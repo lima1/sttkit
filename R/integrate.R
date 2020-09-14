@@ -69,7 +69,8 @@ integrate_spatial <- function(obj_spatial = NULL, references, features = 2000,
         }
     }    
     num_spots <- sapply(references, ncol)
-    .plot_pre_integration_umap(references, scale, features, prefix)
+    .plot_pre_integration_umap(references, scale, features, run_harmony = TRUE,
+        force = force, prefix = prefix)
     if (min(num_spots) < min_spots) {
         poor_libs <- sapply(references[num_spots < min_spots], function(x) x$library[1])
         flog.warn("Samples with low number of cells/spots: %s", 
@@ -363,16 +364,45 @@ find_nearest_neighbors <- function(object, split.by = "library") {
     lapply(references, function(x) x[!rownames(x) %in% undetected_features, ])
 }
     
-.plot_pre_integration_umap <- function(references, scale, features, prefix) {
+
+.plot_pre_integration_umap <- function(references, scale, features, run_harmony = TRUE,
+    force, prefix) {
     flog.info("Plotting pre-integration UMAP...")
-    merged <- Reduce(merge, references) 
+    merged <- Reduce(merge, references)
     VariableFeatures(merged) <- features
 
+    if (requireNamespace("harmony", quietly = TRUE) && run_harmony) {
+        filename <- .get_serialize_path(prefix, "_harmony.rds")
+        if (!force && file.exists(filename)) {
+            flog.warn("%s exists. Skipping Harmony. Use --force to overwrite.", filename)
+            merged <- readRDS(filename)
+        } else {
+            assay.use <- "SCT"
+            if (!assay.use %in% Assays(merged)) assay.use <- "Spatial"
+            if (!assay.use %in% Assays(merged)) assay.use <- "RNA"
+            flog.info("Running Harmony on assay %s...", assay.use)
+            merged <- RunPCA(object = merged, npcs = 30, verbose = TRUE,
+                assay = assay.use)
+            merged <- harmony::RunHarmony(merged, "library", assay.use = assay.use)
+            merged <- RunUMAP(object = merged, assay = assay.use,
+                reduction = "harmony", dims = 1:30)
+            flog.info("Writing R data structure to %s...", filename)
+            saveRDS(merged, filename)
+        }
+        flog.info("Plotting UMAP...")
+        umap_suffix <- "_umap_post_harmony_overview.pdf"
+        pdf(.get_advanced_path(prefix, umap_suffix), width = 10, height = 5)
+        print(DimPlot(merged, reduction = "umap", split.by = "technology",
+                          group.by = "library"))
+        dev.off()
+    }
     merged <- cluster_integrated(merged, regressout = NULL,
                                force = TRUE, plot_umap = TRUE,
                                scale = scale,
-                               serialize = FALSE, prefix, 
+                               serialize = FALSE, prefix,
                                umap_suffix = "_umap_pre_integration_overview.pdf",
-                               verbose = FALSE) 
+                               verbose = FALSE)
     return(1)
-}    
+}
+
+
