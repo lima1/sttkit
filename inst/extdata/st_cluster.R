@@ -72,6 +72,8 @@ option_list <- list(
         help = "SpaceRanger 1.1+ tissue positions list, useful in case barcode suffices differ after integretion and fixing Loupe cluster annotation files [default %default]."),
     make_option(c("--cellphonedb"), action = "store_true", default = FALSE, 
         help="Generate output files for cellphonedb."),
+    make_option(c("--diff_tests"), action = "store", type = "character", default = "wilcox:negbinom",
+        help="Default differential expression method(s) [default %default]."),
     make_option(c("--species"), action = "store", type = "character", default = "Hs",
         help="Currently only used for --cellphonedb to convert symbols to EMSEMBL ids [default %default]."),
     make_option(c("--mpi"), action = "store_true", default = FALSE, 
@@ -248,18 +250,39 @@ if (grepl("list$",opt$infile)) {
     features
 }
 
-.write_labels_diff <- function(ndata, prefix) {
+.write_labels_diff <- function(ndata, test.use = "wilcox", prefix) {
     Idents(ndata) <- ndata$label
 
-    filename <- sttkit:::.get_sub_path(prefix, "advanced", "_labels_diff.csv") 
-    markers <- sttkit:::.find_all_markers(ndata, prefix, "_snn_labels_markers.rds")
+    filename <- sttkit:::.get_sub_path(prefix, "advanced",
+        paste0("_", test.use, "_labels_diff.csv"))
+    markers <- sttkit:::.find_all_markers(ndata, prefix,
+        paste0("_", test.use, "_snn_labels_markers.rds"),
+        test.use = test.use)
     write.csv(markers, file = filename, row.names = FALSE)
+    .volcano <- function(markers, filename) {
+        if (require(EnhancedVolcano)) {
+            markers$avg_log2FC <- log2(exp(markers$avg_logFC))
+            pdf(gsub(".csv$", ".pdf", filename)) 
+            for (group in levels(markers$cluster)) {
+                markers_f <- markers[markers$cluster %in% group,]
+                print(EnhancedVolcano(markers_f, lab = markers_f[["gene"]],
+                    x = "avg_log2FC", y = "p_val", 
+                    title = paste(group, "vs others"), subtitle = ""))
+            }
+            dev.off()
+        }
+    }
+    .volcano(markers, filename)
     # in case labels contain a suffix, e.g. trt_1, trt_2, ctl_1, ctl_2 
     if (length(grep("_\\d+$", levels(ndata)))) {
         Idents(ndata) <- gsub("_\\d+$", "", ndata$label)
-        filename <- sttkit:::.get_sub_path(prefix, "advanced", "_labels_diff_2.csv") 
-        markers <- sttkit:::.find_all_markers(ndata, prefix, "_snn_labels_2_markers.rds")
+        filename <- sttkit:::.get_sub_path(prefix, "advanced",
+            paste0("_", test.use, "_labels_diff_2.csv"))
+        markers <- sttkit:::.find_all_markers(ndata, prefix,
+            paste0("_", test.use, "_snn_labels_2_markers.rds"),
+            test.use = test.use)
         write.csv(markers, file = filename, row.names = FALSE)
+        .volcano(markers, filename)
     }
 }    
 
@@ -392,7 +415,11 @@ if (single_input) {
      }
 }    
 
-if (!is.null(opt$labels)) .write_labels_diff(ndata, opt$outprefix)
+if (!is.null(opt$labels)) {
+    for (test.use in strsplit(opt$diff_tests, ":")[[1]]) {
+        .write_labels_diff(ndata, prefix = opt$outprefix, test.use = test.use)
+    }
+}    
 
 .write_clusters(ndata, opt$outprefix)
 .plot_cluster_qc(ndata, opt$outprefix)
