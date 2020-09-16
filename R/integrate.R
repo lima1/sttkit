@@ -69,7 +69,7 @@ integrate_spatial <- function(obj_spatial = NULL, references, features = 2000,
         }
     }    
     num_spots <- sapply(references, ncol)
-    .plot_pre_integration_umap(references, scale, features, run_harmony = TRUE,
+    .plot_pre_integration_umap(references, scale, features = features, 
         force = force, prefix = prefix)
     if (min(num_spots) < min_spots) {
         poor_libs <- sapply(references[num_spots < min_spots], function(x) x$library[1])
@@ -365,13 +365,14 @@ find_nearest_neighbors <- function(object, split.by = "library") {
 }
     
 
-.plot_pre_integration_umap <- function(references, scale, features, run_harmony = TRUE,
-    force, prefix) {
-    flog.info("Plotting pre-integration UMAP...")
-    merged <- Reduce(merge, references)
-    VariableFeatures(merged) <- features
-
-    if (requireNamespace("harmony", quietly = TRUE) && run_harmony) {
+.merge_by_harmony <- function(references, force, prefix) {
+    if (is(references, "Seurat")) {
+        merged <- references
+    } else {
+        merged <- Reduce(merge, references)
+        VariableFeatures(merged) <- features
+    }        
+    if (requireNamespace("harmony", quietly = TRUE)) {
         filename <- .get_serialize_path(prefix, "_harmony.rds")
         if (!force && file.exists(filename)) {
             flog.warn("%s exists. Skipping Harmony. Use --force to overwrite.", filename)
@@ -395,7 +396,53 @@ find_nearest_neighbors <- function(object, split.by = "library") {
         print(DimPlot(merged, reduction = "umap", split.by = "technology",
                           group.by = "library"))
         dev.off()
+    } else {
+        flog.warn("Install harmony package for Harmony integration.")
     }
+    merged
+}        
+.merge_by_fastmnn <- function(references, force, prefix, features = 3000, cluster = FALSE) {
+    if (requireNamespace("SeuratWrappers", quietly = TRUE)) {
+        assay.use <- "SCT"
+        if (!assay.use %in% Assays(references[[1]])) assay.use <- "Spatial"
+        if (!assay.use %in% Assays(references[[1]])) assay.use <- "RNA"
+        filename <- .get_serialize_path(prefix, "_fastmnn.rds")
+        if (!force && file.exists(filename)) {
+            flog.warn("%s exists. Skipping fastMNN. Use --force to overwrite.", filename)
+            merged <- readRDS(filename)
+        } else {
+            flog.info("Running fastMNN on assay %s...", assay.use)
+            merged <- SeuratWrappers::RunFastMNN(Seurat:::CheckDuplicateCellNames(references),
+                assay = assay.use, features = features)
+            VariableFeatures(merged) <- features
+            merged <- RunUMAP(merged, reduction = "mnn", dims = 1:30, assay = assay.use)
+            if (cluster) {
+                merged <- FindNeighbors(merged, reduction = "mnn", dims = 1:30, assay = assay.use)
+                merged <- FindClusters(merged, assay = assay.use)
+            }
+            flog.info("Writing R data structure to %s...", filename)
+            saveRDS(merged, filename)
+        }
+        flog.info("Plotting UMAP...")
+        umap_suffix <- "_umap_post_fastmnn_overview.pdf"
+        pdf(.get_advanced_path(prefix, umap_suffix), width = 10, height = 5)
+        DefaultAssay(merged) <- assay.use
+        print(DimPlot(merged, reduction = "umap", split.by = "technology",
+                          group.by = "library"))
+        dev.off()
+    } else {
+        flog.warn("Install SeuratWrappers package for fastMNN integration.")
+    }
+    merged
+}        
+.plot_pre_integration_umap <- function(references, scale, features,
+    force, prefix) {
+    flog.info("Plotting pre-integration UMAP...")
+    merged <- Reduce(merge, references)
+    VariableFeatures(merged) <- features
+    invisible(.merge_by_harmony(merged, force, prefix))
+    invisible(.merge_by_fastmnn(references, force, prefix, features))
+
     merged <- cluster_integrated(merged, regressout = NULL,
                                force = TRUE, plot_umap = TRUE,
                                scale = scale,
