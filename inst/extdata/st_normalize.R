@@ -15,7 +15,7 @@ option_list <- list(
         help="In case data is stored as rows genes, spots columns."),
     make_option(c("--outprefix"), action = "store", type = "character", default = NULL,
         help="Outfile."),
-    make_option(c("--num_features"), action="store", type = "integer", default = 2500, 
+    make_option(c("--num_features"), action="store", type = "integer", default = 3000, 
         help="Calculate that many variable features [default %default]"),
     make_option(c("--regressout"), action = "store", type = "character",
         default = NULL, 
