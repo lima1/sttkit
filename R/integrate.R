@@ -434,7 +434,6 @@ find_nearest_neighbors <- function(object, split.by = "library") {
     } else {
         flog.warn("Install SeuratWrappers and batchelor packages for fastMNN integration.")
     }
-    merged
 }        
 .plot_pre_integration_umap <- function(references, scale, features,
     force, prefix) {
