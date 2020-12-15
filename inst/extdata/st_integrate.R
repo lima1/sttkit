@@ -214,7 +214,7 @@ if (!opt$force && file.exists(filename_predictions)) {
     if (is.null(ref_group_names)) {
         ref_group_names <- types[!types %in% c("Tumor", "?", "Unassigned")]
     }
-    if (is.na(ref_group_names)) ref_group_names <- NULL
+    if (!length(ref_group_names) || is.na(ref_group_names)) ref_group_names <- NULL
     if (!is.null(opt$cna_output_normal_counts) &&
         !is.null(ref_group_names)) {
         filename <- file.path(out_dir, "normal_counts.tsv.gz")
@@ -308,11 +308,13 @@ if (!opt$force && file.exists(filename_predictions)) {
         }
     } else {
         ref_group_names <- idents_ref[idents_ref %in% Idents(x)]
-        filename <- file.path(out_dir, "normal_counts.rds")
-        xx <- x[,Idents(x) %in% ref_group_names]
-        if (ncol(xx)) {
-            flog.info("Writing normal data to %s...", basename(filename))
-            saveRDS(xx, filename)
+        if (length(ref_group_names)) {
+            filename <- file.path(out_dir, "normal_counts.rds")
+            xx <- x[,Idents(x) %in% ref_group_names]
+            if (ncol(xx)) {
+                flog.info("Writing normal data to %s...", basename(filename))
+                saveRDS(xx, filename)
+            }
         }
     }    
      if (!is.null(idents_ignore)) {

@@ -402,7 +402,8 @@ find_nearest_neighbors <- function(object, split.by = "library") {
     merged
 }        
 .merge_by_fastmnn <- function(references, force, prefix, features = 3000, cluster = FALSE) {
-    if (requireNamespace("SeuratWrappers", quietly = TRUE)) {
+    if (requireNamespace("SeuratWrappers", quietly = TRUE) &&
+        requireNamespace("batchelor", quietly = TRUE)) {
         assay.use <- "SCT"
         if (!assay.use %in% Assays(references[[1]])) assay.use <- "Spatial"
         if (!assay.use %in% Assays(references[[1]])) assay.use <- "RNA"
@@ -431,7 +432,7 @@ find_nearest_neighbors <- function(object, split.by = "library") {
                           group.by = "library"))
         dev.off()
     } else {
-        flog.warn("Install SeuratWrappers package for fastMNN integration.")
+        flog.warn("Install SeuratWrappers and batchelor packages for fastMNN integration.")
     }
     merged
 }        
