@@ -169,6 +169,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 .order_features <- function(obj, features) {
     m <- GetAssayData(obj, "scale.data")
     m <- m[rownames(m) %in% features,]
+    if (nrow(m) < 4) return(features)
     hc <- hclust(dist(m))
     hc$labels[hc$order]
 }
@@ -177,8 +178,10 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     filename <- sttkit:::.get_sub_path(prefix, "snn/heatmap", "_cluster_heatmap.pdf")
     markers <- sttkit:::.find_all_markers(obj, prefix, "_snn_markers.rds")
     m <- GetAssayData(obj, slot="scale.data")
+    key <- if ("avg_log2FC" %in% colnames(markers)) "avg_log2FC" else "avg_logFC"
+    
     genes <- unique(unlist(lapply(split(markers, markers$cluster), function(x) 
-        head(x[which(x$avg_logFC > 0 & x$gene %in% rownames(m)), "gene"], markergenes))))
+        head(x[which(x[[key]] > 0), "gene"], markergenes))))
     genes <- .order_features(obj, genes)
     flog.info("Plotting cluster heatmap...")
     pdf(filename, height = length(genes) / 60 * 6, width = 8)
@@ -261,7 +264,9 @@ if (grepl("list$",opt$infile)) {
     write.csv(markers, file = filename, row.names = FALSE)
     .volcano <- function(markers, filename) {
         if (require(EnhancedVolcano)) {
-            markers$avg_log2FC <- log2(exp(markers$avg_logFC))
+            if (is.null(markers$avg_log2FC)) {
+                markers$avg_log2FC <- log2(exp(markers$avg_logFC))
+            }
             pdf(gsub(".csv$", ".pdf", filename)) 
             for (group in levels(markers$cluster)) {
                 markers_f <- markers[markers$cluster %in% group,]
