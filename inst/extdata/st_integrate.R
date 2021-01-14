@@ -17,6 +17,8 @@ option_list <- list(
         help = "Optional list of labels --singlecell"),
     make_option(c("--refdata"), action = "store", type = "character", default = "type",
         help = "Meta data column with prediction labels in --singlecell"),
+    make_option(c("--downsample_cells"), action="store", type = "integer", default = 3000, 
+        help = "Integration: Use that many random cells per refdata [default %default]"),
     make_option(c("--condition"), action = "store", type = "character", default = NULL,
         help = "Optional meta data column with conditions in --singlecell. If provided, will split by condition."),
     make_option(c("--outprefix"), action = "store", type = "character", default = NULL,
@@ -137,6 +139,13 @@ if (!opt$force && file.exists(filename_predictions)) {
             if(grepl(".rds$", tolower(x))) readRDS(x)
             else if(grepl("h5ad$", tolower(x))) ReadH5AD(x)
         }))
+        if (!is.null(opt$downsample_cells)) {
+            flog.info("Downsampling --singlecell to %i cells per %s annotation",
+                opt$downsample_cells, opt$refdata)
+            singlecell <- lapply(singlecell, function(x) 
+                x[, unlist(lapply(split(Cells(x), x[[opt$refdata]]), function(y) 
+                    sample(y,min(length(y), opt$downsample_cells), replace = FALSE)))])
+        }
         if (!is.null(opt$condition)) {
             singlecell <- lapply(singlecell, SplitObject, opt$condition)
             labels_new <- lapply(seq_along(labels), function(i) 
