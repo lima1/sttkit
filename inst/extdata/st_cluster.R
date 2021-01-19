@@ -62,6 +62,9 @@ option_list <- list(
     make_option(c("--nmf_ident"), action = "store", type = "integer", 
         default = NULL, 
         help="Set Idents(infile) to NMF of specified rank after NMF [default %default]"),
+    make_option(c("--nmf_cores"), action = "store", type = "integer", 
+        default = NULL, 
+        help="Number of cores to use when --mpi is NOT used [default %default]"),
     make_option(c("--spatially_variable_method"), action = "store", type = "character", default = "markvariogram:moransi",
         help="Method(s) to find top spatially variable features [default %default]."),
     make_option(c("--spatially_variable_nfeatures"), action = "store", type = "integer", default = 80,
@@ -455,7 +458,7 @@ if (opt$nmf) {
                 r, opt$nmf_nruns, length(ks)) 
             nmf_method <- if (!is.null(opt$nmf_method)) opt$nmf_method else nmf.getOption('default.algorithm')
             if (is.null(cl)) {
-                ndata <- cluster_nmf(ndata, ks, .options = 'v3',
+                ndata <- cluster_nmf(ndata, ks, .options = paste0('v3', ifelse(is.null(opt$nmf_cores),"", paste0("p", opt$nmf_cores))),
                     nrun = opt$nmf_nruns, randomize = randomize, 
                     max_features = opt$nmf_max_features, method = nmf_method)
             } else {    
