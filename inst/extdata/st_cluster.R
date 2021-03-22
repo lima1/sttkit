@@ -124,7 +124,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
         gp <- gp + ggthemes::scale_fill_colorblind()
     }
     print(gp)
-    .plot_clustering_overlap(ndata)
+    if (length(levels(Idents(ndata))) > 1) .plot_clustering_overlap(ndata)
     invisible(dev.off())
     if (opt$png) {
         filename <- sttkit:::.get_sub_path(prefix, "snn/he", paste0("_he_cluster", num, ".png"))
@@ -139,6 +139,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     if (length(cluster_cols) < 2) return()
     cluster_cols <- tail(cluster_cols, 2)
     tbl <- table(x@meta.data[, cluster_cols])
+    if (nrow(tbl) < 2) return()
     if (require(pheatmap)) {
         pheatmap(tbl)
     } else {
