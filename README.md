@@ -6,7 +6,7 @@ multi-sample analyses (technical replicates and treatment/control pairs).
 
 ## Installation
 
-These scripts require Seurat 3.2 with Visium support. 
+These scripts require Seurat 3.2 or later with Visium support. 
 
 ```
 install.packages("Seurat")

@@ -50,6 +50,8 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
         raw_data <- DropletUtils::downsampleMatrix(raw_data, prop = downsample_prob)
     }        
     spots_passing <- sum(Matrix::rowSums(raw_data) > min_features)    
+    nfeatures_0 <- Matrix::colSums(x = raw_data > 0)
+
     if (spots_passing < 100) {
         flog.warn("Less than 100 spots passing min_features %i (%i out of %i).", 
             min_features, spots_passing, ncol(raw_data))
