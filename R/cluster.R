@@ -311,6 +311,7 @@ cluster_nmf <- function(obj, rank, randomize = FALSE, variable_features = TRUE,
 #' @param method Parameter of \code{NMF::extractFeatures}
 #' @param prefix Prefix of output files
 #' @returns \code{data.frame} with features.
+#' @importFrom stats na.omit
 #' @export write_nmf_features
 #' @examples
 #' write_nmf_features
@@ -438,12 +439,12 @@ export_snn_loupe <- function(obj, libs, labels = NULL, prefix) {
             label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
             libs_label <- if (length(libs) < 2) "" else paste0("_",libs[i])
                 
-            filename <- sttkit:::.get_sub_path(prefix, "snn/loupe", 
+            filename <- .get_sub_path(prefix, "snn/loupe", 
                 paste0("_snn_cluster_loupe_", sid_us, label, libs_label, ".csv"))
             idx <- which(obj$library == libs[i]) 
             write.csv(d[idx, , drop = FALSE], file = filename, row.names = FALSE)
         }    
-        filename <- sttkit:::.get_sub_path(prefix, "snn/loupe", 
+        filename <- .get_sub_path(prefix, "snn/loupe", 
             paste0("_snn_cluster_loupe_", sid_us, "_all.csv"))
         d$Barcode <- .extract_barcode(obj, aggr = TRUE)
         write.csv(d, file = filename, row.names = FALSE)
@@ -499,6 +500,7 @@ init_nmf_seed <- function(obj, b) {
 #' @param stop_if_unavail Dies when NMF clustering is not found.
 #' If \code{NULL}, use first available.
 #' @return object with new \code{Idents}
+#' @importFrom stats predict
 #' @export set_idents_nmf
 #' @examples
 #' set_idents_nmf

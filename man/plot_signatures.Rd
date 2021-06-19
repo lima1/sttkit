@@ -43,7 +43,7 @@ plot_signatures(
 
 \item{assay}{Name of the assay corresponding to the initial input data.}
 
-\item{...}{Arguments passed to \code{\link{plot_spots}}.}
+\item{...}{Arguments passed to \code{Seurat::SpatialPlot}.}
 }
 \description{
 Plots signatures defined in a GMT file and applied to a Seurat object on HE slides

@@ -41,7 +41,7 @@ find_markers <- function(obj, references = NULL, resolution, max_markers = NULL,
         return(readRDS(filename))
     }
     flog.info("Finding all markers of integrated and clustered scRNA data...")
-    all_markers_unfiltered <- sttkit:::.find_all_markers(obj, prefix = prefix,
+    all_markers_unfiltered <- .find_all_markers(obj, prefix = prefix,
         suffix = paste0("_", reference_technology, "_", merged, resolution, "_markers.rds"),
         only.pos = TRUE, verbose = verbose, ...)
     all_markers <- all_markers_unfiltered
@@ -82,13 +82,13 @@ find_markers <- function(obj, references = NULL, resolution, max_markers = NULL,
         saveRDS(obj_sc_sig, filename)
     }    
     if (write) {
-        filename <- sttkit:::.get_sub_path(prefix, "markers",
+        filename <- .get_sub_path(prefix, "markers",
             paste0("_single_cell_cluster_signature_", merged, resolution, ".csv"))
         write.csv(all_markers, filename, row.names = FALSE)
-        filename <- sttkit:::.get_sub_path(prefix, "markers",
+        filename <- .get_sub_path(prefix, "markers",
             paste0("_single_cell_cluster_signature_unfiltered_", merged, resolution, ".csv"))
         write.csv(all_markers_unfiltered, filename, row.names = FALSE)
-        filename <- sttkit:::.get_sub_path(prefix, "markers",
+        filename <- .get_sub_path(prefix, "markers",
             paste0("_single_cell_cluster_signature_", merged, resolution, ".pdf"))
         flog.info("Plotting signature heatmap to %s...", filename)
         pdf(filename, width = 10, height = 5)
@@ -155,7 +155,7 @@ find_markers <- function(obj, references = NULL, resolution, max_markers = NULL,
         }
         markers <- FindAllMarkers(obj, ...)
         flog.info("Writing R data structure to %s...", filename_markers)
-        sttkit:::.serialize(markers, opt$outprefix, suffix)
+        .serialize(markers, opt$outprefix, suffix)
     }
     return(markers)
 }

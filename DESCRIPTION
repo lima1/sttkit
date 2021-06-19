@@ -1,9 +1,9 @@
 Package: sttkit
 Title: Utility Functions for SpatialTranscriptomics
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: person("Markus", "Riester", email = "markus.riester@novartis.com", role = c("aut", "cre"))
 Description: Utility Functions for SpatialTranscriptomics
-Depends: R (>= 3.4.1), Seurat (>= 3.0.0), ggplot2
+Depends: R (>= 3.5.0), Seurat (>= 3.0.0), ggplot2
 Imports: data.table (>= 1.12.4), 
          futile.logger, 
          methods, 
@@ -15,13 +15,15 @@ Imports: data.table (>= 1.12.4),
          viridis,
          AnnotationDbi,
          Matrix
-Suggests: CellMix,
+Suggests: BayesSpace,
+          CellMix,
           DropletUtils,
           GGally,
           EBImage,
           EnhancedVolcano,
-          SeuratWrappers,
           NMF,
+          SeuratWrappers,
+          SingleCellExperiment,
           corrplot,
           digest,
           edgeR,

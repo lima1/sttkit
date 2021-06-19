@@ -31,12 +31,6 @@ plot_spatially_variable(
 \item{subdir}{Put files in a subdirectory}
 
 \item{...}{Arguments passed to \code{\link{plot_features}}}
-
-\item{width}{Output PDF width}
-
-\item{ncol}{Number of columns to plot genes}
-
-\item{nrow}{Number of rows to plot genes}
 }
 \description{
 Plots results of spatial differential expression analysis

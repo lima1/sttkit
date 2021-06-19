@@ -17,8 +17,6 @@ find_signature_means(obj, features, slot = "data", label = NULL, fun = mean)
 to store.}
 
 \item{fun}{Function to summary signature}
-
-\item{...}{Arguments passed to \code{\link{plot_spots}}.}
 }
 \description{
 A simple alternative to Seurat's \code{AddModuleScore}, simply
