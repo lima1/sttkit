@@ -561,7 +561,7 @@ plot_nmf_gse <- function(object, sig, binwidth = 0.025, rank, prefix,
 #' @param labels Optional \code{character(n)} vector with labels
 #' @param plot_pairs Plot pairwise correlations of all samples
 #' @param plot_bar Plot median counts per M for each sample
-#' @param plot_heatmap Plot heatmaps of all signatures in \code{gmt}
+#' @param plot_heatmaps Plot heatmaps of all signatures in \code{gmt}
 #' @export plot_signatures_fake_bulk
 #' @examples
 #' plot_signatures_fake_bulk()

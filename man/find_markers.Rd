@@ -39,6 +39,8 @@ find_markers(
 
 \item{prefix}{Prefix of output files}
 
+\item{label}{Label of \code{obj}}
+
 \item{verbose}{Verbose Seurat output}
 
 \item{...}{Additional parameters passed to \code{Seurat::FindMarkers}}

@@ -12,7 +12,7 @@
 #' @param force Recalculate, even when serialized objects are available
 #' @param serialize Serialize output objects
 #' @param prefix Prefix of output files
-#; @param label Label of \code{obj}
+#' @param label Label of \code{obj}
 #' @param verbose Verbose Seurat output
 #' @param ... Additional parameters passed to \code{Seurat::FindMarkers}
 #' @export find_markers
