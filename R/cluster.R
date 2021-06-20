@@ -32,7 +32,7 @@ cluster_spatial <- function(ndata, resolution = 0.8, dims = 1:30, verbose = TRUE
 #' @examples
 #' #cluster_bayesspace()
 
-cluster_bayesspace <- function(x, test_num_clusters = seq(2, 16),
+cluster_bayesspace <- function(x, test_num_clusters = seq(2, 12),
                                num_clusters = NULL, ...) {
     if (!requireNamespace("BayesSpace", quietly = TRUE)) {
         stop("Install BayesSpace package.")
@@ -40,12 +40,15 @@ cluster_bayesspace <- function(x, test_num_clusters = seq(2, 16),
     # check if already calculated
     ql <- attr(x, "q.loglik")
     if (is.null(ql) || !identical(ql$q, test_num_clusters)) {
-         x <- BayesSpace::qTune(x, qs = seq(2,16)) 
+         x <- BayesSpace::qTune(x, qs = test_num_clusters) 
+         ql <- attr(x, "q.loglik")
     } else {
         flog.info("Found log likelihoods in x. Skipping qTune...")
     }
+    eql <- .elbow(ql)
+    attr(x, "q.auto.selected") <- eql$q_selected
+
     if (is.null(num_clusters)) {
-        eql <- .elbow(ql)
         num_clusters <- eql$q_selected
     } else {
         if (length(num_clusters) != 1 || !num_clusters %in% test_num_clusters) {
@@ -53,8 +56,9 @@ cluster_bayesspace <- function(x, test_num_clusters = seq(2, 16),
         }
     }
     flog.info("Running spatialCluster with q = %i...", num_clusters)
-     
-    BayesSpace::spatialCluster(x, q = num_clusters, ...)
+    x <- BayesSpace::spatialCluster(x, q = num_clusters, ...)
+
+    return(x)
 }
             
 #' plot_clusters

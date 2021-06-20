@@ -4,7 +4,7 @@
 \alias{cluster_bayesspace}
 \title{cluster_bayesspace}
 \usage{
-cluster_bayesspace(x, test_num_clusters = seq(2, 16), num_clusters = NULL, ...)
+cluster_bayesspace(x, test_num_clusters = seq(2, 12), num_clusters = NULL, ...)
 }
 \arguments{
 \item{x}{Object, converted by \code{\link{as_SingleCellExperiment}}}
