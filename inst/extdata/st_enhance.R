@@ -99,7 +99,7 @@ if (!opt$force && file.exists(filename)) {
     }    
 
     if (is.null(opt$num_clusters)) {
-        opt$num_clusters <- length(unique(colData(x)$spatial.cluster))
+        opt$num_clusters <- length(unique(colData(ndata)$spatial.cluster))
     } 
     flog.info("Enhancing %i clusters. This will take a while...", opt$num_clusters)
     ndata_enhanced <- spatialEnhance(ndata,
