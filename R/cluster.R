@@ -21,6 +21,42 @@ cluster_spatial <- function(ndata, resolution = 0.8, dims = 1:30, verbose = TRUE
     ndata
 }    
 
+#' cluster_bayesspace
+#'
+#' Cluster BayesSpace data
+#' @param x Object, converted by \code{\link{as_SingleCellExperiment}}
+#' @param test_num_clusters Range of number of clusters to be tested (\code{qs}). 
+#' @param num_clusters Optional picked number
+#' @param ... Additional paramters passed to \code{BayesSpace::spatialCluster}
+#' @export cluster_bayesspace
+#' @examples
+#' #cluster_bayesspace()
+
+cluster_bayesspace <- function(x, test_num_clusters = seq(2, 16),
+                               num_clusters = NULL, ...) {
+    if (!requireNamespace("BayesSpace", quietly = TRUE)) {
+        stop("Install BayesSpace package.")
+    }    
+    # check if already calculated
+    ql <- attr(x, "q.loglik")
+    if (is.null(ql) || !identical(ql$q, test_num_clusters)) {
+         x <- BayesSpace::qTune(x, qs = seq(2,16)) 
+    } else {
+        flog.info("Found log likelihoods in x. Skipping qTune...")
+    }
+    if (is.null(num_clusters)) {
+        eql <- .elbow(ql)
+        num_clusters <- eql$q_selected
+    } else {
+        if (length(num_clusters) != 1 || !num_clusters %in% test_num_clusters) {
+            stop("Invalid num_clusters")
+        }
+    }
+    flog.info("Running spatialCluster with q = %i...", num_clusters)
+     
+    BayesSpace::spatialCluster(x, q = num_clusters, ...)
+}
+            
 #' plot_clusters
 #'
 #' Plot clusters
@@ -531,3 +567,54 @@ set_idents_nmf <- function(object, k, rank = NULL, stop_if_unavail = FALSE) {
     Idents(object) <- predict(nmf_obj_f)
     return(object)
 }    
+
+.elbow <- function(data) {
+  # This code is taken from   
+  # https://github.com/ahasverus/elbow/blob/master/R/elbow.R
+
+
+  if (!is.list(data)) {
+    stop("`data` must be a two-columns data frame.")
+  }
+
+  if (!is.numeric(data[ , 1]) || !is.numeric(data[ , 2])) {
+    stop("Non-numeric data detected.")
+  }
+
+  if (sum(is.na(data[ , 1])) + sum(is.na(data[ , 2]))) {
+    stop("Missing values detected.")
+  }
+
+  ## Data transformation ----
+
+  data <- data[ , 1:2]
+  data <- data[order(data[ , 1]), ]
+
+  ## Get constant increase/decrease in y ----
+
+  constant <- data[c(1, nrow(data)), ]
+  colnames(constant) <- c("x", "y")
+
+  mod <- stats::lm(y ~ x, data = constant)
+
+  data[ , "constant"] <- round(mod$coef[[1]] + mod$coef[[2]] * data[ , 1], 3)
+
+  ## Detect inflection point ----
+  pos <- round(nrow(data) / 2)
+
+  if (data[pos, "constant"] < data[pos, 2]) { # Concave Down
+    ymin <- min(data[ , 2])
+    data[ , "benefits"] <- ymin + round(data[ , 2] - data[ , "constant"], 3)
+    maxi <- data[which.max(data[ , "benefits"]), ]
+  } else { # Concave Up
+    ymax <- max(data[ , 2])
+    data[ , "benefits"] <- ymax - round(data[ , "constant"] - data[ , 2], 3)
+    maxi <- data[which.min(data[ , "benefits"]), ]
+  }
+
+  xxx <- list()
+  xxx[[1]] <- maxi[1, 1]
+  xxx[[2]] <- data
+  names(xxx) <- c(paste(colnames(data)[1], "selected", sep = "_"), "data")
+  return(xxx)
+}
