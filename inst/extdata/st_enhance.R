@@ -75,10 +75,11 @@ if (!opt$force && file.exists(filename)) {
     ndata <- readRDS(filename)
 } else {
     flog.info("Loading infile %s...", paste(sapply(infile, basename), collapse=", "))
-    log.normalize <- !grepl("scaled", basename(opt$infile))[1]
     ndata <- readRDS(opt$infile)
+    log.normalize <- "SCT" %in% Seurat::Assays(ndata)
+
     if (!log.normalize) { 
-        flog.info("Skipping log normalization in BayesSpace, using provided logcounts instead.")
+        flog.info("Skipping log normalization in BayesSpace, using provided SCT logcounts instead.")
     }    
     ndata <- as_SingleCellExperiment(ndata, log.normalize = log.normalize)
     ndata <- cluster_bayesspace(ndata,
