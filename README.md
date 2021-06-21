@@ -186,6 +186,22 @@ with `--refdata`). Again, `--singlecell` can be a list of reference datasets.
 ![ex_sagittal_1_he_labels_allen_cortex_1_small](https://user-images.githubusercontent.com/364466/75380489-21e93080-58a5-11ea-8d1a-75950b0dd104.png)
 ![ex_sagittal_a1_he_labels_allen_cortex_1_small](https://user-images.githubusercontent.com/364466/75380495-2281c700-58a5-11ea-97d7-efa00e79914e.png)
 
+### st_enhance.R
+
+Imputes data from neighboring spots. Currently only
+[BayesSpace](https://github.com/edward130603/BayesSpace) supported.
+
+```
+Rscript $STTKIT/st_enhance.R \
+   --infile $OUTDIR/$SAMPLE/cluster/serialize/${SAMPLE}.rds \
+   --outprefix $OUTDIR/$SAMPLE/enhance/$SAMPLE \
+```
+
+When the provided `--infile` contains SCTransform normalized data, it will
+use those log counts. Otherwise BayesSpace's own normalization is used.
+
+![mouse_10x_bayesspace](https://user-images.githubusercontent.com/364466/122808326-c19cb000-d29a-11eb-95b4-da14b0f6d4f0.png)
+
 ## Example workflow
 
 In the following we run `sttkit` on 5 technical replicates of a breast cancer

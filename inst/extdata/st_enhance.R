@@ -29,6 +29,10 @@ option_list <- list(
         help="Number of optimization iterations [default %default]"),
     make_option(c("--png"), action = "store_true", default = FALSE, 
         help="Generate PNG version of output plots."),
+    make_option(c("--width"), action = "store", type = "double", default = 4, 
+        help="Output width in inches."),
+    make_option(c("--height"), action = "store", type = "double", default = 3.9, 
+        help="Output height in inches."),
     make_option(c("--verbose"), action = "store_true", default = FALSE, 
         help="Verbose output"),
     make_option(c("-f", "--force"), action = "store_true", default = FALSE, 
@@ -110,4 +114,21 @@ if (!opt$force && file.exists(filename)) {
     flog.info("Writing R data structure to %s...", filename)
     saveRDS(ndata_enhanced, file = filename)
 }
+
+filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "_original.pdf")
+pdf(filename, width = opt$width, height = opt$height)
+BayesSpace::clusterPlot(ndata)
+dev.off()
+filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "_enhanced.pdf")
+pdf(filename, width = opt$width, height = opt$height)
+BayesSpace::clusterPlot(ndata_enhanced)
+dev.off()
+filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "_original.png")
+png(filename, width = opt$width, height = opt$height, units = "in", res = 150)
+BayesSpace::clusterPlot(ndata)
+dev.off()
+filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "_enhanced.png")
+png(filename, width = opt$width, height = opt$height, units = "in", res = 150)
+BayesSpace::clusterPlot(ndata_enhanced)
+dev.off()
 
