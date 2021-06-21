@@ -21,6 +21,8 @@ running \code{\link{cluster_nmf}}}
 \item{gmt}{GMT file with gene signatures or gene signature read by
 \code{\link{read_signatures}}}
 
+\item{gmt_name}{Optional name of the signature set in \code{gmt}}
+
 \item{rank}{Number of clusters}
 
 \item{prefix}{Output file prefix}
@@ -28,8 +30,6 @@ running \code{\link{cluster_nmf}}}
 \item{subdir}{Put files in a subdirectory}
 
 \item{width}{Output PDF width}
-
-\item{png}{Create, in addition to PDF, PNG files}
 }
 \description{
 Plot correlation of gene signatures with basis of an \code{NMF} object

@@ -174,8 +174,8 @@ calculate_nmf_gse <- function(obj, sig_set, method = c("fisher", "perm"),
 
             ft <- fisher.test(cont, alternative = "greater")
             # equivalent of:
-            gt <- phyper(overlap-1, length(x), length(universe)-length(x),
-                length(sig), lower.tail = FALSE, log.p = FALSE)
+            #gt <- phyper(overlap-1, length(x), length(universe)-length(x),
+            #    length(sig), lower.tail = FALSE, log.p = FALSE)
             return(data.frame(
                 pvalue = ft$p.value, 
                 or = ft$estimate,
@@ -228,7 +228,6 @@ calculate_nmf_gse <- function(obj, sig_set, method = c("fisher", "perm"),
 #' @param label If not \code{NULL}, a \code{obj@meta.data} column name
 #' to store.
 #' @param fun Function to summary signature
-#' @param ... Arguments passed to \code{\link{plot_spots}}.
 #' @export find_signature_means
 #' @examples
 #' find_signature_means()

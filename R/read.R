@@ -22,8 +22,8 @@
 #' @importFrom futile.logger flog.info flog.warn
 #' @importFrom grDevices dev.off pdf
 #' @importFrom graphics par
-#' @importFrom methods is
-#' @importFrom utils read.delim write.csv write.table
+#' @importFrom methods is new
+#' @importFrom utils read.delim write.csv write.table data
 #' @importFrom Matrix t rowSums
 #' @export read_spatial
 #' @examples
@@ -143,7 +143,12 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
     spatial_dir = file.path(filtered_feature_bc_matrix_dir, "spatial"), 
     assay = "Spatial", ...) {
     requireNamespace("hdf5r")
-
+    
+    if (!dir.exists(spatial_dir)) {
+        flog.warn("%s does not exist.", spatial_dir)
+        if (file.exists(file.path(filtered_feature_bc_matrix_dir, 
+            "scalefactors_json.json"))) spatial_dir <- filtered_feature_bc_matrix_dir
+    }    
     filename <- file.path(filtered_feature_bc_matrix_dir, 
         "filtered_feature_bc_matrix.h5")
     raw_data <- Read10X_h5(filename = filename)

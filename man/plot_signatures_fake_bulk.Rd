@@ -31,9 +31,7 @@ plot_signatures_fake_bulk(
 
 \item{plot_bar}{Plot median counts per M for each sample}
 
-\item{plot_heatmap}{Plot heatmaps of all signatures in \code{gmt}}
-
-\item{...}{Arguments passed to \code{\link{plot_spots}}.}
+\item{plot_heatmaps}{Plot heatmaps of all signatures in \code{gmt}}
 }
 \description{
 Plots signatures defined in a GMT file and applied to list of

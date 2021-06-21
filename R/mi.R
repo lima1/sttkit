@@ -10,6 +10,7 @@
 #'
 #' @examples
 #'
+#' @importFrom stats weighted.mean dist
 #' @export find_cluster_neighborhoods
 find_cluster_neighborhoods <- function(obj, max.dist = 3, fun.aggregate = mean) {
     d <- dist(obj@images[[1]]@coordinates[, c("row", "col")])

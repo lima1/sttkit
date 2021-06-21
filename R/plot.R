@@ -41,7 +41,7 @@ plot_features <- function(object, features, cells = NULL,
                           ncol = 4, nrow = 4,
                           plot_correlations = FALSE, plot_violin = FALSE,
                           slot = "data", ...)  {
-    filename <- sttkit:::.get_sub_path(prefix, subdir, suffix)
+    filename <- .get_sub_path(prefix, subdir, suffix)
     ratio <- if (!is.null(height)) height / width else .get_image_ratio(length(features))
     .plot_spatial_with_image(filename, object = object[,cells], features = features, 
                   width = width, ratio = ratio,
@@ -109,7 +109,7 @@ plot_violin <- function(object, features, cells = NULL, pt_size = 0.25, slot = "
 #' @param cells Plot only specified cells
 #' @param zero_cutoff Cutoff defining zero. Defaults to half the number of genes in the signature.
 #' @param assay Name of the assay corresponding to the initial input data.
-#' @param ... Arguments passed to \code{\link{plot_spots}}.
+#' @param ... Arguments passed to \code{Seurat::SpatialPlot}.
 #' @export plot_signatures
 #' @examples
 #' plot_signatures()
@@ -176,7 +176,7 @@ plot_signatures <- function(obj_spatial, file, gmt, nbin = 24,
 #' @param ... Additional parameters passed to \code{\link{plot_features}}
 #' @importFrom graphics plot
 #' @importFrom grDevices png
-#' @importFrom stats heatmap lm
+#' @importFrom stats heatmap lm chisq.test cutree hclust median
 #' @importFrom data.table melt
 #' @export plot_nmf
 #' @examples
@@ -239,7 +239,7 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
                               plot_correlations = TRUE, plot_violin = TRUE, png = png, ...)
 
                 sd.plot <- SpatialDimPlot(obj_split, label = TRUE, image = 
-                                          sttkit:::.get_image_slice(obj_split), label.size = 3, ...)
+                                          .get_image_slice(obj_split), label.size = 3, ...)
 
                 if (requireNamespace("ggthemes", quietly = TRUE) &&
                     length(levels(Idents(obj_split))) <= 8) {
@@ -561,8 +561,7 @@ plot_nmf_gse <- function(object, sig, binwidth = 0.025, rank, prefix,
 #' @param labels Optional \code{character(n)} vector with labels
 #' @param plot_pairs Plot pairwise correlations of all samples
 #' @param plot_bar Plot median counts per M for each sample
-#' @param plot_heatmap Plot heatmaps of all signatures in \code{gmt}
-#' @param ... Arguments passed to \code{\link{plot_spots}}.
+#' @param plot_heatmaps Plot heatmaps of all signatures in \code{gmt}
 #' @export plot_signatures_fake_bulk
 #' @examples
 #' plot_signatures_fake_bulk()
@@ -652,11 +651,11 @@ plot_signatures_fake_bulk <- function(objs, gmt, assay = "Spatial", log_trans = 
 #' running \code{\link{cluster_nmf}}
 #' @param gmt GMT file with gene signatures or gene signature read by
 #' \code{\link{read_signatures}}
+#' @param gmt_name Optional name of the signature set in \code{gmt}
 #' @param rank Number of clusters 
 #' @param prefix Output file prefix
 #' @param subdir Put files in a subdirectory
 #' @param width Output PDF width
-#' @param png Create, in addition to PDF, PNG files
 #' @export plot_signatures_nmf
 #' @examples
 #' plot_signatures_nmf()
@@ -821,9 +820,6 @@ plot_signatures_nmf <- function(object, gmt, gmt_name = NULL, rank, prefix,
 #' @param number_features Plot that many features.
 #' @param prefix Output file prefix
 #' @param subdir Put files in a subdirectory
-#' @param width Output PDF width
-#' @param ncol Number of columns to plot genes
-#' @param nrow Number of rows to plot genes
 #' @param ... Arguments passed to \code{\link{plot_features}}
 #' @importFrom gridExtra marrangeGrob
 #' @export plot_spatially_variable
