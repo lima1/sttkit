@@ -27,6 +27,9 @@ option_list <- list(
     make_option(c("--num_iter"), action = "store", type = "integer", 
         default = 100000,
         help="Number of optimization iterations [default %default]"),
+    make_option(c("--gmt"), action = "store", type = "character", 
+        default = NULL, 
+        help="GMT file including genes of interest. Can be a list of files, separated by ':' (e.g. --gmt a.gmt:b.gmt)."),
     make_option(c("--png"), action = "store_true", default = FALSE, 
         help="Generate PNG version of output plots."),
     make_option(c("--width"), action = "store", type = "double", default = 4, 
@@ -114,6 +117,16 @@ if (!opt$force && file.exists(filename)) {
     flog.info("Writing R data structure to %s...", filename)
     saveRDS(ndata_enhanced, file = filename)
 }
+
+if (!is.null(opt$gmt)) {
+    library(digest)    
+    gmt <- read_signatures(opt$gmt, ndata)
+    markers <- sort(unique(unlist(gmt)))
+    filename <- sttkit:::.get_serialize_path(opt$outprefix, paste0("_bayesspace_enhanced_", digest(markers), ".rds"))
+    ndata_enhanced <- enhanceFeatures(ndata_enhanced, ndata, feature_names = markers)
+    flog.info("Writing R data structure to %s...", filename)
+    saveRDS(ndata_enhanced, file = filename)
+}     
 
 filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "_original.pdf")
 pdf(filename, width = opt$width, height = opt$height)
