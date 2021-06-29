@@ -123,9 +123,36 @@ if (!is.null(opt$gmt)) {
     gmt <- read_signatures(opt$gmt, ndata)
     markers <- sort(unique(unlist(gmt)))
     filename <- sttkit:::.get_serialize_path(opt$outprefix, paste0("_bayesspace_enhanced_", digest(markers), ".rds"))
-    ndata_enhanced <- enhanceFeatures(ndata_enhanced, ndata, feature_names = markers)
-    flog.info("Writing R data structure to %s...", filename)
-    saveRDS(ndata_enhanced, file = filename)
+    if (!opt$force && file.exists(filename)) {
+        flog.warn("%s exists. Skipping enhancement of --gmt features. Use --force to overwrite.", filename)
+        ndata_enhanced <- readRDS(filename)
+    } else {    
+        ndata_enhanced <- enhanceFeatures(ndata_enhanced, ndata, feature_names = markers)
+        flog.info("Writing R data structure to %s...", filename)
+        saveRDS(ndata_enhanced, file = filename)
+    }
+    other_rds <- normalizePath(dir(dirname(filename), pattern = "_bayesspace_enhanced_", full.names = TRUE))
+    other_rds <- other_rds[!other_rds %in% normalizePath(filename)]
+    other_rds <- grep("_bayesspace_enhanced_merged.rds", other_rds, value = TRUE, invert = TRUE)
+    if (length(other_rds)) {
+        flog.info("Found multiple feature enhancements, trying to merge...")
+        merged_any <- FALSE
+        for (fn in other_rds) {
+            flog.info("Reading %s...", fn)
+            tmp <- readRDS(fn)
+            tmp <- sttkit:::.merge_bayesspace(ndata_enhanced, tmp)
+            if (!is.null(tmp)) {
+                flog.info("Merged %s and %s.", basename(filename), basename(fn))
+                ndata_enhanced <- tmp
+                merged_any <- TRUE
+            }
+        }
+        if (merged_any) {
+            filename <- sttkit:::.get_serialize_path(opt$outprefix, "_bayesspace_enhanced_merged.rds")
+            flog.info("Writing R data structure to %s...", filename)
+            saveRDS(ndata_enhanced, file = filename)
+        }            
+    }    
 }     
 
 filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "_original.pdf")

@@ -622,3 +622,20 @@ set_idents_nmf <- function(object, k, rank = NULL, stop_if_unavail = FALSE) {
   names(xxx) <- c(paste(colnames(data)[1], "selected", sep = "_"), "data")
   return(xxx)
 }
+
+.merge_bayesspace <- function(x, y) {
+# there must be a cleaner way, let me know in case there is!
+    if (!identical(dim(x), dim(y))) return(NULL)
+    features_x <- names(which(!is.na(rowData(x)$enhanceFeatures.rmse)))
+    features_y <- names(which(!is.na(rowData(y)$enhanceFeatures.rmse)))
+    if (length(intersect(features_x, features_y))) {
+        flog.warn("Duplicated features in .merge_bayesspace")
+        features_y <- features_y[!features_y %in% features_x]
+    }
+    if (!length(features_x)) return(y)
+    if (!length(features_y)) return(x)
+    m <- x
+    logcounts(m)[features_y,] <- logcounts(y)[features_y,]
+    rowData(m)[features_y,] <- rowData(y)[features_y,]
+    return(m)
+}    
