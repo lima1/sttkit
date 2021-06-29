@@ -568,7 +568,7 @@ set_idents_nmf <- function(object, k, rank = NULL, stop_if_unavail = FALSE) {
         k <- max(rank)
     }
     nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
-    Idents(object) <- predict(nmf_obj_f)
+    Idents(object) <- NMF::predict(nmf_obj_f)
     return(object)
 }    
 
