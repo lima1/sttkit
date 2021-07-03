@@ -473,6 +473,11 @@ if (opt$nmf) {
         }
         ndata
     }
+    # already filtered in multip sample mode
+    if (!is.null(gmt) && single_input) {
+        VariableFeatures(ndata) <- unique(c(VariableFeatures(ndata), unlist(gmt)))
+        VariableFeatures(ndata) <- names(which(apply(GetAssayData(ndata)[VariableFeatures(ndata),],1,max) > 0))
+    }    
     ndata <- .run_nmf()
     if (opt$nmf_randomize) ndata <- .run_nmf(TRUE)
     flog.info("Done with NMF clustering!")
