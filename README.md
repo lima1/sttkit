@@ -8,15 +8,39 @@ multi-sample analyses (technical replicates and treatment/control pairs).
 
 These scripts require Seurat 3.2 or later with Visium support. 
 
+### Dependencies
+
+If you are a conda user, you can find all dependencies available as
+conda packages in the conda_environment.yml file.
+
+Otherwise install Seurat directly from CRAN:
+
 ```
 install.packages("Seurat")
 ```
+
+A few optional but recommended additional packages:
+
+```
+remotes::install_github('satijalab/seurat-wrappers')
+# following packages not necessary with conda_environment.yml
+BiocManager::install(c("batchelor",
+    "harmony",
+    "NMF",
+    "corrplot",
+    "optparse",
+    "pheatmap",
+    "patchwork"))
+```
+ 
+
+### sttkit
 
 Common functionality in this toolkit are provided in an R package called
 `sttkit`.  Install it from GitHub:
 
 ```
-devtools::install_github('lima1/sttkit')
+remotes::install_github('lima1/sttkit')
 ```
 
 Start R and enter the following to get the path to the command line
