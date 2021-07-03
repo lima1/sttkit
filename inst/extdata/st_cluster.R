@@ -331,6 +331,14 @@ if (!opt$force && file.exists(filename)) {
 # reloading after merging because some genes might drop out
 if (!is.null(opt$gmt)) {
     gmt <- read_signatures(opt$gmt, ndata)
+    if (length(unique(unlist(gmt))) > 300) {
+        flog.warn("Many features in --gmt. Suggest to filter them to only include core features.")
+    }
+    # already filtered in multi sample mode
+    if (single_input) {
+        VariableFeatures(ndata) <- unique(c(VariableFeatures(ndata), unlist(gmt)))
+        VariableFeatures(ndata) <- names(which(apply(GetAssayData(ndata)[VariableFeatures(ndata),],1,max) > 0))
+    }    
 }    
 if (!is.null(opt$extra_gmt)) {
     extra_gmt <- read_signatures(opt$extra_gmt, ndata)
@@ -473,11 +481,6 @@ if (opt$nmf) {
         }
         ndata
     }
-    # already filtered in multip sample mode
-    if (!is.null(gmt) && single_input) {
-        VariableFeatures(ndata) <- unique(c(VariableFeatures(ndata), unlist(gmt)))
-        VariableFeatures(ndata) <- names(which(apply(GetAssayData(ndata)[VariableFeatures(ndata),],1,max) > 0))
-    }    
     ndata <- .run_nmf()
     if (opt$nmf_randomize) ndata <- .run_nmf(TRUE)
     flog.info("Done with NMF clustering!")

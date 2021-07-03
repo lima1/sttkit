@@ -141,6 +141,8 @@ plot_clusters <- function(obj, prefix, subdir = "snn") {
 }
     
 .plot_cluster_library <- function(obj, field = "library", prefix, subdir = "snn/umap", reference_technology) {
+    if (nrow(unique(obj[[field]])) < 2) return()
+        
     flog.info("UMAP %s...", field)
     filename <- .get_sub_path(prefix, subdir, paste0("_", reference_technology, "_cluster_", field, ".pdf"))
 
