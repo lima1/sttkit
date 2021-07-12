@@ -66,6 +66,9 @@ option_list <- list(
         help="Do additional SC3 clustering"),
     make_option(c("--sc3_ranks"), action = "store", type = "character", default = NULL,
         help="List of ranks (clusters) to test with --sc3. Default will check from min(6, #idents) to 12."),
+    make_option(c("--sc3_ident"), action = "store", type = "integer", 
+        default = NULL, 
+        help="Set Idents(infile) to SC3 of specified rank after SC3 [default %default]"),
     make_option(c("--nmf_cores"), action = "store", type = "integer", 
         default = NULL, 
         help="Deprecated, use --n_cores instead."),
@@ -538,7 +541,7 @@ if (!is.null(opt$nmf_ident)) {
     old_idents <- Idents(ndata)
     ndata <- set_idents_nmf(ndata, k = opt$nmf_ident, stop_if_unavail = TRUE)
     if (!identical(old_idents, Idents(ndata))) {
-        flog.info("Setting idents to NMF %i clustering. This is not serialized.", opt$nmf_ident)
+        flog.info("Setting idents to NMF %i clustering.", opt$nmf_ident)
     }
 }
 
@@ -583,7 +586,21 @@ if (opt$sc3) {
     if (length(ks) > 1) ks <- seq(ks[1], ks[2])
     ndata <- cluster_sc3(ndata, rank = ks, force = opt$force,
         prefix = opt$outprefix, n_cores = opt$n_cores)
+
+    plot_sc3(ndata, libs, labels = labels, rank = ks, prefix = opt$outprefix, png = opt$png, 
+        pt.size.factor = opt$dot_size)
 }    
+if (!is.null(opt$sc3_ident)) {
+    if (is.null(opt$sc3)) {
+        flog.warn("--sc3_ident requires --sc3")
+    }  
+    old_idents <- Idents(ndata)
+    ndata <- set_idents_sc3(ndata, k = opt$sc3_ident, stop_if_unavail = TRUE)
+    if (!identical(old_idents, Idents(ndata))) {
+        flog.info("Setting idents to SC3 %i clustering.", opt$sc3_ident)
+    }
+}
+
 if (opt$cellphonedb) {
     orgdb <- paste0("org.", opt$species, ".eg.db")
     assay <- NULL
