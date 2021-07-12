@@ -23,6 +23,7 @@ Suggests: BayesSpace,
           EBImage,
           EnhancedVolcano,
           NMF,
+          SC3,
           SeuratWrappers,
           SingleCellExperiment,
           corrplot,
@@ -38,6 +39,7 @@ Suggests: BayesSpace,
           optparse,
           pheatmap,
           scran,
+          scater,
           sctransform
 License: Artistic-2.0
 URL: https://github.com/lima1/sttkit

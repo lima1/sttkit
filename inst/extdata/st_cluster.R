@@ -62,7 +62,14 @@ option_list <- list(
     make_option(c("--nmf_ident"), action = "store", type = "integer", 
         default = NULL, 
         help="Set Idents(infile) to NMF of specified rank after NMF [default %default]"),
+    make_option(c("--sc3"), action = "store_true", default = FALSE, 
+        help="Do additional SC3 clustering"),
+    make_option(c("--sc3_ranks"), action = "store", type = "character", default = NULL,
+        help="List of ranks (clusters) to test with --sc3. Default will check from min(6, #idents) to 12."),
     make_option(c("--nmf_cores"), action = "store", type = "integer", 
+        default = NULL, 
+        help="Deprecated, use --n_cores instead."),
+    make_option(c("--n_cores"), action = "store", type = "integer", 
         default = NULL, 
         help="Number of cores to use when --mpi is NOT used [default %default]"),
     make_option(c("--spatially_variable_method"), action = "store", type = "character", default = "markvariogram:moransi",
@@ -99,6 +106,10 @@ if (is.null(opt$infile)) {
 if (is.null(opt$outprefix)) {
     stop("Need --outprefix")
 }
+if (!is.null(opt$nmf_cores)) {
+    flog.warn("--nmf_cores deprecated; use --n_cores instead.")
+    opt$n_cores <- opt$nmf_cores
+}    
 if (!dir.exists(dirname(opt$outprefix))) {
     dir.create(dirname(dirname(opt$outprefix)))
     dir.create(dirname(opt$outprefix))
@@ -300,10 +311,10 @@ if (grepl("list$",opt$infile)) {
     if (is.null(opt$regressout)) NULL else strsplit(opt$regressout, ":")[[1]]
 }
 
-filename <- .get_serialize_path(opt$outprefix, ".rds")
-if (!opt$force && file.exists(filename)) {
-    flog.warn("%s exists. Skipping clustering. Use --force to overwrite.", filename)
-    ndata <- readRDS(filename)
+filename_final <- .get_serialize_path(opt$outprefix, ".rds")
+if (!opt$force && file.exists(filename_final)) {
+    flog.warn("%s exists. Skipping clustering. Use --force to overwrite.", filename_final)
+    ndata <- readRDS(filename_final)
 } else {
     if (!single_input) {
         features <- .find_integration_features(reference_list, gmt, prefix = opt$outprefix)
@@ -324,7 +335,7 @@ if (!opt$force && file.exists(filename)) {
         ndata <- cluster_spatial(ndata, 
                              resolution = as.numeric(strsplit(opt$resolution, ":")[[1]]))
     }
-    flog.info("Writing R data structure to %s...", filename)
+    flog.info("Writing R data structure to %s...", filename_final)
     sttkit:::.serialize(ndata, opt$outprefix, ".rds")
 }
 
@@ -467,7 +478,7 @@ if (opt$nmf) {
                 r, opt$nmf_nruns, length(ks)) 
             nmf_method <- if (!is.null(opt$nmf_method)) opt$nmf_method else nmf.getOption('default.algorithm')
             if (is.null(cl)) {
-                ndata <- cluster_nmf(ndata, ks, .options = paste0('v3', ifelse(is.null(opt$nmf_cores),"", paste0("p", opt$nmf_cores))),
+                ndata <- cluster_nmf(ndata, ks, .options = paste0('v3', ifelse(is.null(opt$n_cores),"", paste0("p", opt$n_cores))),
                     nrun = opt$nmf_nruns, randomize = randomize, 
                     max_features = opt$nmf_max_features, method = nmf_method)
             } else {    
@@ -563,7 +574,16 @@ if (length(Images(ndata))) {
             pt.size.factor = opt$dot_size, ncol = opt$ncol, nrow = opt$nrow)
     }
 }
-
+if (opt$sc3) {
+    if (is.null(opt$sc3_ranks)) {
+        ks <- seq(min(6, length(levels(Idents(ndata)))), 12)
+    } else {    
+        ks <- sort(as.numeric(strsplit(opt$sc3_ranks, ":")[[1]]))
+    }    
+    if (length(ks) > 1) ks <- seq(ks[1], ks[2])
+    ndata <- cluster_sc3(ndata, rank = ks, force = opt$force,
+        prefix = opt$outprefix, n_cores = opt$n_cores)
+}    
 if (opt$cellphonedb) {
     orgdb <- paste0("org.", opt$species, ".eg.db")
     assay <- NULL
@@ -581,6 +601,10 @@ if (opt$cellphonedb) {
             slot = slot, assay = assay)
     }
 }            
+
+flog.info("Writing R data structure to %s...", filename_final)
+sttkit:::.serialize(ndata, opt$outprefix, ".rds")
+
 if (opt$mpi) {
     closeCluster(cl)
     mpi.quit()

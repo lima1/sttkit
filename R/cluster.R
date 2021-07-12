@@ -570,6 +570,7 @@ set_idents_nmf <- function(object, k, rank = NULL, stop_if_unavail = FALSE) {
         k <- max(rank)
     }
     nmf_obj_f <- if (is(nmf_obj, "NMFfit")) nmf_obj else nmf_obj$fit[[as.character(k)]]
+    object[["orig.ident.before.nmf"]] <- Idents(object = object)
     Idents(object) <- NMF::predict(nmf_obj_f)
     return(object)
 }    
@@ -637,7 +638,123 @@ set_idents_nmf <- function(object, k, rank = NULL, stop_if_unavail = FALSE) {
     if (!length(features_x)) return(y)
     if (!length(features_y)) return(x)
     m <- x
-    logcounts(m)[features_y,] <- logcounts(y)[features_y,]
+    SingleCellExperiment::logcounts(m)[features_y,] <- SingleCellExperiment::logcounts(y)[features_y,]
     rowData(m)[features_y,] <- rowData(y)[features_y,]
     return(m)
 }    
+
+#' cluster_sc3
+#'
+#' Performes SC3 clustering 
+#' @param obj Object, clustered by \code{\link{cluster_spatial}}.
+#' @param rank Number of clusters 
+#' @param variable_features If \code{TRUE}, only use variable features
+#' @param max_features Reduce runtime by only using the top 
+#' \code{max_features} features
+#' @param ... Additional parameters passed to the \code{sc3} function.
+#' @export cluster_sc3
+#' @examples
+#' cluster_sc3
+cluster_sc3 <- function(obj, rank, variable_features = FALSE, 
+    max_features = NULL, force, serialize = TRUE, prefix, ...) {
+    if (!requireNamespace("SC3", quietly = TRUE)) {
+        stop("This function requires the SC3 library.")
+    }
+    if (!requireNamespace("scater", quietly = TRUE)) {
+        stop("This function requires the scater library.")
+    }
+    if (!requireNamespace("SingleCellExperiment", quietly = TRUE)) {
+        stop("This function requires the SingleCellExperiment library.")
+    }
+    if (!requireNamespace("SummarizedExperiment", quietly = TRUE)) {
+        stop("This function requires the SummarizedExperiment library.")
+    }
+    rank <- sort(unique(rank))
+
+    if (length(rank) == 1) {
+        key <- paste0("sc3_k_", rank)
+    } else {
+        key <- paste0("sc3_k_", min(rank), "_to_", max(rank))
+    }
+    if (!is.null(max_features)) {
+        obj <- FindVariableFeatures(obj, nfeatures = max_features,
+            selection.method = "disp")
+    }    
+    if (variable_features) {
+        obj <- obj[VariableFeatures(obj),]
+    }
+    flog.info("Performing SC3 clustering on %i samples and %i features.",
+        ncol(obj), nrow(obj))
+    
+    if (!is.null(obj@misc[[key]])) {
+        flog.warn("Object %s in misc slot already exists. Skipping...")
+        return(obj)
+    }
+    sce <- as.SingleCellExperiment(obj)
+    SummarizedExperiment::rowData(sce)$feature_symbol <- rownames(sce)
+    sce <- sce[!duplicated(SummarizedExperiment::rowData(sce)$feature_symbol), ]
+    sce <- scater::runPCA(sce)
+    SingleCellExperiment::counts(sce) <- as.matrix(SingleCellExperiment::counts(sce))
+    SingleCellExperiment::logcounts(sce) <- as.matrix(SingleCellExperiment::logcounts(sce))
+    sce <- SC3::sc3(sce, ks = rank, ...) 
+    if (serialize) {
+        filename <- .get_serialize_path(prefix, paste0("_", key, ".rds"))
+        if (!file.exists(filename) || force) {
+            flog.info("Writing R data structure to %s...", filename)
+            saveRDS(sce, filename)
+        }    
+    }
+    obj@misc[[key]] <- list(
+        rank = rank,
+        sc3_rowData = SummarizedExperiment::rowData(sce),
+        sc3_colData = SummarizedExperiment::colData(sce)
+    )    
+    obj
+}
+
+
+#' set_idents_sc3
+#'
+#' Sets \code{Idents} to SC3 clustering
+#' @param obj Object, clustered by \code{\link{cluster_sc3}}.
+#' @param k Features of rank to be written (must be a single k, not a range)
+#' @param rank Number of clusters (the one used in \code{\link{cluster_sc3}})
+#' @param stop_if_unavail Dies when SC3 clustering is not found.
+#' If \code{NULL}, use first available.
+#' @return obj with new \code{Idents}
+#' @export set_idents_sc3
+#' @examples
+#' set_idents_sc3
+set_idents_sc3 <- function(obj, k, rank = NULL, stop_if_unavail = FALSE) {
+    if (!requireNamespace("SC3", quietly = TRUE)) {
+        stop("This function requires the SC3 library.")
+    }
+
+    if (is.null(rank)) {
+        available_misc <- names(obj@misc)
+        available_misc <- available_misc[grep("^sc3", available_misc)]
+        if (!length(available_misc)) {
+            if (stop_if_unavail) stop("SC3 clustering not found.")
+            return(obj)
+        }    
+        rank <- obj@misc[[available_misc]]$rank
+    } else {
+        if (length(rank) > 1) {
+            available_misc <- paste0("sc3_k_", min(rank), "_to_", max(rank))
+        } else {
+            available_misc <- paste0("sc3_k_", rank)
+        }       
+    }    
+    if (k < min(rank)) {
+        flog.warn("requested k not available.")
+        k <- min(rank)
+    } else if (k > max(rank)) {
+        flog.warn("requested k not available.")
+        k <- max(rank)
+    }
+    obj[["orig.ident.before.sc3"]] <- Idents(object = obj)
+
+    Idents(obj) <- obj@misc[[available_misc]]$sc3_colData[colnames(obj),paste0("sc3_", k, "_clusters")]
+    return(obj)
+}    
+

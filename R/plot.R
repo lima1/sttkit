@@ -940,3 +940,85 @@ plot_qc_read <- function(object, prefix, assay) {
     dev.off()
     .write_qc_stats(object, prefix)
 }    
+
+#' plot_sc3
+#'
+#' Basic plots of saved \code{SC3} information
+#' @param object Seurat object that contains \code{SC3} information after
+#' running \code{\link{cluster_sc3}}
+#' @param libs Library ids, must be stored in \code{object$library}
+#' @param labels Optional \code{character(n)} with sample labels
+#' @param rank Number of clusters 
+#' @param prefix Output file prefix
+#' @param subdir Put files in a subdirectory
+#' @param width Output PDF width
+#' @param png Create, in addition to PDF, PNG files
+#' @param plot_he Plot for each library the HE jpeg
+#' @param assay Name of the assay corresponding to the initial input data.
+#' @param ... Additional parameters passed to \code{\link{plot_features}}
+#' @export plot_sc3
+#' @examples
+#' plot_sc3()
+plot_sc3 <- function(object, libs, labels = NULL, rank, prefix, 
+                     subdir = "sc3", width = 10, png = FALSE,
+                     plot_he = TRUE, assay = "Spatial", ...) {
+
+    libs <- as.vector(libs)
+    #create subdir if not exists
+    .get_sub_path(prefix, subdir, "")
+
+    for (k in rank) {
+        object <- set_idents_sc3(object, k, rank)
+
+        tmp <- .get_sub_path(prefix, file.path(subdir, "umap"), "") # make sure that umap directory exists
+        filename <- .get_sub_path(prefix, file.path(subdir, "umap", k),
+            paste0("_spatial_cluster.pdf"))
+        pdf(filename, width = 10, height = 5)
+        gp <- DimPlot(object, reduction = "umap", label = TRUE)
+        if (requireNamespace("ggthemes", quietly = TRUE) &&
+            length(levels(Idents(object))) <= 8) {
+            gp <- gp + ggthemes::scale_colour_colorblind()
+        }
+        print(gp)
+        dev.off()
+        if ("label" %in% colnames(object@meta.data)) {
+            .plot_cluster_library(object, field = "label", prefix = prefix, 
+                subdir = file.path(subdir, "umap", k),
+                reference_technology = "spatial")
+        } else if ("library" %in% colnames(object@meta.data)) {
+            .plot_cluster_library(object, field = "library", prefix = prefix, 
+                subdir = file.path(subdir, "umap", k),
+                reference_technology = "spatial")
+        }
+
+        ratio <- .get_image_ratio(k)
+        if (plot_he) {
+            flog.info("Generating output plots for k = %i...", k)
+            tmp <- .get_sub_path(prefix, file.path(subdir, "he"), "") # make sure that HE directory exists
+
+            for (i in seq_along(libs)) {
+                label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
+                libs_label <- if (length(libs) < 2) "" else paste0("_",libs[i])
+                obj_split <- object[,object$library == libs[i]]
+
+                sd.plot <- SpatialDimPlot(obj_split, label = TRUE, image = 
+                                          .get_image_slice(obj_split), label.size = 3, ...)
+
+                if (requireNamespace("ggthemes", quietly = TRUE) &&
+                    length(levels(Idents(obj_split))) <= 8) {
+                    sd.plot <- sd.plot + ggthemes::scale_fill_colorblind()
+                }    
+                filename <- .get_sub_path(prefix, file.path(subdir, "he", k),
+                    paste0("_he_sc3_discrete_cluster_", k, label, libs_label, ".pdf"))
+                pdf(filename, width = 4, height = 3.9)
+                print(sd.plot)
+                invisible(dev.off())
+                if(png) {
+                    png(sub(".pdf$", ".png", filename), width = 4, height = 3.9, units = "in", res = 150)
+                    print(sd.plot)
+                    invisible(dev.off())
+                }
+            }
+        }
+    }        
+}        
