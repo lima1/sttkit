@@ -651,6 +651,8 @@ set_idents_nmf <- function(object, k, rank = NULL, stop_if_unavail = FALSE) {
 #' @param variable_features If \code{TRUE}, only use variable features
 #' @param max_features Reduce runtime by only using the top 
 #' \code{max_features} features
+#' @param force Recalculate, even when serialized objects are available
+#' @param serialize Serialize output objects
 #' @param ... Additional parameters passed to the \code{sc3} function.
 #' @export cluster_sc3
 #' @examples

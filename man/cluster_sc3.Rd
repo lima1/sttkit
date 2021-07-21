@@ -25,6 +25,10 @@ cluster_sc3(
 \item{max_features}{Reduce runtime by only using the top 
 \code{max_features} features}
 
+\item{force}{Recalculate, even when serialized objects are available}
+
+\item{serialize}{Serialize output objects}
+
 \item{...}{Additional parameters passed to the \code{sc3} function.}
 }
 \description{

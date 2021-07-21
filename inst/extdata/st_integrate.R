@@ -159,6 +159,7 @@ if (!opt$force && file.exists(filename_predictions)) {
         } 
 
         singlecell <- lapply(singlecell, function(x) {
+            x <- UpdateSeuratObject(x)
             if ("SCT" %in% Assays(x)) return(x)
             flog.info("Running sctransform --singlecell...")
             SCTransform(x, ncells = opt$num_integration_features, verbose = FALSE)
@@ -184,11 +185,11 @@ if (!opt$force && file.exists(filename_predictions)) {
     flog.info("Calculating transfer anchors...")
     anchors <- lapply(singlecell, function(x)
         FindTransferAnchors(reference = x, query = infile,
-            normalization.method = "SCT"))
+            normalization.method = "SCT", dims = 1:30))
     flog.info("Calculating transfer predictions....")
     prediction.assay <- lapply(seq_along(anchors), function(i)
         TransferData(anchorset = anchors[[i]], refdata = singlecell[[i]][[opt$refdata]][,1],
-            prediction.assay = TRUE, weight.reduction = infile[["pca"]]))
+            prediction.assay = TRUE, weight.reduction = infile[["pca"]], dims = 1:30))
     flog.info("Writing R data structure to %s...", filename_predictions)
     saveRDS(prediction.assay, filename_predictions)
 
