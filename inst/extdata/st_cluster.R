@@ -26,6 +26,8 @@ option_list <- list(
         help="Resolution values for clustering. When multiple are provided, the last one is the main one [default %default]"),
     make_option(c("--labels"), action = "store", type = "character", default = NULL,
         help="Optional list of labels for multi-sample analyses"),
+    make_option(c("--batch_correction"), action = "store", type = "character", default = NULL,
+        help="Alternate batch effect correction. When installed, can be harmony or fastmnn. Default uses Seurat."),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.6,
         help="Size of dots on H&E."),
     make_option(c("--ncol"), action = "store", type = "double", default = 4,
@@ -328,6 +330,17 @@ if (!opt$force && file.exists(filename_final)) {
             min_spots = opt$min_spots, 
             min_max_counts = 0, scale = scale, force = opt$force,
             prefix = opt$outprefix, verbose = opt$verbose)
+        if (!is.null(opt$batch_correction)) {
+            filename_batch <- .get_serialize_path(opt$outprefix, paste0("_", opt$batch_correction, ".rds"))
+            if (!file.exists(filename_batch)) {
+                flog.warn("File %s does not exist. Is --batch_correction dependency installed?",
+                    filename_batch)
+            } else {
+                flog.info("Loading %s...", filename_batch)
+                ndata <- readRDS(filename_batch)
+            }    
+        }    
+
         flog.info("Clustering integrated data...")
         ndata <- cluster_integrated(ndata, regressout = .parse_regressout(), 
             force = opt$force, prefix = opt$outprefix, verbose = opt$verbose)
