@@ -13,6 +13,8 @@
 #' @param min_detected Remove features detected in fewer than \code{min_detected}
 #' \code{references} (including \code{obj_spatial}). 
 #' @param reference_technology Used to fill the \code{meta.data@technology} field
+#' @param skip_alternative_batch_corrections By default, harmony and fastmnn will
+#' be run when installed. Provide methods to skip here as array.
 #' @param force Recalculate, even when serialized objects are available
 #' @param serialize Serialize output objects
 #' @param prefix Prefix of output files
@@ -26,6 +28,7 @@ integrate_spatial <- function(obj_spatial = NULL, references, features = 2000,
                             min_max_counts = 3,
                             min_detected = 2,
                             reference_technology = "single_cell",
+                            skip_alternative_batch_corrections = c(),
                             force, 
                             serialize = TRUE, prefix, verbose = FALSE) {
     if (serialize || !force) { 
@@ -63,23 +66,24 @@ integrate_spatial <- function(obj_spatial = NULL, references, features = 2000,
         features <- length(VariableFeatures(references[[1]]))
     } else {
         if (length(features) > 1 && any(!features %in% all_features)) {
-            flog.warn("Some requested features not available: %s", 
+            flog.warn("Some requested features not available: %s",
                 paste(features[!features %in% all_features], collapse = ","))
             features <- features[features %in% all_features]
         }
-    }    
+    }
     num_spots <- sapply(references, ncol)
-    .plot_pre_integration_umap(references, scale, features = features, 
+    .plot_pre_integration_umap(references, scale, features = features,
+        skip_alternative_batch_corrections = skip_alternative_batch_corrections,
         force = force, prefix = prefix)
     if (min(num_spots) < min_spots) {
         poor_libs <- sapply(references[num_spots < min_spots], function(x) x$library[1])
-        flog.warn("Samples with low number of cells/spots: %s", 
-            paste(poor_libs, collapse=", "))
-        if (length(poor_libs)>1) references <- .merge_poor_libs(references, min_spots)
+        flog.warn("Samples with low number of cells/spots: %s",
+            paste(poor_libs, collapse = ", "))
+        if (length(poor_libs) > 1) references <- .merge_poor_libs(references, min_spots)
     } else {
         flog.info("Minimum number of cells/spots: %i (%s)", min(num_spots),
             references[[which.min(num_spots)]]$library[1])
-    }       
+    }
     if (references[[1]]@active.assay == "SCT") {
         integrated <- .integrate_sct(references, features, scale, verbose)
     } else {
@@ -180,12 +184,12 @@ cluster_integrated <- function(integrated, regressout, scale = NULL,
                                umap_suffix = "_umap_integration_overview.pdf",
                                verbose = FALSE) {
     reference_technology <- integrated$technology[integrated$reference][1]
-    if (serialize || !force) { 
-        filename <- .get_serialize_path(prefix, 
+    if (serialize || !force) {
+        filename <- .get_serialize_path(prefix,
             paste0("_", reference_technology, "_integrated_scaled.rds"))
     }
     if (!force && file.exists(filename)) {
-        flog.warn("%s exists. Skipping scaling. Use --force to overwrite.", 
+        flog.warn("%s exists. Skipping scaling. Use --force to overwrite.",
             filename)
         return(readRDS(filename))
     }
@@ -193,15 +197,15 @@ cluster_integrated <- function(integrated, regressout, scale = NULL,
     if (scale) {   
         flog.info("Scaling data...")
         regressout <- .check_regressout(integrated, regressout)
-        integrated <- ScaleData(object = integrated, verbose = verbose, 
+        integrated <- ScaleData(object = integrated, verbose = verbose,
             vars.to.regress = regressout)
     } else {
         flog.info("Skipping scaling.")
-    } 
+    }
     flog.info("Running PCA...")
     integrated <- RunPCA(object = integrated, npcs = 30, verbose = verbose)
     flog.info("Running UMAP...")
-    integrated <- RunUMAP(object = integrated, reduction = "pca", 
+    integrated <- RunUMAP(object = integrated, reduction = "pca",
         dims = 1:30, verbose = verbose)
     if (plot_umap) {
         flog.info("Plotting UMAP...")
@@ -260,12 +264,12 @@ cluster_reference <- function(integrated, resolution = 0.8, sub = FALSE,
         obj_ref <- integrated[, integrated$reference]
         if (!is.null(idents)) {
             flog.info("Loading existing idents from %s...", idents)
-            if (is(idents, "character")) { 
+            if (is(idents, "character")) {
                 idents <- Idents(readRDS(idents))
-            }    
+            }
             Idents(obj_ref) <- idents
             flog.info("Found %i idents.", length(levels(Idents(obj_ref))))
-        } else {    
+        } else {
             flog.info("Finding neighbors of integrated reference data...")
             obj_ref <- FindNeighbors(obj_ref, verbose = verbose, features = features)
             flog.info("Finding clusters of integrated reference data...")
@@ -277,12 +281,12 @@ cluster_reference <- function(integrated, resolution = 0.8, sub = FALSE,
                names(x = ids) <- levels(x = obj_ref)
                obj_ref <- RenameIdents(object = obj_ref, ids)
                if (plot_umap) {
-                   pdf(.get_advanced_path(prefix, paste0("_", reference_technology, "_cluster_", sub, features, 
-                        resolution_label, "predictedid.pdf")), width=10, height=10)
+                   pdf(.get_advanced_path(prefix, paste0("_", reference_technology, "_cluster_", sub, features,
+                        resolution_label, "predictedid.pdf")), width = 10, height = 10)
                    print(DimPlot(obj_ref, reduction = "umap", split.by = "predicted.id"))
                    dev.off()
                }
-            }                
+            }
         }
         obj_ref[["new.idents"]] <-  Idents(obj_ref)
         if (serialize) {
@@ -371,7 +375,7 @@ find_nearest_neighbors <- function(object, split.by = "library") {
     } else {
         merged <- Reduce(merge, references)
         VariableFeatures(merged) <- features
-    }        
+    }
     if (requireNamespace("harmony", quietly = TRUE)) {
         filename <- .get_serialize_path(prefix, "_harmony.rds")
         if (!force && file.exists(filename)) {
@@ -436,13 +440,20 @@ find_nearest_neighbors <- function(object, split.by = "library") {
     }
 }        
 .plot_pre_integration_umap <- function(references, scale, features,
-    force, prefix) {
+    skip_alternative_batch_corrections, force, prefix) {
     flog.info("Plotting pre-integration UMAP...")
     merged <- Reduce(merge, references)
     VariableFeatures(merged) <- features
-    invisible(.merge_by_harmony(merged, force, prefix))
-    invisible(.merge_by_fastmnn(references, force, prefix, features))
-
+    if (! "harmony" %in% skip_alternative_batch_corrections) {
+        invisible(.merge_by_harmony(merged, force, prefix))
+    } else {
+        flog.info("Skipping harmony as requested.")
+    }    
+    if (! "fastmnn" %in% skip_alternative_batch_corrections) {
+        invisible(.merge_by_fastmnn(references, force, prefix, features))
+    } else {
+        flog.info("Skipping fastmnn as requested.")
+    }
     merged <- cluster_integrated(merged, regressout = NULL,
                                force = TRUE, plot_umap = TRUE,
                                scale = scale,

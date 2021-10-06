@@ -15,6 +15,7 @@ integrate_spatial(
   min_max_counts = 3,
   min_detected = 2,
   reference_technology = "single_cell",
+  skip_alternative_batch_corrections = c(),
   force,
   serialize = TRUE,
   prefix,
@@ -43,6 +44,9 @@ Can be \code{NULL}; in that case only references will be integrated.}
 \code{references} (including \code{obj_spatial}).}
 
 \item{reference_technology}{Used to fill the \code{meta.data@technology} field}
+
+\item{skip_alternative_batch_corrections}{By default, harmony and fastmnn will
+be run when installed. Provide methods to skip here as array.}
 
 \item{force}{Recalculate, even when serialized objects are available}
 

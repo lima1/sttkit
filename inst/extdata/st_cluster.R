@@ -28,6 +28,9 @@ option_list <- list(
         help="Optional list of labels for multi-sample analyses"),
     make_option(c("--batch_correction"), action = "store", type = "character", default = NULL,
         help="Alternate batch effect correction. When installed, can be harmony or fastmnn. Default uses Seurat."),
+    make_option(c("--skip_alternative_batch_corrections"), action = "store",
+        type = "character", default = NULL, 
+        help = "Skip the defined methods, separated by ':' (e.g. harmony:fastmnn)"),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.6,
         help="Size of dots on H&E."),
     make_option(c("--ncol"), action = "store", type = "double", default = 4,
@@ -49,6 +52,8 @@ option_list <- list(
         help="Integration: Keep spots that detected that many genes or more [default %default]"),
     make_option(c("--min_spots"), action="store", type = "double", default = 200, 
         help="Integration: Merge samples with fewer detected spots [default %default]"),
+    make_option(c("--scale"), action = "store_true", default = NULL, 
+        help="(Re-)run ScaleData on input files. Default will determine if needed."),
     make_option(c("--nmf"), action = "store_true", default = FALSE, 
         help="Do additional NMF clustering"),
     make_option(c("--nmf_ranks"), action = "store", type = "character", default = NULL,
@@ -239,6 +244,8 @@ if (grepl("list$",opt$infile)) {
             reference_list[[i]]})
     }
     reference_list <- cli_check_lib_ids(reference_list)
+    reference_list <- lapply(reference_list, UpdateSeuratObject)
+
     if (!is.null(opt$gmt)) {
         ndata_merged <- Reduce(merge, reference_list)
         gmt <- read_signatures(opt$gmt, ndata_merged)
@@ -324,11 +331,13 @@ if (!opt$force && file.exists(filename_final)) {
     if (!single_input) {
         features <- .find_integration_features(reference_list, gmt, prefix = opt$outprefix)
         scale <- if (grepl("unscaled.rds", infiles[1])) TRUE else FALSE
+        if (!is.null(opt$scale)) scale <- opt$scale
         if (!scale) flog.info("Not scaling input files.")
         ndata <- integrate_spatial(reference = reference_list, features = features,
             reference_technology = "spatial", min_features = opt$min_features, 
             min_spots = opt$min_spots, 
             min_max_counts = 0, scale = scale, force = opt$force,
+            skip_alternative_batch_corrections = trimws(strsplit(opt$skip_alternative_batch_corrections, ":")[[1]]),
             prefix = opt$outprefix, verbose = opt$verbose)
         if (!is.null(opt$batch_correction)) {
             filename_batch <- .get_serialize_path(opt$outprefix, paste0("_", opt$batch_correction, ".rds"))
