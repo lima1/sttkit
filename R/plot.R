@@ -238,7 +238,7 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
                 .plot_spatial_with_image(filename, obj_split, features, width, ratio, 
                               plot_correlations = TRUE, plot_violin = TRUE, png = png, ...)
 
-                sd.plot <- SpatialDimPlot(obj_split, label = TRUE, image = 
+                sd.plot <- SpatialDimPlot(obj_split, label = TRUE, images = 
                                           .get_image_slice(obj_split), label.size = 3, ...)
 
                 if (requireNamespace("ggthemes", quietly = TRUE) &&
@@ -1001,7 +1001,7 @@ plot_sc3 <- function(object, libs, labels = NULL, rank, prefix,
                 libs_label <- if (length(libs) < 2) "" else paste0("_",libs[i])
                 obj_split <- object[,object$library == libs[i]]
 
-                sd.plot <- SpatialDimPlot(obj_split, label = TRUE, image = 
+                sd.plot <- SpatialDimPlot(obj_split, label = TRUE, images = 
                                           .get_image_slice(obj_split), label.size = 3, ...)
 
                 if (requireNamespace("ggthemes", quietly = TRUE) &&

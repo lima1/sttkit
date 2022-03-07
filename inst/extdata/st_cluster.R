@@ -138,7 +138,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     filename <- sttkit:::.get_sub_path(prefix, "snn/he", paste0("_he_cluster", num, ".pdf"))
     flog.info("Plotting clusters on H&E for %s...", ndata$library[1])
     pdf(filename, width = 4, height = 3.9)
-    gp <- SpatialDimPlot(ndata, label = TRUE, image = sttkit:::.get_image_slice(ndata), 
+    gp <- SpatialDimPlot(ndata, label = TRUE, images = sttkit:::.get_image_slice(ndata), 
         pt.size.factor = opt$dot_size, label.size = 3)
     if (requireNamespace("ggthemes", quietly = TRUE) &&
         length(levels(Idents(ndata))) <= 8) {
