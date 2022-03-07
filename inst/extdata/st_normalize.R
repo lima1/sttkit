@@ -21,7 +21,7 @@ option_list <- list(
         default = NULL, 
         help="Variables to regress out [default %default]"),
     make_option(c("--normalization_method"), action = "store", default = "sctransform", 
-        help="Which normalization method to use, seurat, sctransform or scran [default %default]."),
+        help="Which normalization method to use, seurat, sctransform, sctransform2, or scran [default %default]."),
     make_option(c("--hejpeg"), action = "store", type = "character", default = NULL,
         help="Optional path to a JPEG containing cropped HE image (Spatial Transcriptomics data)."),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.5,

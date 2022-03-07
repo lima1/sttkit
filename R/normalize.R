@@ -23,7 +23,7 @@
 
 normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE,
                               correct_umi = TRUE,
-                              method = c("sctransform", "seurat2", "scran"), 
+                              method = c("sctransform", "sctransform2", "seurat2", "scran"), 
                               cell_cycle_score = TRUE,
                               regressout = NULL, assay = "Spatial",
                               serialize = TRUE, prefix, ...) {
@@ -34,6 +34,11 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
     scale_alt_assay <- NULL
 
     method <- match.arg(method)
+    vst.flavor <- NULL
+    if (method == "sctransform2") {
+        method <- "sctransform"
+        vst.flavor <- "v2"
+    }    
     if (method == "sctransform" && requireNamespace("sctransform")) {
         scale_alt_assay <- DefaultAssay(obj)
         flog.info("Using sctransform with %i features...", nfeatures)
@@ -43,7 +48,9 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
         min_cells <- min(Matrix::rowSums(GetAssayData(obj, "counts"))) + 1
         obj <- SCTransform(obj, variable.features.n = nfeatures, assay = assay,
             vars.to.regress = regressout, do.correct.umi = correct_umi,
-            return.only.var.genes = FALSE, min_cells = min_cells, ...)
+            return.only.var.genes = FALSE, min_cells = min_cells,
+            vst.flavor = vst.flavor, ...)
+
         if (cell_cycle_score) obj <- .add_cc_score(obj)
         if (serialize) .serialize(obj, prefix, "_scaled.rds")
         flog.info("Scaling alternative assay %s...", scale_alt_assay)

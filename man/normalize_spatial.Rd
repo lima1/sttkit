@@ -10,7 +10,7 @@ normalize_spatial(
   scale = TRUE,
   center = TRUE,
   correct_umi = TRUE,
-  method = c("sctransform", "seurat2", "scran"),
+  method = c("sctransform", "sctransform2", "seurat2", "scran"),
   cell_cycle_score = TRUE,
   regressout = NULL,
   assay = "Spatial",
