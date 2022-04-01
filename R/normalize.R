@@ -46,10 +46,16 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
             flog.info("Regressing out %s.", paste(regressout, collapse = ", "))
         }
         min_cells <- min(Matrix::rowSums(GetAssayData(obj, "counts"))) + 1
-        obj <- SCTransform(obj, variable.features.n = nfeatures, assay = assay,
-            vars.to.regress = regressout, do.correct.umi = correct_umi,
-            return.only.var.genes = FALSE, min_cells = min_cells,
-            vst.flavor = vst.flavor, ...)
+        if ("vst.flavor" %in% names(formals(vst))) {
+            obj <- SCTransform(obj, variable.features.n = nfeatures, assay = assay,
+                vars.to.regress = regressout, do.correct.umi = correct_umi,
+                return.only.var.genes = FALSE, min_cells = min_cells,
+                vst.flavor = vst.flavor, ...)
+        } else {
+            obj <- SCTransform(obj, variable.features.n = nfeatures, assay = assay,
+                vars.to.regress = regressout, do.correct.umi = correct_umi,
+                return.only.var.genes = FALSE, min_cells = min_cells, ...)
+        }    
 
         if (cell_cycle_score) obj <- .add_cc_score(obj)
         if (serialize) .serialize(obj, prefix, "_scaled.rds")
