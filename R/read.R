@@ -15,6 +15,9 @@
 #' Can also be a JPEG for Spatial Transcriptomics data.
 #' @param slice Optional name for the stored \code{image}
 #' @param downsample_prob Downsample input matrix. Requires \code{DropletUtils}.
+#' @param hybrid_reference_prefixes For dataset aligned to hybrid references, the
+#' the feature name prefixes. First one reserved for human (for non-human,
+#' hybrid references, this just means that some downstream tools might not work).
 #' @param assay Name of the assay corresponding to the initial input data.
 #' @param serialize Automatically serialize object
 #' @param prefix Prefix of output files
@@ -33,6 +36,7 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
                         min_features = 300, min_spots = 2, required_features = NULL, 
                         transpose = FALSE, barcodes = NULL, image = NULL, slice = sampleid,
                         downsample_prob = NULL,
+                        hybrid_reference_prefixes = c("hg19", "mm10"),
                         assay = "Spatial", 
                         serialize = TRUE, prefix) {
     if (is(file, "character")) {
@@ -56,6 +60,7 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
         flog.warn("Less than 100 spots passing min_features %i (%i out of %i).", 
             min_features, spots_passing, ncol(raw_data))
     }
+    # TODO: this hack is obsolete with hybrid_reference_prefixes
     if (sum(grepl("^mm|^hs", rownames(raw_data))) > nrow(raw_data)*0.9) { 
         rownames(raw_data) <- gsub("^mm_|^mm-", "mm10-", rownames(raw_data))
         rownames(raw_data) <- gsub("^hs_|^hs-", "hg19-", rownames(raw_data))
@@ -92,20 +97,16 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
         ndata[[slice]] <- image
     }
     cnts <- GetAssayData(object = ndata, slot = 'counts')
-
-    if (sum(grepl("^hg19", rownames(ndata)))>50) {
-        hg19.features <- grep(pattern = "^hg19", x = rownames(x = ndata), value = TRUE)
-        percent.hg19 <- Matrix::colSums(x = cnts[hg19.features, ]) / Matrix::colSums(x = cnts)
-        ndata <- AddMetaData(object = ndata, metadata = percent.hg19, col.name = "hg19")
-        key <- paste0("nFeature_", DefaultAssay(ndata), "_hg19")
-        ndata[[key]] <- apply(as.matrix(cnts[grep("hg19", rownames(cnts)),]),2,function(x) length(which(x>0)))
-    }    
-    if (sum(grepl("^mm10", rownames(ndata)))>50) {
-        mm10.features <- grep(pattern = "^mm10", x = rownames(x = ndata), value = TRUE)
-        percent.mm10 <- Matrix::colSums(x = cnts[mm10.features, ]) / Matrix::colSums(x = cnts)
-        ndata <- AddMetaData(object = ndata, metadata = percent.mm10, col.name = "mm10")
-        key <- paste0("nFeature_", DefaultAssay(ndata), "_mm10")
-        ndata[[key]] <- apply(as.matrix(cnts[grep("mm10", rownames(cnts)),]),2,function(x) length(which(x>0)))
+    for (hrp in hybrid_reference_prefixes) {
+        pattern <- paste0("^", hrp)
+        if (sum(grepl(pattern, rownames(ndata))) > 50) {
+            features <- grep(pattern = pattern, x = rownames(x = ndata), value = TRUE)
+            percent <- Matrix::colSums(x = cnts[features, ]) / Matrix::colSums(x = cnts)
+            ndata <- AddMetaData(object = ndata, metadata = percent, col.name = hrp)
+            key <- paste0("nFeature_", DefaultAssay(ndata), "_", hrp)
+            ndata[[key]] <- apply(as.matrix(cnts[grep(hrp, rownames(cnts)), ]),
+                2, function(x) length(which(x > 0)))
+        }
     }
     if (serialize) {
         flog.info("Writing R data structure to %s...", paste0(prefix, "_raw.rds"))
@@ -219,7 +220,7 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
     data(cc.genes.all, envir = environment())
     prefix <- .check_for_symbol_prefix(obj)
     if (!is.null(prefix)) {
-        if (grepl("hg19|hg38", prefix[1])) {
+        if (grepl("hg19|hg38|GRCh3", prefix[1])) {
             cc.genes.all$Mixed <- lapply(cc.genes.all$Hs, function(x) c(paste0(prefix[1], "-", x)))
         }     
     }

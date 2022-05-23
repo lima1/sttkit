@@ -9,6 +9,8 @@
 #' @param correct_umi Currently only supported by \code{sctransform}
 #' @param method Use \code{sctransform} to normalize and scale data,
 #' or use \code{scran} or Seurat 2 style normalization and scaling.
+#' @param backend_method Method used by the backend. Currently only used by 
+#' \code{sctransform} and \code{sctransform2}.
 #' @param regressout Regressout these features.
 #' @param cell_cycle_score Use \code{CellCycleScoring} to add S/G1/G2M scores
 #' @param assay Name of the assay corresponding to the initial input data.
@@ -24,6 +26,7 @@
 normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE,
                               correct_umi = TRUE,
                               method = c("sctransform", "sctransform2", "seurat2", "scran"), 
+                              backend_method = "poisson",
                               cell_cycle_score = TRUE,
                               regressout = NULL, assay = "Spatial",
                               serialize = TRUE, prefix, ...) {
@@ -50,11 +53,12 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
             obj <- SCTransform(obj, variable.features.n = nfeatures, assay = assay,
                 vars.to.regress = regressout, do.correct.umi = correct_umi,
                 return.only.var.genes = FALSE, min_cells = min_cells,
-                vst.flavor = vst.flavor, ...)
+                vst.flavor = vst.flavor, method = backend_method, ...)
         } else {
             obj <- SCTransform(obj, variable.features.n = nfeatures, assay = assay,
                 vars.to.regress = regressout, do.correct.umi = correct_umi,
-                return.only.var.genes = FALSE, min_cells = min_cells, ...)
+                return.only.var.genes = FALSE, min_cells = min_cells,
+                method = backend_method, ...)
         }    
 
         if (cell_cycle_score) obj <- .add_cc_score(obj)

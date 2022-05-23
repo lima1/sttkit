@@ -11,6 +11,7 @@ normalize_spatial(
   center = TRUE,
   correct_umi = TRUE,
   method = c("sctransform", "sctransform2", "seurat2", "scran"),
+  backend_method = "poisson",
   cell_cycle_score = TRUE,
   regressout = NULL,
   assay = "Spatial",
@@ -32,6 +33,9 @@ normalize_spatial(
 
 \item{method}{Use \code{sctransform} to normalize and scale data,
 or use \code{scran} or Seurat 2 style normalization and scaling.}
+
+\item{backend_method}{Method used by the backend. Currently only used by 
+\code{sctransform} and \code{sctransform2}.}
 
 \item{cell_cycle_score}{Use \code{CellCycleScoring} to add S/G1/G2M scores}
 

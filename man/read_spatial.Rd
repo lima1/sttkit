@@ -17,6 +17,7 @@ read_spatial(
   image = NULL,
   slice = sampleid,
   downsample_prob = NULL,
+  hybrid_reference_prefixes = c("hg19", "mm10"),
   assay = "Spatial",
   serialize = TRUE,
   prefix
@@ -48,6 +49,10 @@ Can also be a JPEG for Spatial Transcriptomics data.}
 \item{slice}{Optional name for the stored \code{image}}
 
 \item{downsample_prob}{Downsample input matrix. Requires \code{DropletUtils}.}
+
+\item{hybrid_reference_prefixes}{For dataset aligned to hybrid references, the
+the feature name prefixes. First one reserved for human (for non-human,
+hybrid references, this just means that some downstream tools might not work).}
 
 \item{assay}{Name of the assay corresponding to the initial input data.}
 

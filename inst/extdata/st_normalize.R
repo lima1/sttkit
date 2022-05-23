@@ -22,6 +22,8 @@ option_list <- list(
         help="Variables to regress out [default %default]"),
     make_option(c("--normalization_method"), action = "store", default = "sctransform", 
         help="Which normalization method to use, seurat, sctransform, sctransform2, or scran [default %default]."),
+    make_option(c("--normalization_backend_method"), action = "store", default = "poisson", 
+        help="Which backend normalization method to use, for example poisson or glmGamPoi [default %default]. Only relevant for sctransform and sctransform2."),
     make_option(c("--hejpeg"), action = "store", type = "character", default = NULL,
         help="Optional path to a JPEG containing cropped HE image (Spatial Transcriptomics data)."),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.5,
@@ -158,6 +160,7 @@ if (!opt$force && file.exists(filename)) {
                          center = opt$normalization_method != "scran",
                          regressout = .parse_regressout(), 
                          method = opt$normalization_method,
+                         backend_method = opt$normalization_backend_method,
                          prefix = opt$outprefix)
 }
 
