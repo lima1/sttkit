@@ -15,6 +15,11 @@ cluster_spatial <- function(ndata, resolution = 0.8, dims = 1:30, verbose = TRUE
         resolution, length(dims))
     ndata <- RunPCA(object = ndata, npcs = min(ncol(ndata)-1, 50),
          verbose = verbose)
+    # check for crappy samples with less than 30 spots/cells
+    if (length(dims) > length(Seurat::Reductions(ndata, slot = "pca"))) {
+        flog.warn("Ignoring provided dims argument because ndata does not have sufficient dimension.")
+        dims <- seq(1, ncol(ndata) - 1)
+    }
     ndata <- RunUMAP(object = ndata, dims = dims, verbose = verbose)
     ndata <- FindNeighbors(ndata, dims = dims, verbose = verbose)
     ndata <- FindClusters(ndata, resolution = resolution, verbose = verbose)
