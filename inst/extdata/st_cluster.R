@@ -333,11 +333,15 @@ if (!opt$force && file.exists(filename_final)) {
         scale <- if (grepl("unscaled.rds", infiles[1])) TRUE else FALSE
         if (!is.null(opt$scale)) scale <- opt$scale
         if (!scale) flog.info("Not scaling input files.")
+        skip_alternative_batch_corrections <- c()
+        if (!is.null(opt$skip_alternative_batch_corrections)) {
+            skip_alternative_batch_corrections <- trimws(strsplit(opt$skip_alternative_batch_corrections, ":")[[1]])
+        }    
         ndata <- integrate_spatial(reference = reference_list, features = features,
             reference_technology = "spatial", min_features = opt$min_features, 
             min_spots = opt$min_spots, 
             min_max_counts = 0, scale = scale, force = opt$force,
-            skip_alternative_batch_corrections = trimws(strsplit(opt$skip_alternative_batch_corrections, ":")[[1]]),
+            skip_alternative_batch_corrections = skip_alternative_batch_corrections,
             prefix = opt$outprefix, verbose = opt$verbose)
         if (!is.null(opt$batch_correction)) {
             filename_batch <- .get_serialize_path(opt$outprefix, paste0("_", opt$batch_correction, ".rds"))
