@@ -442,6 +442,7 @@ if (single_input) {
 
 .write_gse_results <- function(gse, gse_method, gse_perm_n, ks, 
                                suffix = "_cluster_") {
+     if (is.null(gse[[1]])) return()
      eps <- if (gse_method == "perm") 1/gse_perm_n else eps = .Machine$double.eps
      x_df  <- lapply(gse, function(x) do.call(rbind, 
         lapply(seq_along(x), function(i) { 
@@ -536,14 +537,16 @@ if (opt$nmf) {
                 rank = ks, k = i, method = gse_method, perm_n = gse_perm_n, 
                 alternative = "less", verbose = FALSE))
              # build spreadsheets with NMF/signature associations
-             .write_gse_results(gse, gse_method, gse_perm_n, ks)
-             idx <- names(gmt) %in% rownames(gse[[1]][[1]])
-             for (sig in names(gmt)[idx]) {
-                 sig <- sig[sig %in% rownames(gse[[1]][[1]])]
-                 plot_nmf_gse(gse, sig = sig, rank = ks,
-                    prefix = opt$outprefix, method = gse_method,
-                    png = opt$png, subdir = "nmf/signatures/advanced")
-             }   
+             if (!is.null(gse[[1]])) {
+                .write_gse_results(gse, gse_method, gse_perm_n, ks)
+                 idx <- names(gmt) %in% rownames(gse[[1]][[1]])
+                 for (sig in names(gmt)[idx]) {
+                     sig <- sig[sig %in% rownames(gse[[1]][[1]])]
+                     plot_nmf_gse(gse, sig = sig, rank = ks,
+                        prefix = opt$outprefix, method = gse_method,
+                        png = opt$png, subdir = "nmf/signatures/advanced")
+                 }
+             }
          }
          plot_signatures_nmf(ndata, gmt, gmt_name = "",
             rank = ks,

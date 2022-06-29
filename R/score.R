@@ -142,7 +142,10 @@ calculate_nmf_gse <- function(obj, sig_set, method = c("fisher", "perm"),
         flog.info("Removing %i identical (after filtering) gene sets.", sum(dups))
         sig_set <- .remove_sigs(sig_set, !dups)
     }
-
+    if (!length(sig_set)) {
+        if (verbose) flog.warn("Empty signature. Skipping enrichment analysis.")
+        return(NULL)    
+    }    
     if (method == "fisher") {
         return(.calculate_nmf_gse_fisher(sig_set, nmf_sig_set, universe, verbose))
     } else if (method == "perm") {
