@@ -491,8 +491,8 @@ if (opt$nmf) {
         ks <- seq(min(6, length(levels(Idents(ndata)))), 12)
     } else {    
         ks <- sort(as.numeric(strsplit(opt$nmf_ranks, ":")[[1]]))
+        if (length(ks) > 1) ks <- seq(ks[1], ks[2])
     }    
-    if (length(ks) > 1) ks <- seq(ks[1], ks[2])
 
     .run_nmf <- function(randomize = FALSE) {
         r <- if (randomize) "_randomize" else ""
