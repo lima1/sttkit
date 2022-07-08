@@ -36,7 +36,7 @@ cellphone_for_seurat <- function(obj, orgdb, prefix, slot = "data",
     colnames(counts) <- make.names(colnames(counts))
 
     metadata <- data.frame(Cell = make.names(Cells(obj)),
-                           cell_type = Idents(obj))
+                           cell_type = make.names(Idents(obj)))
 
 
     filename <- .get_sub_path(prefix, "cellphonedb", "_counts.txt")
