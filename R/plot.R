@@ -846,7 +846,7 @@ plot_spatially_variable <- function(object, labels = NULL, spatial_features, met
 
 .reorder_spatially_variable_features <- function(features, x) {
     m1 <- FetchData(x, features)
-    idx <- colnames(x@meta.data)[grep("nmf", colnames(x@meta.data))]
+    idx <- colnames(x@meta.data)[grep("^nmf_k", colnames(x@meta.data))]
     if (length(idx)) {
         m2 <- FetchData(x, idx)
         d <- dist(t(apply(m1, 2, function(x) cor(x, m2))))
