@@ -24,9 +24,6 @@ output tables for cell-cell interction inference
 \description{
 This function allows you to use an CellPhoneDB on Seurat Object
 }
-\examples{
-
-}
 \keyword{RNA-seq,}
 \keyword{Seurat,}
 \keyword{cell}

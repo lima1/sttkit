@@ -20,6 +20,3 @@ output pairwise cluster neighborhood overlaps
 \description{
 This function allows you to use an CellPhoneDB on Seurat Object
 }
-\examples{
-
-}

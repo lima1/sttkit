@@ -19,6 +19,3 @@ interaction pairs in GMT format
 \description{
 This function allows you to read CellPhoneDB output and rerank it based on local interactions.
 }
-\examples{
-
-}
