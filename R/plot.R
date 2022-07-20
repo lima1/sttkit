@@ -1022,3 +1022,71 @@ plot_sc3 <- function(object, libs, labels = NULL, rank, prefix,
         }
     }        
 }        
+
+#' plot_scoloc
+#'
+#' Co-localization plot for cell types from \code{celltrek} integration
+#' @param celltrek_object \code{celltrek} object to plot co-localization for
+#' @param directed Should the graph be directed or not (default: FALSE)
+#' @export plot_scoloc
+#' @examples
+#' plot_scoloc(celltrek)
+plot_scoloc <- function(celltrek_object, directed=FALSE) {
+  plot_cell <- names(sort(table(celltrek_object$cell_type), decreasing=TRUE)[1:8])
+  names(plot_cell) <- make.names(plot_cell)
+  ct_plot <- subset(celltrek_object, subset=cell_type %in% plot_cell)
+  ct_plot$cell_type <- factor(ct_plot$cell_type, levels=plot_cell)
+
+  sgraph_KL <- CellTrek::scoloc(ct_plot, col_cell='cell_type', use_method='KL', eps=1e-50)
+
+  ## We extract the minimum spanning tree (MST) result from the graph
+  sgraph_KL_mst_cons <- sgraph_KL$mst_cons
+  rownames(sgraph_KL_mst_cons) <- colnames(sgraph_KL_mst_cons) <- plot_cell[colnames(sgraph_KL_mst_cons)]
+
+  ## We then extract the metadata (including cell types and their frequencies)
+  cell_class <- ct_plot@meta.data %>% dplyr::select(id=cell_type) %>% unique
+  ct_count <- data.frame(freq = table(celltrek_object$cell_type))
+  cell_counts <- merge(cell_class, ct_count, by.x ="id", by.y = "freq.Var1")
+
+  mst_cons_am <- sgraph_KL_mst_cons
+
+  if (!directed) mst_cons_am[upper.tri(mst_cons_am, diag = T)] <- NA
+
+  mst_cons_am <- data.frame(id=rownames(mst_cons_am), mst_cons_am, check.names=F)
+  mst_cons_table <- reshape2::melt(mst_cons_am) %>% na.omit() %>% magrittr::set_colnames(c('source', 'destination', 'weight'))
+  mst_cons_table$destination <- as.character(mst_cons_table$destination)
+  mst_cons_table <- tibble(mst_cons_table)
+
+  node_col='id'
+  node_size='freq.Freq'
+
+  if (!is.null(cell_counts)) {
+    if (node_col!='None') {
+      froms <- mst_cons_table %>% distinct(source) %>% rename(label=source)
+      tos <- mst_cons_table %>% distinct(destination) %>% rename(label=destination)
+
+      mst_cons_node <- full_join(froms, tos, by="label")
+      mst_cons_node <- mst_cons_node %>% mutate(id=1:nrow(mst_cons_node)) %>% select(id, everything())
+
+      mst_cons_edge <- mst_cons_table %>% left_join(mst_cons_node, by=c("source"="label")) %>% rename(from=id)
+      mst_cons_edge <- mst_cons_edge %>% left_join(mst_cons_node, by=c("destination"="label")) %>% rename(to=id)
+      mst_cons_edge <- select(mst_cons_edge, from, to, weight)
+      mst_cons_edge <- mst_cons_edge[which(mst_cons_edge$weight>0),]
+
+
+      node_cols <- ggpubr::get_palette('Set1', length(unique(mst_cons_node$label)))
+      names(node_cols) <- unique(mst_cons_node$label)
+      mst_cons_node$color <- node_cols[match(mst_cons_node$label, names(node_cols))]
+    }
+    if (node_size!='None') {
+      size_colmn <- as.character(node_size)
+      size_df <- data.frame(id=cell_counts$id, value=as.numeric(cell_counts[, size_colmn])/sum(as.numeric(cell_counts[, size_colmn])))
+      mst_cons_node$size <- size_df$value[match(mst_cons_node$label, size_df$id)]
+    }
+      net.tidy <- tbl_graph(nodes=mst_cons_node, edges=mst_cons_edge, directed=directed)
+      ggraph(net.tidy, layout = "graphopt") + geom_node_point(aes(colour=color, size=size)) +
+          geom_edge_link(aes(width = weight), alpha = 0.5) + scale_edge_width(range = c(0.5, 5)) +
+          scale_size_continuous(range=c(5,25)) + geom_node_text(aes(label = label), repel = TRUE) 
+  }
+}
+
