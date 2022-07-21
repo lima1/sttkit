@@ -45,7 +45,7 @@ single hue palettes from colorbrewer2.org}
 
 \item{palette_inverse}{Flip the low and high colors in \code{palette}}
 
-\item{trans}{Transform values, currently only log2 is implemented when this 
+\item{trans}{Transform values, currently only log2 is implemented when this
 parameter is set to a different value than \code{NULL}.}
 
 \item{ggcode}{Extra code added to \code{ggplot} call.}

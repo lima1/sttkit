@@ -9,9 +9,9 @@
 #' @param labels_title Title, shown in the legend
 #' @param palette Color palette. Can be two colors in format "low:high",
 #' brewer_single_hue_x (x = red, green, blue, orange, gray, purple) for
-#' single hue palettes from colorbrewer2.org     
-#' @param palette_inverse Flip the low and high colors in \code{palette}     
-#' @param trans Transform values, currently only log2 is implemented when this 
+#' single hue palettes from colorbrewer2.org
+#' @param palette_inverse Flip the low and high colors in \code{palette}
+#' @param trans Transform values, currently only log2 is implemented when this
 #' parameter is set to a different value than \code{NULL}.
 #' @param ggcode Extra code added to \code{ggplot} call.
 #' @param prefix Output file prefix
@@ -32,7 +32,7 @@
 #' @importFrom patchwork wrap_plots
 #' @examples
 #' plot_features()
-plot_features <- function(object, features, cells = NULL, 
+plot_features <- function(object, features, cells = NULL,
                           labels = NULL, labels_title = "",
                           palette = NULL, palette_inverse = FALSE,
                           trans = NULL, ggcode = NULL,
@@ -43,12 +43,12 @@ plot_features <- function(object, features, cells = NULL,
                           slot = "data", ...)  {
     filename <- .get_sub_path(prefix, subdir, suffix)
     ratio <- if (!is.null(height)) height / width else .get_image_ratio(length(features))
-    .plot_spatial_with_image(filename, object = object[,cells], features = features, 
+    .plot_spatial_with_image(filename, object = object[, cells], features = features,
                   width = width, ratio = ratio,
-                  ncol = ncol, nrow = nrow, cells = cells, 
-                  labels = labels, labels_title = labels_title, 
+                  ncol = ncol, nrow = nrow, cells = cells,
+                  labels = labels, labels_title = labels_title,
                   palette = palette, palette_inverse = palette_inverse, trans = trans,
-                  ggcode = ggcode, 
+                  ggcode = ggcode,
                   plot_correlations = TRUE, plot_violin = TRUE, png = png, ...)
 }
 
@@ -59,7 +59,7 @@ plot_features <- function(object, features, cells = NULL,
 #' @param object Seurat object
 #' @param features \code{character(n)} of features to be plotted
 #' @param cells Plot only specified cells
-#' @param pt_size Size of overlayed dots 
+#' @param pt_size Size of overlayed dots
 #' @param slot Slot to pull feature data for
 #' @param ... Arguments passed to \code{Seurat::VlnPlot}.
 #' @export plot_violin
@@ -104,7 +104,7 @@ plot_violin <- function(object, features, cells = NULL, pt_size = 0.25, slot = "
 #' @param nbin Argument of \code{Seurat::AddModuleScore}
 #' @param ctrl Argument of \code{Seurat::AddModuleScore}
 #' @param method Either use \code{Seurat::AddModuleScore} or simple mean
-#' @param width Plot width 
+#' @param width Plot width
 #' @param png Create, in addition to PDF, PNG files
 #' @param cells Plot only specified cells
 #' @param zero_cutoff Cutoff defining zero. Defaults to half the number of genes in the signature.
@@ -114,23 +114,23 @@ plot_violin <- function(object, features, cells = NULL, pt_size = 0.25, slot = "
 #' @examples
 #' plot_signatures()
 
-plot_signatures <- function(obj_spatial, file, gmt, nbin = 24, 
+plot_signatures <- function(obj_spatial, file, gmt, nbin = 24,
     ctrl = 30, method = c("seurat", "mean"), width = 10, png = FALSE,
     cells = NULL, zero_cutoff = NULL, assay = "Spatial", ...) {
     if (is(gmt, "character") && file.exists(gmt)) {
         sigs <- read_signatures(gmt, obj_spatial)
-    } else { 
+    } else {
         sigs <- gmt
-    }    
+    }
     sig_names <- .get_signature_names(obj_spatial, sigs)
     if (sum(is.na(sig_names))) {
         flog.info("Adding signature scores...")
         obj_spatial <- .add_module_score(obj_spatial, sigs, zero_offset = -1000,
-            zero_cutoff = zero_cutoff, nbin = nbin, ctrl = ctrl, 
+            zero_cutoff = zero_cutoff, nbin = nbin, ctrl = ctrl,
             name = names(sigs), method = method, assay = assay)
     } else {
         flog.info("obj_spatial contains signature scores.")
-    }    
+    }
     sig_names <- .get_signature_names(obj_spatial, sigs)
     ratio <- .get_image_ratio(length(sig_names))
     obj_spatial <- .plot_spatial_with_image(file, obj_spatial, sig_names, width, ratio, cells = cells,

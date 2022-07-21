@@ -35,6 +35,8 @@ option_list <- list(
         help="Flip the low:high colors in --palette"),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.6,
         help="Size of dots on H&E [default %default]"),
+    make_option(c("--no_crop"), action = "store_true", default = FALSE, 
+        help="Do not crop H&E image."),
     make_option(c("--png"), action = "store_true", default = FALSE, 
         help="Generate PNG version of output plots."),
     make_option(c("--verbose"), action = "store_true", default = FALSE, 
@@ -92,7 +94,7 @@ if (!is.null(opt$labels)) {
     ndata <- plot_signatures(ndata, file = filename, gmt = gmt, 
         cells = cells, pt.size.factor = opt$dot_size,
         nbin = opt$seurat_nbin, ctrl = opt$seurat_ctrl,
-        method = opt$method, png = opt$png)
+        method = opt$method, png = opt$png, crop = !opt$no_crop)
     if (opt$single_features) {
         ndata_rna <- ndata
         DefaultAssay(ndata_rna) <- names(ndata@assays)[1]
@@ -106,7 +108,7 @@ if (!is.null(opt$labels)) {
               suffix = paste0("_feature_counts", name, num, ".pdf"),
               subdir = file.path("he", name_no_dash),
               cells = cells, pt.size.factor = opt$dot_size,
-              image.alpha = 0,
+              image.alpha = 0, crop = !opt$no_crop,
               png = opt$png, plot_correlations = TRUE)
 
         flog.info("Plotting scaled single feature counts...", filename)
@@ -116,7 +118,7 @@ if (!is.null(opt$labels)) {
               suffix = paste0("_feature_scaled", name, num, ".pdf"),
               subdir = file.path("he", name_no_dash),
               cells = cells, pt.size.factor = opt$dot_size, 
-              image.alpha = 0,
+              image.alpha = 0, crop = !opt$no_crop,
               png = opt$png, plot_correlations = TRUE)
     }    
     ndata
