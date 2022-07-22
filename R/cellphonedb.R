@@ -90,24 +90,32 @@ cellphone_for_seurat <- function(obj, orgdb, prefix, slot = "data",
 #' @export import_cellphone
 
 import_cellphone <- function(obj, cellphone_outpath, orgdb) {
-    sig_means <- read.delim(file.path(cellphone_outpath, "significant_means.txt"), as.is = TRUE)
-    col_ids <- grep("^X\\d", colnames(sig_means))
+    sig_means <- read.delim(file.path(cellphone_outpath, "significant_means.txt"),
+        as.is = TRUE, check.names = FALSE)
+    col_ids <- grep("\\|", colnames(sig_means))
     sig_means <- sig_means[ apply(sig_means[, col_ids],1,function(x) sum(!is.na(x))) > 0, ]
 
     ids_a <- mapIds(orgdb, sig_means$gene_a, 'SYMBOL', 'ENSEMBL')
     ids_b <- mapIds(orgdb, sig_means$gene_b, 'SYMBOL', 'ENSEMBL')
-    sig_means$symbol_a <- sapply(ids_a[sig_means$gene_a],function(x) ifelse(length(x),x,NA))
-    sig_means$symbol_b <- sapply(ids_b[sig_means$gene_b],function(x) ifelse(length(x),x,NA))
+    sig_means$symbol_a <- sapply(ids_a[sig_means$gene_a], function(x) ifelse(length(x), x, NA))
+    sig_means$symbol_b <- sapply(ids_b[sig_means$gene_b], function(x) ifelse(length(x), x, NA))
 
-    pairs <- apply(sig_means[, col_ids],1,function(x) which(!is.na(x)))
-    pairs <- lapply(pairs, function(x) lapply(strsplit(gsub("^X","", names(x)), "\\."), as.numeric))
-    hood <- find_cluster_neighborhoods(obj)
-    sig_means$hood_score <- sapply(lapply(pairs, sapply, function(x) hood[x[1],x[2]]), function(y) 1/(max(y)/length(y)))
+    pairs <- apply(sig_means[, col_ids], 1, function(x) which(!is.na(x)))
+    pairs <- lapply(pairs, function(x) lapply(strsplit(names(x), "\\|"), make.names))
+    hood <- data.frame(find_cluster_neighborhoods(obj))
+    rownames(hood) <- make.names(rownames(hood))
+
+    if (!identical(sort(unique(colnames(hood))), sort(unique(unlist(pairs))))) {
+        flog.warn("Could not map cluster ids.")
+        return(sig_means)
+    }
+
+    sig_means$hood_score <- sapply(lapply(pairs, sapply, function(x)
+        hood[x[1], x[2]]), function(y) 1 / (max(y) / length(y)))
     sig_means <- sig_means[order(sig_means$rank, sig_means$hood_score),]
     write.csv(sig_means, file.path(cellphone_outpath, "significant_means_ranked_spatial.csv"), row.names = FALSE)
-
     return(sig_means)
-} 
+}
 
 #' Plot cell-cell interaction analysis using CellPhoneDB
 #'
