@@ -135,7 +135,7 @@ plot_cellphone <- function(obj, id = 1, cellphone_outpath, features = NULL) {
     if (!is.null(id)) {
         ranked <- read.csv(file.path(cellphone_outpath, "significant_means_ranked_spatial.csv"),
             as.is = TRUE)
-        col_ids <- colnames(ranked)[grep("^X\\d+\\.\\d+$", colnames(ranked))]
+        col_ids <- colnames(ranked)[grep("^X\\d+\\.X\\d+$", colnames(ranked))]
         pairs <- lapply(strsplit(gsub("X", "", col_ids), "\\."), as.numeric)
         cluster_pairs <- apply(t(ranked[,col_ids]),2, function(x) pairs[which(!is.na(x))])
         new_idents <- as.character(Idents(obj))

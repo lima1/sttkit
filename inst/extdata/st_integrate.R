@@ -104,7 +104,6 @@ if(opt$integration_method!="seurat" & opt$integration_method!="celltrek") {
 flog.info("Loading Seurat...")
 suppressPackageStartupMessages(library(Seurat))
 library(sttkit)
-library(CellTrek)
 library(grid)
 
 singlecell <- opt$singlecell
@@ -146,6 +145,9 @@ if(opt$integration_method=="seurat") {
 } else if(opt$integration_method=="celltrek") {
   filename_traint <- sttkit:::.get_serialize_path(opt$outprefix, "_traint.rds")
   filename_celltrek_model <- sttkit:::.get_serialize_path(opt$outprefix, "_celltrek_model.rds")
+  if (!requireNamespace("CellTrek", quietly = TRUE)) {
+       stop("This function requires the CellTrek package.")
+  }
   if (!opt$force && file.exists(filename_celltrek_model) && file.exists(filename_traint)) {
       flog.warn("%s and %s exist. Skipping running celltrek. Use --force to overwrite.", filename_celltrek_model, filename_traint)
       train <- readRDS(filename_traint)
