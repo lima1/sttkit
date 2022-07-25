@@ -142,10 +142,10 @@ if(opt$integration_method=="seurat") {
       prediction.assay <- readRDS(filename_predictions)
       find_pred <- FALSE
   }
-} else if(opt$integration_method=="celltrek") {
+} else if(opt$integration_method == "celltrek") {
   filename_traint <- sttkit:::.get_serialize_path(opt$outprefix, "_traint.rds")
   filename_celltrek_model <- sttkit:::.get_serialize_path(opt$outprefix, "_celltrek_model.rds")
-  if (!requireNamespace("CellTrek", quietly = TRUE)) {
+  if (!require("CellTrek", quietly = TRUE)) {
        stop("This function requires the CellTrek package.")
   }
   if (!opt$force && file.exists(filename_celltrek_model) && file.exists(filename_traint)) {
@@ -232,14 +232,18 @@ if(find_pred==TRUE) {
             infile <- RenameCells(infile, new.names=make.names(Cells(infile)))
             singlecell <- lapply(singlecell, function(sc) {RenameCells(sc, new.names=make.names(Cells(sc)))})
             train <- lapply(singlecell, function(x)
-                traint(st_data=infile, sc_data=x, sc_assay='RNA', cell_names=opt$refdata))
+                CellTrek::traint(st_data = infile, sc_data = x,
+                    sc_assay = 'RNA', cell_names = opt$refdata))
             flog.info("Writing R data structure to %s ...", filename_traint)
             saveRDS(train, filename_traint)
         }
         celltrek_model <- lapply(seq(1:length(singlecell)), function(i) {
-            ctm <- celltrek(st_sc_int=train[[i]], int_assay='traint', sc_data=singlecell[[i]], sc_assay = 'RNA',
-                            reduction='pca', intp=T, intp_pnt=5000, intp_lin=F, nPCs=30, ntree=1000,
-                            dist_thresh=0.55, top_spot=5, spot_n=5, repel_r=20, repel_iter=20, keep_model=T)
+            ctm <- CellTrek::celltrek(st_sc_int = train[[i]], int_assay = 'traint',
+                     sc_data = singlecell[[i]], sc_assay = 'RNA',
+                            reduction='pca', intp=TRUE, intp_pnt=5000, intp_lin = FALSE,
+                            nPCs = 30, ntree = 1000,
+                            dist_thresh = 0.55, top_spot = 5, spot_n = 5, repel_r = 20,
+                            repel_iter = 20, keep_model = TRUE)
             cidx <- which(colnames(ctm$celltrek@meta.data)==opt$refdata)
             ctm$celltrek$cell_type <- factor(ctm$celltrek@meta.data[,cidx], levels=sort(unique(ctm$celltrek@meta.data[,cidx])))
             ctm
