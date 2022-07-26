@@ -193,22 +193,37 @@ files (see `st_cluster.R`).
 
 ### st_integrate.R
 
-Integrates SpatialTranscriptomics with a (matched) scRNA reference. ALPHA.
+Integrates SpatialTranscriptomics with a (matched) scRNA reference. The default
+is simply following the Seurat best practices as outlined in their [Spatial Vignette](https://satijalab.org/seurat/articles/spatial_vignette.html):
 
 ```
 Rscript $STTKIT/st_integrate.R \
-   --infile $OUTDIR/$SAMPLE/cluster/serialize/${SAMPLE}.rds \
-   --outprefix $OUTDIR/$SAMPLE/integrate/$SAMPLE \
-   --singlecell breast_cancer/GSE114725/cells_seurat3.RDS \
-   --labels_singlecell gse114725 
+    --infile $OUTDIR/$SAMPLE/cluster/serialize/${SAMPLE}.rds \
+    --outprefix $OUTDIR/$SAMPLE/integrate/$SAMPLE \
+    --singlecell allen_cortex.rds \
+    --labels_singlecell allen_cortex \
+    --refdata subclass
 ```
 
 Here, the reference scRNA-seq dataset is expected to be normalized by `sctransform` and 
 contains cell type annotation in a `type` meta data column (the column can be changed
-with `--refdata`). Again, `--singlecell` can be a list of reference datasets. 
+with `--refdata` as in this example).
+Again, `--singlecell` can be a list of reference datasets. 
 
 ![ex_sagittal_1_he_labels_allen_cortex_1_small](https://user-images.githubusercontent.com/364466/75380489-21e93080-58a5-11ea-8d1a-75950b0dd104.png)
 ![ex_sagittal_a1_he_labels_allen_cortex_1_small](https://user-images.githubusercontent.com/364466/75380495-2281c700-58a5-11ea-97d7-efa00e79914e.png)
+
+We also support the [CellTrek](https://github.com/navinlabcode/CellTrek) package:
+
+```
+ Rscript $STTKIT/st_integrate.R \
+    --infile $OUTDIR/$SAMPLE/cluster/serialize/${SAMPLE}.rds \
+    --outprefix $OUTDIR/$SAMPLE/celltrek/$SAMPLE \
+    --singlecell allen_cortex.rds \
+    --labels_singlecell allen_cortex \
+    --refdata subclass --png --serialize \
+    --integration_method celltrek
+```
 
 ### st_enhance.R
 
