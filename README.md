@@ -213,7 +213,7 @@ Again, `--singlecell` can be a list of reference datasets.
 ![ex_sagittal_1_he_labels_allen_cortex_1_small](https://user-images.githubusercontent.com/364466/75380489-21e93080-58a5-11ea-8d1a-75950b0dd104.png)
 ![ex_sagittal_a1_he_labels_allen_cortex_1_small](https://user-images.githubusercontent.com/364466/75380495-2281c700-58a5-11ea-97d7-efa00e79914e.png)
 
-We also support the [CellTrek](https://github.com/navinlabcode/CellTrek) package:
+We also support the [CellTrek](https://github.com/navinlabcode/CellTrek) package that performs coembedding of the single-cell and spatial data to generate the training model. The single cells are then charted on to their spatial locations using non-linear interpolation to augment the ST spots.
 
 ```
  Rscript $STTKIT/st_integrate.R \
@@ -224,6 +224,7 @@ We also support the [CellTrek](https://github.com/navinlabcode/CellTrek) package
     --refdata subclass --png --serialize \
     --integration_method celltrek
 ```
+![ex_sagittal_1_he_celltrek_dots_labels_allen_cortex](https://user-images.githubusercontent.com/405520/181086643-de237893-006d-4a27-b41b-2d5c7c72ba64.png)
 
 ### st_enhance.R
 
