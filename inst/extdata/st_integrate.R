@@ -129,7 +129,7 @@ if (!is.null(opt$nmf_ident)) {
 }
 
 find_pred <- TRUE
-if(opt$integration_method=="seurat") {
+if(opt$integration_method == "seurat") {
   filename_predictions_old <- sttkit:::.get_serialize_path(opt$outprefix, "_transfer_predictions.rds")
   filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix, paste0("_", digest(labels), "_transfer_predictions.rds"))
   #TODO remove
@@ -156,66 +156,66 @@ if(opt$integration_method=="seurat") {
   }
 }
 
-if(find_pred==TRUE) {
-    filename_singlecell <- sttkit:::.get_serialize_path(opt$outprefix, "_singlecell.rds")
-    if (!opt$force && file.exists(filename_singlecell)) {
-        flog.warn("%s exists. Skipping normalization and clustering. Use --force to overwrite.",
-            filename_singlecell)
-        singlecell <- readRDS(filename_singlecell)
-        labels <- names(singlecell)
-    } else {
-        flog.info("Reading --singlecell (%s)...",
-            basename(opt$singlecell))
+filename_singlecell <- sttkit:::.get_serialize_path(opt$outprefix, "_singlecell.rds")
+if (!opt$force && file.exists(filename_singlecell)) {
+    flog.warn("%s exists. Skipping normalization and clustering. Use --force to overwrite.",
+        filename_singlecell)
+    singlecell <- readRDS(filename_singlecell)
+    labels <- names(singlecell)
+} else {
+    flog.info("Reading --singlecell (%s)...",
+        basename(opt$singlecell))
 
-        singlecell <- unlist(lapply(singlecell, function(x) {
-            if(grepl(".rds$", tolower(x))) readRDS(x)
-            else if(grepl("h5ad$", tolower(x))) ReadH5AD(x)
-        }))
-        if (!is.null(opt$downsample_cells)) {
-            flog.info("Downsampling --singlecell to %i cells per %s annotation",
-                opt$downsample_cells, opt$refdata)
-            singlecell <- lapply(singlecell, function(x) 
-                x[, unlist(lapply(split(Cells(x), x[[opt$refdata]]), function(y) 
-                    sample(y,min(length(y), opt$downsample_cells), replace = FALSE)))])
-        }
-        if (!is.null(opt$condition)) {
-            singlecell <- lapply(singlecell, SplitObject, opt$condition)
-            labels_new <- lapply(seq_along(labels), function(i) 
-                paste0(labels[[i]], "_", names(singlecell[[i]])))
-            singlecell <- unlist(singlecell)
-            labels <- unlist(labels_new)
-        }
-        if (!is.null(names(singlecell))) {
-            flog.warn("--singlecell already contains labels.")
-            labels <- names(singlecell)
-        } 
-
-        singlecell <- lapply(singlecell, function(x) {
-            x <- UpdateSeuratObject(x)
-            if ("SCT" %in% Assays(x)) return(x)
-            flog.info("Running sctransform --singlecell...")
-            SCTransform(x, ncells = opt$num_integration_features, verbose = FALSE)
-        })
-
-        singlecell <- lapply(singlecell, function(x) {
-            DefaultAssay(x) <- "SCT"
-            if ("umap" %in% Reductions(x) && "pca" %in% Reductions(x))
-                if( DefaultAssay(x[["pca"]]) == "SCT" && DefaultAssay(x[["umap"]]) == "SCT")
-                    return(x)
-            flog.info("Running PCA and UMAP on --singlecell...")
-            RunPCA(x, verbose = TRUE) %>% RunUMAP(dims = 1:30)
-        })
-        flog.info("Clustering --singlecell...")
-        singlecell <- lapply(singlecell, FindNeighbors, verbose = FALSE)
-        singlecell <- lapply(singlecell, FindClusters, resolution = opt$resolution, verbose = FALSE)
-        if (opt$serialize) {
-            flog.info("Writing R data structure to %s...", filename_singlecell)
-            names(singlecell) <- labels
-            sttkit:::.serialize(singlecell, opt$outprefix, "_singlecell.rds")
-        }
+    singlecell <- unlist(lapply(singlecell, function(x) {
+        if(grepl(".rds$", tolower(x))) readRDS(x)
+        else if(grepl("h5ad$", tolower(x))) ReadH5AD(x)
+    }))
+    if (!is.null(opt$downsample_cells)) {
+        flog.info("Downsampling --singlecell to %i cells per %s annotation",
+            opt$downsample_cells, opt$refdata)
+        singlecell <- lapply(singlecell, function(x) 
+            x[, unlist(lapply(split(Cells(x), x[[opt$refdata]]), function(y) 
+                sample(y,min(length(y), opt$downsample_cells), replace = FALSE)))])
     }
+    if (!is.null(opt$condition)) {
+        singlecell <- lapply(singlecell, SplitObject, opt$condition)
+        labels_new <- lapply(seq_along(labels), function(i) 
+            paste0(labels[[i]], "_", names(singlecell[[i]])))
+        singlecell <- unlist(singlecell)
+        labels <- unlist(labels_new)
+    }
+    if (!is.null(names(singlecell))) {
+        flog.warn("--singlecell already contains labels.")
+        labels <- names(singlecell)
+    } 
 
-    if(opt$integration_method=="seurat") {
+    singlecell <- lapply(singlecell, function(x) {
+        x <- UpdateSeuratObject(x)
+        if ("SCT" %in% Assays(x)) return(x)
+        flog.info("Running sctransform --singlecell...")
+        SCTransform(x, ncells = opt$num_integration_features, verbose = FALSE)
+    })
+
+    singlecell <- lapply(singlecell, function(x) {
+        DefaultAssay(x) <- "SCT"
+        if ("umap" %in% Reductions(x) && "pca" %in% Reductions(x))
+            if( DefaultAssay(x[["pca"]]) == "SCT" && DefaultAssay(x[["umap"]]) == "SCT")
+                return(x)
+        flog.info("Running PCA and UMAP on --singlecell...")
+        RunPCA(x, verbose = TRUE) %>% RunUMAP(dims = 1:30)
+    })
+    flog.info("Clustering --singlecell...")
+    singlecell <- lapply(singlecell, FindNeighbors, verbose = FALSE)
+    singlecell <- lapply(singlecell, FindClusters, resolution = opt$resolution, verbose = FALSE)
+    if (opt$serialize) {
+        flog.info("Writing R data structure to %s...", filename_singlecell)
+        names(singlecell) <- labels
+        sttkit:::.serialize(singlecell, opt$outprefix, "_singlecell.rds")
+    }
+}
+
+if(find_pred == TRUE) {
+    if(opt$integration_method == "seurat") {
         flog.info("Calculating transfer anchors...")
         anchors <- lapply(singlecell, function(x)
             FindTransferAnchors(reference = x, query = infile,
@@ -227,7 +227,7 @@ if(find_pred==TRUE) {
         flog.info("Writing R data structure to %s...", filename_predictions)
         saveRDS(prediction.assay, filename_predictions)
 
-    } else if(opt$integration_method=="celltrek") {
+    } else if(opt$integration_method == "celltrek") {
         if(opt$force | !file.exists(filename_traint)) {
             infile <- RenameCells(infile, new.names=make.names(Cells(infile)))
             singlecell <- lapply(singlecell, function(sc) {RenameCells(sc, new.names=make.names(Cells(sc)))})
@@ -468,8 +468,9 @@ if(find_pred==TRUE) {
     plot_features(object = y[[i]]$celltrek, features = features, prefix = opt$outprefix, subdir = "celltrek",
         suffix = paste0("_he_celltrek_labels", label, ".pdf"), png = opt$png, pt.size.factor = opt$dot_size)
 
-    c2 <- SpatialDimPlot(y[[i]]$celltrek, group.by="cell_type", pt.size.factor=opt$dot_size, cols=rep("red",length(features)))[[1]] +
-              facet_wrap(cell_type ~ .) + theme(legend.position="none")
+    c2 <- SpatialDimPlot(y[[i]]$celltrek, group.by = "cell_type", pt.size.factor = opt$dot_size, 
+                         cols = rep("red", length(features)))[[1]] +
+                         facet_wrap(cell_type ~ .) + theme(legend.position="none")
     filename <- file.path(dirname(opt$outprefix), "celltrek", paste0(basename(opt$outprefix), "_he_celltrek_dots_labels", label, ".pdf"))
     pdf(filename, width = 10, height = 10)
     print(c2)
@@ -480,26 +481,33 @@ if(find_pred==TRUE) {
         dev.off()
     }
 
-    library(colorBlindness)
-    cidx <- which(colnames(x[[i]]@meta.data)==opt$refdata)
-    umap_pal <- paletteMartin
-    names(umap_pal) <- levels(x[[i]]@meta.data[,cidx])
+    library(Polychrome)
+    cidx <- which(colnames(x[[i]]@meta.data) == opt$refdata)
+    sc.cell.types <- unique(x[[i]]@meta.data[,cidx])
+    sc.cell.types <- sc.cell.types[!is.na(sc.cell.types)]
+    if(length(sc.cell.types <= 26)) {
+        umap_pal <- alphabet.colors(length(sc.cell.types))
+    } else if(length(sc.cell.types <= 36)) {
+        umap_pal <- palette36.colors(length(sc.cell.types))
+    } else {
+        flog.warn("Too many cell-types to plot UMAP for (%d). Skipping...", length(sc.cell.types))
+    }
+    names(umap_pal) <- sc.cell.types
     t1 <- DimPlot(x[[i]], label = TRUE, label.size = 4.5, group.by = "type", pt.size=0.8, shuffle=TRUE)
-    t2 <- DimPlot(x[[i]][,which(x[[i]]$type=="sc")], label = TRUE, label.size = 4.5, group.by = opt$refdata,
-                  cols=umap_pal, pt.size=0.8, shuffle=TRUE, na.value="white")
+    t2 <- DimPlot(x[[i]][, which(x[[i]]$type=="sc")], label = TRUE, label.size = 4.5, group.by = opt$refdata,
+                  cols = umap_pal, pt.size = 0.8, shuffle = TRUE, na.value = "white", repel = TRUE)
     filename <- file.path(dirname(opt$outprefix), "celltrek", paste0(basename(opt$outprefix), "_umap_labels", label, ".pdf"))
-    pdf(filename, width=10, height=5)
-    gridExtra::grid.arrange(t1,t2,ncol=2)
+    pdf(filename, width = 15, height = 5)
+    t1 + t2 + plot_layout(widths = c(1, 2))
     dev.off()
     if(opt$png) {
-        png(gsub(".pdf$", ".png", filename), width = 10, height = 5, units = "in", res = 150)
-        print(gridExtra::grid.arrange(t1,t2, ncol=2))
+        png(gsub(".pdf$", ".png", filename), width = 15, height = 5, units = "in", res = 150)
+        t1 + t2 + plot_layout(widths = c(1, 2))
         dev.off()
     }
-
 }
 
-for (i in seq_along(singlecell)) {
+for (i in seq_along(celltrek_model)) {
     if(opt$integration_method=='seurat') {
         .plot_he(infile, i)
     } else if(opt$integration_method=='celltrek') {
