@@ -215,6 +215,13 @@ Again, `--singlecell` can be a list of reference datasets.
 
 We also support the [CellTrek](https://github.com/navinlabcode/CellTrek) package that performs coembedding of the single-cell and spatial data to generate the training model. The single cells are then charted on to their spatial locations using non-linear interpolation to augment the ST spots.
 
+The CellTrek::celltrek_vis function uses RShiny to visualize all cell-types in the mouse brain sample. 
+<img width="752" alt="F4_schart_vis" src="https://user-images.githubusercontent.com/405520/181097821-6e4504be-45e1-411d-a7d7-4d0125622b9a.png">
+
+We have adapted the same to work using command line inside of sttkit, and also splitting the various cell-types on to separate panels as shown below
+
+![brain_he_celltrek_dots_labels_brain](https://user-images.githubusercontent.com/405520/181096917-260e847f-074d-41ee-a225-54dab2121184.png)
+
 ```
  Rscript $STTKIT/st_integrate.R \
     --infile $OUTDIR/$SAMPLE/cluster/serialize/${SAMPLE}.rds \
