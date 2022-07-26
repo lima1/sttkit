@@ -61,13 +61,11 @@ option_list <- list(
         help = "Put inferCNV output in this sub-directory [default %default]."),
     make_option(c("--cna_assay"), action = "store", type = "character", default = "Spatial", 
         help = "Extract counts from this assay [default %default]."),
-    make_option(c("--feature_list"), action = "store", type = "character", default = NULL, 
-        help = "File containing list of feature/cells to plot using 'celltrek'"),
     make_option(c("--run_coloc"), action = "store", type = "character", default = FALSE, 
         help = "Run Co-locolization analysis (--integration_method should be 'celltrek')"),
     make_option(c("--run_coexp"), action = "store", type = "character", default = FALSE, 
         help = "Run Co-expression analysis (--integration_method should be 'celltrek')"),
-    make_option(c("--coexp_cell_types"), action="store", type="character", default='Tumor',
+    make_option(c("--coexp_cell_types"), action="store", type="character", default=NULL,
         help = "Cell type(s) for co-expression analysis (use with '--run_coexp')"),
     make_option(c("--png"), action = "store_true", default = FALSE, 
         help = "Generate PNG version of output plots."),
@@ -457,12 +455,9 @@ if(find_pred == TRUE) {
 }
 
 .plot_he_ct <- function(x, y, i) {
-    if(!is.null(opt$feature_list)) {
-        feature.df <- read.csv(opt$feature_list)
-        features <- feature.df$Feature
-    } else {
-        features <- names(Matrix::rowSums(GetAssayData(x[[i]])) > 0)
-    }
+    cidx <- which(colnames(x[[i]]@meta.data) == opt$refdata)
+    features <- unique(x[[i]]@meta.data[,cidx])
+    features <- features[!is.na(features)]
     label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
 
     plot_features(object = y[[i]]$celltrek, features = features, prefix = opt$outprefix, subdir = "celltrek",
@@ -482,35 +477,32 @@ if(find_pred == TRUE) {
     }
 
     library(Polychrome)
-    cidx <- which(colnames(x[[i]]@meta.data) == opt$refdata)
-    sc.cell.types <- unique(x[[i]]@meta.data[,cidx])
-    sc.cell.types <- sc.cell.types[!is.na(sc.cell.types)]
-    if(length(sc.cell.types <= 26)) {
-        umap_pal <- alphabet.colors(length(sc.cell.types))
-    } else if(length(sc.cell.types <= 36)) {
-        umap_pal <- palette36.colors(length(sc.cell.types))
+    if(length(features <= 26)) {
+        umap_pal <- alphabet.colors(length(features))
+    } else if(length(features <= 36)) {
+        umap_pal <- palette36.colors(length(features))
     } else {
-        flog.warn("Too many cell-types to plot UMAP for (%d). Skipping...", length(sc.cell.types))
+        flog.warn("Too many cell-types to plot UMAP for (%d). Skipping...", length(features))
     }
-    names(umap_pal) <- sc.cell.types
-    t1 <- DimPlot(x[[i]], label = TRUE, label.size = 4.5, group.by = "type", pt.size=0.8, shuffle=TRUE)
+    names(umap_pal) <- features
+    t1 <- DimPlot(x[[i]], label = TRUE, label.size = 4.5, group.by = "type", pt.size=opt$dot_size, shuffle=TRUE)
     t2 <- DimPlot(x[[i]][, which(x[[i]]$type=="sc")], label = TRUE, label.size = 4.5, group.by = opt$refdata,
-                  cols = umap_pal, pt.size = 0.8, shuffle = TRUE, na.value = "white", repel = TRUE)
+                  cols = umap_pal, pt.size = opt$dot_size, shuffle = TRUE, na.value = "white", repel = TRUE)
     filename <- file.path(dirname(opt$outprefix), "celltrek", paste0(basename(opt$outprefix), "_umap_labels", label, ".pdf"))
     pdf(filename, width = 15, height = 5)
-    t1 + t2 + plot_layout(widths = c(1, 2))
+    t1 + t2 + patchwork::plot_layout(widths = c(1, 2))
     dev.off()
     if(opt$png) {
         png(gsub(".pdf$", ".png", filename), width = 15, height = 5, units = "in", res = 150)
-        t1 + t2 + plot_layout(widths = c(1, 2))
+        t1 + t2 + patchwork::plot_layout(widths = c(1, 2))
         dev.off()
     }
 }
 
 for (i in seq_along(celltrek_model)) {
-    if(opt$integration_method=='seurat') {
+    if(opt$integration_method == 'seurat') {
         .plot_he(infile, i)
-    } else if(opt$integration_method=='celltrek') {
+    } else if(opt$integration_method == 'celltrek') {
         .plot_he_ct(train, celltrek_model, i)
     }
 }
@@ -575,12 +567,16 @@ if(opt$run_coloc) {
 }
 
 if(opt$run_coexp) {
-    if(opt$integration_method=="seurat") {
+    if(opt$integration_method == "seurat") {
         flog.warn("Co-expression analysis works with 'celltrek' integration only, not 'seurat'), skipping...")
-    } else if(opt$integration_method=="celltrek") {
-        cell_types <- unlist(strsplit(opt$coexp_cell_types, ","))
+    } else if(opt$integration_method == "celltrek") {
         for(i in seq_along(celltrek_model)) {
             ct <- celltrek_model[[i]]$celltrek
+            if(!is.null(opt$coexp_cell_types)) {
+                cell_types <- unlist(strsplit(opt$coexp_cell_types, ","))
+            } else {
+                cell_types <- > levels(ct@meta.data$cell_type)
+            }
             label <- if (is.null(labels[i])) "" else paste0("_",labels[i],"_")
             for (ctype in cell_types) {
                 flog.info("Co-expression analysis for %s", ctype)
