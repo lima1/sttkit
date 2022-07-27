@@ -90,8 +90,15 @@ cellphone_for_seurat <- function(obj, orgdb, prefix, slot = "data",
 #' @export import_cellphone
 
 import_cellphone <- function(obj, cellphone_outpath, orgdb) {
+  if(file.exists(file.path(cellphone_outpath, "significant_means.txt"))) {
     sig_means <- read.delim(file.path(cellphone_outpath, "significant_means.txt"),
-        as.is = TRUE, check.names = FALSE)
+        sep="\t", as.is = TRUE, check.names = FALSE)
+  } else if(file.exists(file.path(cellphone_outpath, "significant_means.csv"))) {
+    sig_means <- read.delim(file.path(cellphone_outpath, "significant_means.csv"),
+        sep=",", as.is = TRUE, check.names = FALSE)
+  } else {
+    stop("ERROR: CellPhoneDB - significant_means.(txt|csv) file not found at %s", cellphone_outpath)
+  }
     col_ids <- grep("\\|", colnames(sig_means))
     sig_means <- sig_means[ apply(sig_means[, col_ids],1,function(x) sum(!is.na(x))) > 0, ]
 
@@ -144,7 +151,7 @@ plot_cellphone <- function(obj, id = 1, cellphone_outpath, features = NULL) {
         features <- unlist(ranked[id,c("symbol_a", "symbol_b")])
     }    
     g1 <- SpatialFeaturePlot(obj, features = features)
-    g2 <- SpatialDimPlot(obj)
+    g2 <- SpatialDimPlot(obj) + theme(legend.position = "top")
     if (requireNamespace("ggthemes", quietly = TRUE) &&
         length(levels(Idents(obj))) <= 8) {
         g2 <- g2 + ggthemes::scale_fill_colorblind()
