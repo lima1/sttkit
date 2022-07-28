@@ -19,67 +19,67 @@ option_list <- list(
         help = "Meta data column with prediction labels in --singlecell"),
     make_option(c("--integration_method"), action = "store", type = "character", default = "seurat",
         help = "Integration: Choose between 'seurat' (default) and 'celltrek' as integration method"),
-    make_option(c("--downsample_cells"), action="store", type = "integer", default = 3000, 
+    make_option(c("--downsample_cells"), action = "store", type = "integer", default = 3000,
         help = "Integration: Use that many random cells per refdata [default %default]"),
     make_option(c("--condition"), action = "store", type = "character", default = NULL,
         help = "Optional meta data column with conditions in --singlecell. If provided, will split by condition."),
     make_option(c("--outprefix"), action = "store", type = "character", default = NULL,
         help = "Outfile."),
-    make_option(c("--num_integration_features"), action="store", type = "integer", default = 3000, 
+    make_option(c("--num_integration_features"), action = "store", type = "integer", default = 3000,
         help = "Integration: Use that many features [default %default]"),
-    make_option(c("--resolution"), action = "store", type = "double", 
-        default = 0.8, 
+    make_option(c("--resolution"), action = "store", type = "double",
+        default = 0.8,
         help = "Resolution values for clustering [default %default]"),
-    make_option(c("--nmf_ident"), action = "store", type = "integer", 
-        default = NULL, 
+    make_option(c("--nmf_ident"), action = "store", type = "integer",
+        default = NULL,
         help = "Set Idents(infile) to NMF of specified rank [default %default]"),
-    make_option(c("--markers"), action = "store_true", 
-        default = FALSE, 
+    make_option(c("--markers"), action = "store_true",
+        default = FALSE,
         help = "Find markers for --singlecell clusters."),
-    make_option(c("--simulation"), action = "store_true", 
-        default = FALSE, 
+    make_option(c("--simulation"), action = "store_true",
+        default = FALSE,
         help = "Subcluster the reference cells, specified by the call attribute [default %default]"),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.6,
         help = "Size of dots on H&E [default %default]"),
-    make_option(c("--infer_cna"), action = "store_true", default = FALSE, 
+    make_option(c("--infer_cna"), action = "store_true", default = FALSE,
         help = "Try to infer copy number alterations to label tumor clusters (works with 'seurat' integration only)."),
     make_option(c("--cna_cutoff"), action = "store", type = "double", default = 0.3,
         help = "Default infercnv cutoff, requires --infer_cna [default %default]"),
-    make_option(c("--cna_hmm"), action = "store_true", default = FALSE, 
+    make_option(c("--cna_hmm"), action = "store_true", default = FALSE,
         help = "Run infercnv HMM."),
-    make_option(c("--cna_output_normal_counts"), action = "store_true", default = FALSE, 
+    make_option(c("--cna_output_normal_counts"), action = "store_true", default = FALSE,
         help = "Output counts of normal clusters, useful for creating a normal reference database."),
-    make_option(c("--cna_scale_data"), action = "store_true", default = FALSE, 
+    make_option(c("--cna_scale_data"), action = "store_true", default = FALSE,
         help = "Scale data in inferCNV, useful when --cna_pool_of_normals contains very different data."),
-    make_option(c("--cna_pool_of_normals"), action = "store", type = "character", default = NULL, 
+    make_option(c("--cna_pool_of_normals"), action = "store", type = "character", default = NULL,
         help = "Matrix or (matrices in .list file) used for infercnv normalization."),
-    make_option(c("--cna_idents_ignore"), action = "store", type = "character", default = NULL, 
+    make_option(c("--cna_idents_ignore"), action = "store", type = "character", default = NULL,
         help = "(low quality) clusters ignored in infercnv [default none]."),
-    make_option(c("--cna_idents_reference"), action = "store", type = "character", default = NULL, 
+    make_option(c("--cna_idents_reference"), action = "store", type = "character", default = NULL,
         help = "Clusters used for reference in infercnv [default auto]."),
-    make_option(c("--cna_subdir"), action = "store", type = "character", default = "", 
+    make_option(c("--cna_subdir"), action = "store", type = "character", default = "",
         help = "Put inferCNV output in this sub-directory [default %default]."),
-    make_option(c("--cna_assay"), action = "store", type = "character", default = "Spatial", 
+    make_option(c("--cna_assay"), action = "store", type = "character", default = "Spatial",
         help = "Extract counts from this assay [default %default]."),
-    make_option(c("--run_coloc"), action = "store", type = "character", default = FALSE, 
+    make_option(c("--feature_list"), action = "store", type = "character", default = NULL,
+        help = "File containing list of feature/cells to plot using 'celltrek'"),
+    make_option(c("--run_coloc"), action = "store", type = "character", default = FALSE,
         help = "Run Co-locolization analysis (--integration_method should be 'celltrek')"),
-    make_option(c("--run_coexp"), action = "store", type = "character", default = FALSE, 
+    make_option(c("--run_coexp"), action = "store", type = "character", default = FALSE,
         help = "Run Co-expression analysis (--integration_method should be 'celltrek')"),
-    make_option(c("--coexp_cell_types"), action="store", type="character", default=NULL,
+    make_option(c("--coexp_cell_types"), action = "store", type = "character", default = "Tumor",
         help = "Cell type(s) for co-expression analysis (use with '--run_coexp')"),
-    make_option(c("--png"), action = "store_true", default = FALSE, 
+    make_option(c("--png"), action = "store_true", default = FALSE,
         help = "Generate PNG version of output plots."),
-    make_option(c("--serialize"), action = "store_true", default = FALSE, 
+    make_option(c("--serialize"), action = "store_true", default = FALSE,
         help = "Serialize processed --singlecell object. Can be large."),
-    make_option(c("--verbose"), action = "store_true", default = FALSE, 
+    make_option(c("--verbose"), action = "store_true", default = FALSE,
         help = "Verbose output"),
-    make_option(c("-f", "--force"), action = "store_true", default = FALSE, 
+    make_option(c("-f", "--force"), action = "store_true", default = FALSE,
         help = "Overwrite existing files")
 )
 
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-
-opt <- parse_args(OptionParser(option_list=option_list))
+opt <- parse_args(OptionParser(option_list = option_list))
 
 if (is.null(opt[["infile"]])) {
     stop("Need --infile")
@@ -95,7 +95,7 @@ if (is.null(opt$singlecell)) {
     stop("Need --singlecell")
 }
 
-if(opt$integration_method!="seurat" & opt$integration_method!="celltrek") {
+if(opt$integration_method != "seurat" && opt$integration_method != "celltrek") {
   stop("Integration: Choose between 'seurat' (default) and 'celltrek' as integration method")
 }
 
@@ -105,7 +105,7 @@ library(sttkit)
 library(grid)
 
 singlecell <- opt$singlecell
-if (grepl("list$",opt$singlecell)) {
+if (grepl("list$", opt$singlecell)) {
     singlecell <- cli_check_file_list(opt$singlecell)
 }
 if (!is.null(opt$labels_singlecell)) {
@@ -115,7 +115,7 @@ if (!is.null(opt$labels_singlecell)) {
     }
 } else {
     labels <- paste0("reference_", seq(length(singlecell)))
-}    
+}
 
 flog.info("Reading --infile (%s)...",
     basename(opt[["infile"]]))
@@ -127,93 +127,93 @@ if (!is.null(opt$nmf_ident)) {
 }
 
 find_pred <- TRUE
-if(opt$integration_method == "seurat") {
-  filename_predictions_old <- sttkit:::.get_serialize_path(opt$outprefix, "_transfer_predictions.rds")
-  filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix, paste0("_", digest(labels), "_transfer_predictions.rds"))
-  #TODO remove
-  if (file.exists(filename_predictions_old)) {
-      file.copy(filename_predictions_old, filename_predictions)
-      file.remove(filename_predictions_old)
-  }    
-  if (!opt$force && file.exists(filename_predictions)) {
-      flog.warn("%s exists. Skipping finding transfer predictions. Use --force to overwrite.", filename_predictions)
-      prediction.assay <- readRDS(filename_predictions)
-      find_pred <- FALSE
-  }
-} else if(opt$integration_method == "celltrek") {
-  filename_traint <- sttkit:::.get_serialize_path(opt$outprefix, "_traint.rds")
-  filename_celltrek_model <- sttkit:::.get_serialize_path(opt$outprefix, "_celltrek_model.rds")
-  if (!require("CellTrek", quietly = TRUE)) {
-       stop("This function requires the CellTrek package.")
-  }
-  if (!opt$force && file.exists(filename_celltrek_model) && file.exists(filename_traint)) {
-      flog.warn("%s and %s exist. Skipping running celltrek. Use --force to overwrite.", filename_celltrek_model, filename_traint)
-      train <- readRDS(filename_traint)
-      celltrek_model <- readRDS(filename_celltrek_model)
-      find_pred <- FALSE
-  }
+if (opt$integration_method == "seurat") {
+    filename_predictions_old <- sttkit:::.get_serialize_path(opt$outprefix, "_transfer_predictions.rds")
+    filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix, paste0("_", digest(labels), "_transfer_predictions.rds"))
+#TODO remove
+    if (file.exists(filename_predictions_old)) {
+          file.copy(filename_predictions_old, filename_predictions)
+          file.remove(filename_predictions_old)
+    }
+    if (!opt$force && file.exists(filename_predictions)) {
+        flog.warn("%s exists. Skipping finding transfer predictions. Use --force to overwrite.", filename_predictions)
+        prediction.assay <- readRDS(filename_predictions)
+        find_pred <- FALSE
+    }
+} else if (opt$integration_method == "celltrek") {
+    filename_traint <- sttkit:::.get_serialize_path(opt$outprefix, "_traint.rds")
+    filename_celltrek_model <- sttkit:::.get_serialize_path(opt$outprefix, "_celltrek_model.rds")
+    if (!require("CellTrek", quietly = TRUE)) {
+         stop("This function requires the CellTrek package.")
+    }
+    if (!opt$force && file.exists(filename_celltrek_model) && file.exists(filename_traint)) {
+        flog.warn("%s and %s exist. Skipping running celltrek. Use --force to overwrite.", filename_celltrek_model, filename_traint)
+        train <- readRDS(filename_traint)
+        celltrek_model <- readRDS(filename_celltrek_model)
+        find_pred <- FALSE
+    }
 }
 
-filename_singlecell <- sttkit:::.get_serialize_path(opt$outprefix, "_singlecell.rds")
-if (!opt$force && file.exists(filename_singlecell)) {
-    flog.warn("%s exists. Skipping normalization and clustering. Use --force to overwrite.",
-        filename_singlecell)
-    singlecell <- readRDS(filename_singlecell)
-    labels <- names(singlecell)
-} else {
-    flog.info("Reading --singlecell (%s)...",
-        basename(opt$singlecell))
-
-    singlecell <- unlist(lapply(singlecell, function(x) {
-        if(grepl(".rds$", tolower(x))) readRDS(x)
-        else if(grepl("h5ad$", tolower(x))) ReadH5AD(x)
-    }))
-    if (!is.null(opt$downsample_cells)) {
-        flog.info("Downsampling --singlecell to %i cells per %s annotation",
-            opt$downsample_cells, opt$refdata)
-        singlecell <- lapply(singlecell, function(x) 
-            x[, unlist(lapply(split(Cells(x), x[[opt$refdata]]), function(y) 
-                sample(y,min(length(y), opt$downsample_cells), replace = FALSE)))])
-    }
-    if (!is.null(opt$condition)) {
-        singlecell <- lapply(singlecell, SplitObject, opt$condition)
-        labels_new <- lapply(seq_along(labels), function(i) 
-            paste0(labels[[i]], "_", names(singlecell[[i]])))
-        singlecell <- unlist(singlecell)
-        labels <- unlist(labels_new)
-    }
-    if (!is.null(names(singlecell))) {
-        flog.warn("--singlecell already contains labels.")
+if (find_pred == TRUE) {
+    filename_singlecell <- sttkit:::.get_serialize_path(opt$outprefix, "_singlecell.rds")
+    if (!opt$force && file.exists(filename_singlecell)) {
+        flog.warn("%s exists. Skipping normalization and clustering. Use --force to overwrite.",
+            filename_singlecell)
+        singlecell <- readRDS(filename_singlecell)
         labels <- names(singlecell)
-    } 
+    } else {
+        flog.info("Reading --singlecell (%s)...",
+            basename(opt$singlecell))
 
-    singlecell <- lapply(singlecell, function(x) {
-        x <- UpdateSeuratObject(x)
-        if ("SCT" %in% Assays(x)) return(x)
-        flog.info("Running sctransform --singlecell...")
-        SCTransform(x, ncells = opt$num_integration_features, verbose = FALSE)
-    })
+        singlecell <- unlist(lapply(singlecell, function(x) {
+            if (grepl(".rds$", tolower(x))) readRDS(x)
+            else if (grepl("h5ad$", tolower(x))) ReadH5AD(x)
+        }))
+        if (!is.null(opt$downsample_cells)) {
+            flog.info("Downsampling --singlecell to %i cells per %s annotation",
+                opt$downsample_cells, opt$refdata)
+            singlecell <- lapply(singlecell, function(x)
+                x[, unlist(lapply(split(Cells(x), x[[opt$refdata]]), function(y)
+                    sample(y, min(length(y), opt$downsample_cells), replace = FALSE)))])
+        }
+        if (!is.null(opt$condition)) {
+            singlecell <- lapply(singlecell, SplitObject, opt$condition)
+            labels_new <- lapply(seq_along(labels), function(i)
+                paste0(labels[[i]], "_", names(singlecell[[i]])))
+            singlecell <- unlist(singlecell)
+            labels <- unlist(labels_new)
+        }
+        if (!is.null(names(singlecell))) {
+            flog.warn("--singlecell already contains labels.")
+            labels <- names(singlecell)
+        }
 
-    singlecell <- lapply(singlecell, function(x) {
-        DefaultAssay(x) <- "SCT"
-        if ("umap" %in% Reductions(x) && "pca" %in% Reductions(x))
-            if( DefaultAssay(x[["pca"]]) == "SCT" && DefaultAssay(x[["umap"]]) == "SCT")
-                return(x)
-        flog.info("Running PCA and UMAP on --singlecell...")
-        RunPCA(x, verbose = TRUE) %>% RunUMAP(dims = 1:30)
-    })
-    flog.info("Clustering --singlecell...")
-    singlecell <- lapply(singlecell, FindNeighbors, verbose = FALSE)
-    singlecell <- lapply(singlecell, FindClusters, resolution = opt$resolution, verbose = FALSE)
-    if (opt$serialize) {
-        flog.info("Writing R data structure to %s...", filename_singlecell)
-        names(singlecell) <- labels
-        sttkit:::.serialize(singlecell, opt$outprefix, "_singlecell.rds")
+        singlecell <- lapply(singlecell, function(x) {
+            x <- UpdateSeuratObject(x)
+            if ("SCT" %in% Assays(x)) return(x)
+            flog.info("Running sctransform --singlecell...")
+            SCTransform(x, ncells = opt$num_integration_features, verbose = FALSE)
+        })
+
+        singlecell <- lapply(singlecell, function(x) {
+            DefaultAssay(x) <- "SCT"
+            if ("umap" %in% Reductions(x) && "pca" %in% Reductions(x))
+                if( DefaultAssay(x[["pca"]]) == "SCT" && DefaultAssay(x[["umap"]]) == "SCT")
+                    return(x)
+            flog.info("Running PCA and UMAP on --singlecell...")
+            RunPCA(x, verbose = TRUE) %>% RunUMAP(dims = 1:30)
+        })
+        flog.info("Clustering --singlecell...")
+        singlecell <- lapply(singlecell, FindNeighbors, verbose = FALSE)
+        singlecell <- lapply(singlecell, FindClusters, resolution = opt$resolution, verbose = FALSE)
+        if (opt$serialize) {
+            flog.info("Writing R data structure to %s...", filename_singlecell)
+            names(singlecell) <- labels
+            sttkit:::.serialize(singlecell, opt$outprefix, "_singlecell.rds")
+        }
     }
-}
 
-if(find_pred == TRUE) {
-    if(opt$integration_method == "seurat") {
+    if(opt$integration_method=="seurat") {
         flog.info("Calculating transfer anchors...")
         anchors <- lapply(singlecell, function(x)
             FindTransferAnchors(reference = x, query = infile,
@@ -225,25 +225,26 @@ if(find_pred == TRUE) {
         flog.info("Writing R data structure to %s...", filename_predictions)
         saveRDS(prediction.assay, filename_predictions)
 
-    } else if(opt$integration_method == "celltrek") {
-        if(opt$force | !file.exists(filename_traint)) {
+    } else if (opt$integration_method == "celltrek") {
+        if (opt$force | !file.exists(filename_traint)) {
             infile <- RenameCells(infile, new.names=make.names(Cells(infile)))
-            singlecell <- lapply(singlecell, function(sc) {RenameCells(sc, new.names=make.names(Cells(sc)))})
+            singlecell <- lapply(singlecell, function(sc) RenameCells(sc, new.names = make.names(Cells(sc))))
             train <- lapply(singlecell, function(x)
                 CellTrek::traint(st_data = infile, sc_data = x,
-                    sc_assay = 'RNA', cell_names = opt$refdata))
+                    sc_assay = "RNA", cell_names = opt$refdata))
             flog.info("Writing R data structure to %s ...", filename_traint)
             saveRDS(train, filename_traint)
         }
-        celltrek_model <- lapply(seq(1:length(singlecell)), function(i) {
-            ctm <- CellTrek::celltrek(st_sc_int = train[[i]], int_assay = 'traint',
-                     sc_data = singlecell[[i]], sc_assay = 'RNA',
-                            reduction='pca', intp=TRUE, intp_pnt=5000, intp_lin = FALSE,
-                            nPCs = 30, ntree = 1000,
+        celltrek_model <- lapply(seq_along(singlecell), function(i) {
+            ctm <- CellTrek::celltrek(st_sc_int = train[[i]], int_assay = "traint",
+                     sc_data = singlecell[[i]], sc_assay = "RNA",
+                            reduction = "pca", intp = TRUE, intp_pnt = 5000,
+                            intp_lin = FALSE, nPCs = 30, ntree = 1000,
                             dist_thresh = 0.55, top_spot = 5, spot_n = 5, repel_r = 20,
                             repel_iter = 20, keep_model = TRUE)
-            cidx <- which(colnames(ctm$celltrek@meta.data)==opt$refdata)
-            ctm$celltrek$cell_type <- factor(ctm$celltrek@meta.data[,cidx], levels=sort(unique(ctm$celltrek@meta.data[,cidx])))
+            cidx <- which(colnames(ctm$celltrek@meta.data) == opt$refdata)
+            ctm$celltrek$cell_type <- factor(ctm$celltrek@meta.data[, cidx],
+                levels = sort(unique(ctm$celltrek@meta.data[, cidx])))
             ctm
         })
         flog.info("Writing R data structures to %s ...", filename_celltrek_model)
@@ -252,7 +253,7 @@ if(find_pred == TRUE) {
     if (opt$markers) {
         flog.info("Finding single cell cluster markers...")
         invisible(lapply(seq_along(singlecell), function(i) {
-            Idents(singlecell[[i]]) <- singlecell[[i]][[opt$refdata]][,1]
+            Idents(singlecell[[i]]) <- singlecell[[i]][[opt$refdata]][, 1]
             features <- VariableFeatures(singlecell[[i]])
             find_markers(singlecell[[i]][features, ],
                 label = labels[[i]], prefix = opt$outprefix,
@@ -264,19 +265,19 @@ if(find_pred == TRUE) {
     }
 }
 
-.run_infer <- function(seurat_obj, seurat_raw_obj = seurat_obj, 
+.run_infer <- function(seurat_obj, seurat_raw_obj = seurat_obj,
                        ref_group_names = NULL, out_dir = tempfile(),
-                       feature = "ident", HMM=FALSE, cutoff = 0.4,
+                       feature = "ident", HMM = FALSE, cutoff = 0.4,
                        scale_data = opt$cna_scale_data) {
 
     if (!file.exists(out_dir)) {
         out_dir <- gsub(" ", "_", out_dir)
         dir.create(out_dir)
     }
-    count_matrix <- GetAssayData(seurat_raw_obj, slot= "counts",
+    count_matrix <- GetAssayData(seurat_raw_obj, slot = "counts",
         assay = opt$cna_assay)[, colnames(seurat_obj)]
     annotations <- FetchData(seurat_obj, feature)
-    types <- unique(annotations[,1])
+    types <- unique(annotations[, 1])
     if (is.null(ref_group_names)) {
         ref_group_names <- types[!types %in% c("Tumor", "?", "Unassigned")]
     }
@@ -285,40 +286,40 @@ if(find_pred == TRUE) {
         !is.null(ref_group_names)) {
         filename <- file.path(out_dir, "normal_counts.tsv.gz")
         flog.info("Writing normal count data to %s...", basename(filename))
-        idx <- annotations[,1] %in% ref_group_names
-        data.table::fwrite(data.table::as.data.table(count_matrix[,idx]), file = filename,
+        idx <- annotations[, 1] %in% ref_group_names
+        data.table::fwrite(data.table::as.data.table(count_matrix[, idx]), file = filename,
             sep = "\t", quote = FALSE)
-    }    
+    }
     pon_count_matrix <- .get_infer_cna_pon()
     if (!is.null(pon_count_matrix)) {
         isc <- intersect(rownames(count_matrix), rownames(pon_count_matrix))
-        count_matrix <- cbind(count_matrix[isc,], pon_count_matrix[isc,])
+        count_matrix <- cbind(count_matrix[isc, ], pon_count_matrix[isc, ])
         pon_annotations <- data.frame(
             ident = rep("PoN", ncol(pon_count_matrix)),
             row.names = colnames(pon_count_matrix)
         )
         colnames(pon_annotations) <- colnames(annotations)
-        annotations[,1] <- as.character(annotations[,1])
+        annotations[, 1] <- as.character(annotations[, 1])
         annotations <- rbind(annotations, pon_annotations)
-        annotations[,1] <- as.factor(annotations[,1])
+        annotations[, 1] <- as.factor(annotations[, 1])
         ref_group_names <- c(ref_group_names, "PoN")
     }    
-    message("Refgroups: ", paste(ref_group_names, collapse=","))
+    message("Refgroups: ", paste(ref_group_names, collapse = ","))
     infercnv_obj <- CreateInfercnvObject(
         raw_counts_matrix = count_matrix,
-        gene_order_file=infercnv_genes_example,
+        gene_order_file = infercnv_genes_example,
         annotations_file = annotations,
         ref_group_names = ref_group_names
     )
     infercnv_obj <- infercnv::run(infercnv_obj,
-                                   cutoff=cutoff,
-                                   out_dir=out_dir,
-                                   cluster_by_groups=TRUE,
-                                   denoise=TRUE,
-                                   HMM=HMM,
-                                   num_threads=2,
+                                   cutoff = cutoff,
+                                   out_dir = out_dir,
+                                   cluster_by_groups = TRUE,
+                                   denoise = TRUE,
+                                   HMM = HMM,
+                                   num_threads = 2,
                                    scale_data = scale_data,
-                                   sd_amplifier=1.0
+                                   sd_amplifier = 1.0
                                    )
     saveRDS(infercnv_obj, file = file.path(out_dir, "infercnv_obj.rds"))
     infercnv_obj
@@ -326,18 +327,18 @@ if(find_pred == TRUE) {
 
 .get_infer_cna_pon <- function() {
     if (is.null(opt$cna_pool_of_normals)) return(NULL)
-    .load_infer_cna_pon <- function(file, i) {    
+    .load_infer_cna_pon <- function(file, i) {
         if (tolower(tools::file_ext(file)) == "rds") {
             seurat_obj <- readRDS(file)
             count_matrix <- GetAssayData(seurat_obj, slot = "counts", assay = opt$cna_assay)
-        } else {   
+        } else {
             count_matrix <- data.table::fread(file)
         }
-        colnames(count_matrix) <- gsub("-\\d$", 
+        colnames(count_matrix) <- gsub("-\\d$",
             paste0("-pon-", i), colnames(count_matrix))
         return(count_matrix)
     }
-    if (grepl("list$",opt$cna_pool_of_normals)) {
+    if (grepl("list$", opt$cna_pool_of_normals)) {
         files <- cli_check_file_list(opt$cna_pool_of_normals)
     } else {
         files <- opt$cna_pool_of_normals
@@ -345,10 +346,10 @@ if(find_pred == TRUE) {
     m <- lapply(seq_along(files), function(i) .load_infer_cna_pon(files[i], i))
     if (length(m) < 2) return(m[[1]])
     isc <- Reduce(intersect, lapply(m, rownames))
-    return(Reduce(cbind, lapply(m, function(x) x[isc,])))    
+    return(Reduce(cbind, lapply(m, function(x) x[isc, ])))
 }
 
-.infer_cna <- function(x, 
+.infer_cna <- function(x,
                        idents_ignore = opt$cna_idents_ignore,
                        idents_ref = opt$cna_idents_reference,
                        tumor_ps = c("Unassigned", "Tumor", "?")) {
@@ -363,13 +364,13 @@ if(find_pred == TRUE) {
             x$predictions <- pa
             GetTransferPredictions(x)
          })
-         p <- do.call(cbind,p)
-         tumor_fraction <- apply(p,1, function(x) sum(x %in% tumor_ps)/length(x))
+         p <- do.call(cbind, p)
+         tumor_fraction <- apply(p, 1, function(x) sum(x %in% tumor_ps) / length(x))
          tumor_fraction_mean <- sapply(split(tumor_fraction, Idents(x)), mean)
-         tumor_fraction_o <- apply(p,1, function(x) sum(x %in% "Tumor")/length(x))
+         tumor_fraction_o <- apply(p, 1, function(x) sum(x %in% "Tumor") / length(x))
          tumor_fraction_o_mean <- sapply(split(tumor_fraction_o, Idents(x)), mean)
          ref_group_names <- names(tumor_fraction_mean[tumor_fraction_mean < median(tumor_fraction_mean)])
-         if (max(tumor_fraction_o_mean)>0) {
+         if (max(tumor_fraction_o_mean) > 0) {
             obs_group_names <- names(tumor_fraction_o_mean[tumor_fraction_o_mean > median(tumor_fraction_o_mean)])
             ref_group_names <- ref_group_names[!ref_group_names %in% obs_group_names]
         }
@@ -377,25 +378,25 @@ if(find_pred == TRUE) {
         ref_group_names <- idents_ref[idents_ref %in% Idents(x)]
         if (length(ref_group_names)) {
             filename <- file.path(out_dir, "normal_counts.rds")
-            xx <- x[,Idents(x) %in% ref_group_names]
+            xx <- x[, Idents(x) %in% ref_group_names]
             if (ncol(xx)) {
                 flog.info("Writing normal data to %s...", basename(filename))
                 saveRDS(xx, filename)
             }
         }
-    }    
+    }
      if (!is.null(idents_ignore)) {
-         x <- x[,!Idents(x) %in% strsplit(idents_ignore, ":")[[1]]]
+         x <- x[, !Idents(x) %in% strsplit(idents_ignore, ":")[[1]]]
 
-     }     
+     }
     if (!is.null(opt[["infile_raw"]])) {
         flog.info("Reading --infile_raw (%s)...",
             basename(opt[["infile_raw"]]))
         seurat_raw_obj <- readRDS(opt[["infile_raw"]])
     } else {
         seurat_raw_obj <- x
-    }        
-    .run_infer(x, seurat_raw_obj = seurat_raw_obj, ref_group_names = ref_group_names, out_dir = out_dir, cutoff = opt$cna_cutoff, HMM = opt$cna_hmm )
+    }
+    .run_infer(x, seurat_raw_obj = seurat_raw_obj, ref_group_names = ref_group_names, out_dir = out_dir, cutoff = opt$cna_cutoff, HMM = opt$cna_hmm)
 }
 
 .plot_he <- function(x, i) {
@@ -403,12 +404,12 @@ if(find_pred == TRUE) {
     DefaultAssay(x) <- "predictions"
     Idents(x) <- GetTransferPredictions(x)
     features <- names(Matrix::rowSums(GetAssayData(x)) > 0)
-    label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
+    label <- if (is.null(labels[i])) "" else paste0("_", labels[i])
     flog.info("Generating output plots for %s ...", label)
     if (length(Images(x)) > 1 && "library" %in% colnames(x@meta.data)) {
         x_split <- SplitObject(x, split.by = "library")
         libs <- sapply(x_split, function(y) y$library[1])
-        libs_label <- rep("", length(libs)) 
+        libs_label <- rep("", length(libs))
         field <- "library"
         if ("label" %in% colnames(x@meta.data)) {
             libs_label <- paste0("_", sapply(x_split, function(y) y$label[1]))
@@ -417,12 +418,12 @@ if(find_pred == TRUE) {
         for (j in seq_along(libs)) {
             plot_features(object = x_split[[j]], features = features,
                 prefix = opt$outprefix, subdir = "he",
-                suffix = paste0("_he_labels", label, "_", libs[j], libs_label[j],".pdf"),
+                suffix = paste0("_he_labels", label, "_", libs[j], libs_label[j], ".pdf"),
                 png = opt$png, pt.size.factor = opt$dot_size)
-            filename <- sttkit:::.get_sub_path(opt$outprefix, "he", 
-                    suffix = paste0("_he_labels_call", label, "_", libs[j], libs_label[j],".pdf"))
-            gp <- SpatialDimPlot(x_split[[j]], label = TRUE, 
-                image = sttkit:::.get_image_slice(x_split[[j]]), 
+            filename <- sttkit:::.get_sub_path(opt$outprefix, "he",
+                    suffix = paste0("_he_labels_call", label, "_", libs[j], libs_label[j], ".pdf"))
+            gp <- SpatialDimPlot(x_split[[j]], label = TRUE,
+                image = sttkit:::.get_image_slice(x_split[[j]]),
                 pt.size.factor = opt$dot_size, label.size = 3)
             pdf(filename, width = 4, height = 3.9)
             print(gp)
@@ -434,11 +435,11 @@ if(find_pred == TRUE) {
                 invisible(dev.off())
             }
         }
-        filename <- sttkit:::.get_sub_path(opt$outprefix, "advanced", 
-                suffix = paste0("_labels", label, "_", libs[j], libs_label[j],".pdf"))
+        filename <- sttkit:::.get_sub_path(opt$outprefix, "advanced",
+                suffix = paste0("_labels", label, "_", libs[j], libs_label[j], ".pdf"))
         ratio <- sttkit:::.get_image_ratio(min(6,length(features)))
         glist <- VlnPlot(x, features = features, group.by = field, pt.size = 0.25, combine = FALSE)
-        glist <- lapply(glist, function(p) ggplotGrob( p + theme(legend.position = "none") ))
+        glist <- lapply(glist, function(p) ggplotGrob(p + theme(legend.position = "none")))
         if (length(features) > 6) {
             glist <- gridExtra::marrangeGrob(glist, ncol = 3, nrow = 2)
         } else {
@@ -446,7 +447,7 @@ if(find_pred == TRUE) {
         }    
         ggsave(filename, glist,
                width = 10, height = 10 * ratio)
-    } else {    
+    } else {
         plot_features(object = x, features = features,
             prefix = opt$outprefix, subdir = "he",
             suffix = paste0("_he_labels", label, ".pdf"),
@@ -455,18 +456,21 @@ if(find_pred == TRUE) {
 }
 
 .plot_he_ct <- function(x, y, i) {
-    cidx <- which(colnames(x[[i]]@meta.data) == opt$refdata)
-    features <- unique(x[[i]]@meta.data[,cidx])
-    features <- features[!is.na(features)]
-    label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
+    if (!is.null(opt$feature_list)) {
+        feature.df <- read.csv(opt$feature_list)
+        features <- feature.df$Feature
+    } else {
+        features <- names(Matrix::rowSums(GetAssayData(x[[i]])) > 0)
+    }
+    label <- if (is.null(labels[i])) "" else paste0("_", labels[i])
 
-    plot_features(object = y[[i]]$celltrek, features = features, prefix = opt$outprefix, subdir = "celltrek",
+    plot_features(object = y[[i]]$celltrek, features = features, prefix = opt$outprefix, subdir = "he",
         suffix = paste0("_he_celltrek_labels", label, ".pdf"), png = opt$png, pt.size.factor = opt$dot_size)
 
-    c2 <- SpatialDimPlot(y[[i]]$celltrek, group.by = "cell_type", pt.size.factor = opt$dot_size, 
-                         cols = rep("red", length(features)))[[1]] +
-                         facet_wrap(cell_type ~ .) + theme(legend.position="none")
-    filename <- file.path(dirname(opt$outprefix), "celltrek", paste0(basename(opt$outprefix), "_he_celltrek_dots_labels", label, ".pdf"))
+    c2 <- SpatialDimPlot(y[[i]]$celltrek, group.by = "cell_type",
+        pt.size.factor = opt$dot_size, cols = rep("red", length(features)))[[1]] +
+              facet_wrap(cell_type ~ .) + theme(legend.position = "none")
+    filename <- file.path(dirname(opt$outprefix), "he", paste0(basename(opt$outprefix), "_he_celltrek_dots_labels", label, ".pdf"))
     pdf(filename, width = 10, height = 10)
     print(c2)
     dev.off()
@@ -475,31 +479,38 @@ if(find_pred == TRUE) {
         print(patchwork::wrap_plots(c2))
         dev.off()
     }
-
-    library(Polychrome)
-    if(length(features <= 26)) {
-        umap_pal <- alphabet.colors(length(features))
-    } else if(length(features <= 36)) {
-        umap_pal <- palette36.colors(length(features))
+    t1 <- DimPlot(x[[i]], label = TRUE, label.size = 4.5, group.by = "type", pt.size = 0.8, shuffle = TRUE)
+    if (require(colorBlindness)) {
+        cidx <- which(colnames(x[[i]]@meta.data) == opt$refdata)
+        umap_pal <- paletteMartin
+        names(umap_pal) <- levels(x[[i]]@meta.data[, cidx])
+        t2 <- DimPlot(x[[i]][, which(x[[i]]$type == "sc")], label = TRUE, label.size = 4.5,
+                      group.by = opt$refdata, cols = umap_pal, pt.size = 0.8, shuffle = TRUE,
+                      na.value = "white")
+        t3 <- DimPlot(x[[i]][, which(x[[i]]$type != "sc")], label = TRUE, label.size = 4.5,
+                      group.by = opt$refdata, cols = umap_pal, pt.size = 0.8, shuffle = TRUE,
+                      na.value = "white")
     } else {
-        flog.warn("Too many cell-types to plot UMAP for (%d). Skipping...", length(features))
+        t2 <- DimPlot(x[[i]][, which(x[[i]]$type == "sc")], label = TRUE, label.size = 4.5,
+                      group.by = opt$refdata, pt.size = 0.8, shuffle = TRUE,
+                      na.value = "white")
+        t3 <- DimPlot(x[[i]][, which(x[[i]]$type != "sc")], label = TRUE, label.size = 4.5,
+                      group.by = opt$refdata, pt.size = 0.8, shuffle = TRUE,
+                      na.value = "white")
     }
-    names(umap_pal) <- features
-    t1 <- DimPlot(x[[i]], label = TRUE, label.size = 4.5, group.by = "type", pt.size=opt$dot_size, shuffle=TRUE)
-    t2 <- DimPlot(x[[i]][, which(x[[i]]$type=="sc")], label = TRUE, label.size = 4.5, group.by = opt$refdata,
-                  cols = umap_pal, pt.size = opt$dot_size, shuffle = TRUE, na.value = "white", repel = TRUE)
-    filename <- file.path(dirname(opt$outprefix), "celltrek", paste0(basename(opt$outprefix), "_umap_labels", label, ".pdf"))
-    pdf(filename, width = 15, height = 5)
-    t1 + t2 + patchwork::plot_layout(widths = c(1, 2))
+    filename <- sttkit:::.get_sub_path(opt$outprefix, "umap",
+            siffix = paste0("_umap_labels", label, ".pdf"))
+    pdf(filename, width = 10, height = 4.5)
+    gridExtra::grid.arrange(t1, t2, t3, ncol = 3)
     dev.off()
     if(opt$png) {
-        png(gsub(".pdf$", ".png", filename), width = 15, height = 5, units = "in", res = 150)
-        t1 + t2 + patchwork::plot_layout(widths = c(1, 2))
+        png(gsub(".pdf$", ".png", filename), width = 10, height = 5, units = "in", res = 150)
+        print(gridExtra::grid.arrange(t1, t2, ncol = 2))
         dev.off()
     }
 }
 
-for (i in seq_along(celltrek_model)) {
+for (i in seq_along(singlecell)) {
     if(opt$integration_method == 'seurat') {
         .plot_he(infile, i)
     } else if(opt$integration_method == 'celltrek') {
@@ -508,7 +519,7 @@ for (i in seq_along(celltrek_model)) {
 }
 
 if (opt$infer_cna) {
-    if(opt$integration_method=='celltrek') {
+    if(opt$integration_method == 'celltrek') {
         flog.warn("Works with 'seurat' integration only, not 'celltrek'), skipping...")
     } else if(opt$integration_method=='seurat') {
         if (!require("infercnv")) {
@@ -522,7 +533,7 @@ if (opt$infer_cna) {
 if(opt$run_coloc) {
     if(opt$integration_method=="seurat") {
         flog.warn("Co-localization analysis works with 'celltrek' integration only, not 'seurat'), skipping...")
-    } else if(opt$integration_method=="celltrek") {
+    } else if(opt$integration_method == "celltrek") {
         opath <- file.path(dirname(opt$outprefix), "celltrek", "co-analysis")
         if (!dir.exists(opath)) {
             dir.create(opath)
@@ -567,16 +578,12 @@ if(opt$run_coloc) {
 }
 
 if(opt$run_coexp) {
-    if(opt$integration_method == "seurat") {
+    if(opt$integration_method=="seurat") {
         flog.warn("Co-expression analysis works with 'celltrek' integration only, not 'seurat'), skipping...")
-    } else if(opt$integration_method == "celltrek") {
+    } else if(opt$integration_method=="celltrek") {
+        cell_types <- unlist(strsplit(opt$coexp_cell_types, ","))
         for(i in seq_along(celltrek_model)) {
             ct <- celltrek_model[[i]]$celltrek
-            if(!is.null(opt$coexp_cell_types)) {
-                cell_types <- unlist(strsplit(opt$coexp_cell_types, ","))
-            } else {
-                cell_types <- > levels(ct@meta.data$cell_type)
-            }
             label <- if (is.null(labels[i])) "" else paste0("_",labels[i],"_")
             for (ctype in cell_types) {
                 flog.info("Co-expression analysis for %s", ctype)
