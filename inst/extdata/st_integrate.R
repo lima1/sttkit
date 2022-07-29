@@ -61,13 +61,11 @@ option_list <- list(
         help = "Put inferCNV output in this sub-directory [default %default]."),
     make_option(c("--cna_assay"), action = "store", type = "character", default = "Spatial",
         help = "Extract counts from this assay [default %default]."),
-    make_option(c("--feature_list"), action = "store", type = "character", default = NULL,
-        help = "File containing list of feature/cells to plot using 'celltrek'"),
     make_option(c("--run_coloc"), action = "store", type = "character", default = FALSE,
         help = "Run Co-locolization analysis (--integration_method should be 'celltrek')"),
     make_option(c("--run_coexp"), action = "store", type = "character", default = FALSE,
         help = "Run Co-expression analysis (--integration_method should be 'celltrek')"),
-    make_option(c("--coexp_cell_types"), action = "store", type = "character", default = "Tumor",
+    make_option(c("--coexp_cell_types"), action="store", type="character", default=NULL,
         help = "Cell type(s) for co-expression analysis (use with '--run_coexp')"),
     make_option(c("--png"), action = "store_true", default = FALSE,
         help = "Generate PNG version of output plots."),
@@ -95,7 +93,7 @@ if (is.null(opt$singlecell)) {
     stop("Need --singlecell")
 }
 
-if(opt$integration_method != "seurat" && opt$integration_method != "celltrek") {
+if (opt$integration_method != "seurat" && opt$integration_method != "celltrek") {
   stop("Integration: Choose between 'seurat' (default) and 'celltrek' as integration method")
 }
 
@@ -142,83 +140,84 @@ if (opt$integration_method == "seurat") {
     }
 } else if (opt$integration_method == "celltrek") {
     filename_traint <- sttkit:::.get_serialize_path(opt$outprefix, "_traint.rds")
-    filename_celltrek_model <- sttkit:::.get_serialize_path(opt$outprefix, "_celltrek_model.rds")
+    filename_celltrek <- sttkit:::.get_serialize_path(opt$outprefix, "_celltrek.rds")
     if (!require("CellTrek", quietly = TRUE)) {
          stop("This function requires the CellTrek package.")
     }
-    if (!opt$force && file.exists(filename_celltrek_model) && file.exists(filename_traint)) {
-        flog.warn("%s and %s exist. Skipping running celltrek. Use --force to overwrite.", filename_celltrek_model, filename_traint)
+    if (!opt$force && file.exists(filename_celltrek) && file.exists(filename_traint)) {
+        flog.warn("%s and %s exist. Skipping running celltrek. Use --force to overwrite.", filename_celltrek, filename_traint)
         train <- readRDS(filename_traint)
-        celltrek_model <- readRDS(filename_celltrek_model)
+        celltrek_predictions <- readRDS(filename_celltrek)
         find_pred <- FALSE
     }
 }
 
-if (find_pred == TRUE) {
-    filename_singlecell <- sttkit:::.get_serialize_path(opt$outprefix, "_singlecell.rds")
-    if (!opt$force && file.exists(filename_singlecell)) {
-        flog.warn("%s exists. Skipping normalization and clustering. Use --force to overwrite.",
-            filename_singlecell)
-        singlecell <- readRDS(filename_singlecell)
+filename_singlecell <- sttkit:::.get_serialize_path(opt$outprefix, "_singlecell.rds")
+if (!opt$force && file.exists(filename_singlecell)) {
+    flog.warn("%s exists. Skipping normalization and clustering. Use --force to overwrite.",
+        filename_singlecell)
+    singlecell <- readRDS(filename_singlecell)
+    labels <- names(singlecell)
+} else {
+    flog.info("Reading --singlecell (%s)...",
+        basename(opt$singlecell))
+
+    singlecell <- unlist(lapply(singlecell, function(x) {
+        if (grepl(".rds$", tolower(x))) readRDS(x)
+        else if (grepl("h5ad$", tolower(x))) ReadH5AD(x)
+    }))
+    if (!is.null(opt$downsample_cells)) {
+        flog.info("Downsampling --singlecell to %i cells per %s annotation",
+            opt$downsample_cells, opt$refdata)
+        singlecell <- lapply(singlecell, function(x)
+            x[, unlist(lapply(split(Cells(x), x[[opt$refdata]]), function(y)
+                sample(y, min(length(y), opt$downsample_cells), replace = FALSE)))])
+    }
+    if (!is.null(opt$condition)) {
+        singlecell <- lapply(singlecell, SplitObject, opt$condition)
+        labels_new <- lapply(seq_along(labels), function(i)
+            paste0(labels[[i]], "_", names(singlecell[[i]])))
+        singlecell <- unlist(singlecell)
+        labels <- unlist(labels_new)
+    }
+    if (!is.null(names(singlecell))) {
+        flog.warn("--singlecell already contains labels.")
         labels <- names(singlecell)
-    } else {
-        flog.info("Reading --singlecell (%s)...",
-            basename(opt$singlecell))
-
-        singlecell <- unlist(lapply(singlecell, function(x) {
-            if (grepl(".rds$", tolower(x))) readRDS(x)
-            else if (grepl("h5ad$", tolower(x))) ReadH5AD(x)
-        }))
-        if (!is.null(opt$downsample_cells)) {
-            flog.info("Downsampling --singlecell to %i cells per %s annotation",
-                opt$downsample_cells, opt$refdata)
-            singlecell <- lapply(singlecell, function(x)
-                x[, unlist(lapply(split(Cells(x), x[[opt$refdata]]), function(y)
-                    sample(y, min(length(y), opt$downsample_cells), replace = FALSE)))])
-        }
-        if (!is.null(opt$condition)) {
-            singlecell <- lapply(singlecell, SplitObject, opt$condition)
-            labels_new <- lapply(seq_along(labels), function(i)
-                paste0(labels[[i]], "_", names(singlecell[[i]])))
-            singlecell <- unlist(singlecell)
-            labels <- unlist(labels_new)
-        }
-        if (!is.null(names(singlecell))) {
-            flog.warn("--singlecell already contains labels.")
-            labels <- names(singlecell)
-        }
-
-        singlecell <- lapply(singlecell, function(x) {
-            x <- UpdateSeuratObject(x)
-            if ("SCT" %in% Assays(x)) return(x)
-            flog.info("Running sctransform --singlecell...")
-            SCTransform(x, ncells = opt$num_integration_features, verbose = FALSE)
-        })
-
-        singlecell <- lapply(singlecell, function(x) {
-            DefaultAssay(x) <- "SCT"
-            if ("umap" %in% Reductions(x) && "pca" %in% Reductions(x))
-                if( DefaultAssay(x[["pca"]]) == "SCT" && DefaultAssay(x[["umap"]]) == "SCT")
-                    return(x)
-            flog.info("Running PCA and UMAP on --singlecell...")
-            RunPCA(x, verbose = TRUE) %>% RunUMAP(dims = 1:30)
-        })
-        flog.info("Clustering --singlecell...")
-        singlecell <- lapply(singlecell, FindNeighbors, verbose = FALSE)
-        singlecell <- lapply(singlecell, FindClusters, resolution = opt$resolution, verbose = FALSE)
-        if (opt$serialize) {
-            flog.info("Writing R data structure to %s...", filename_singlecell)
-            names(singlecell) <- labels
-            sttkit:::.serialize(singlecell, opt$outprefix, "_singlecell.rds")
-        }
     }
 
-    if(opt$integration_method=="seurat") {
+    singlecell <- lapply(singlecell, function(x) {
+        x <- UpdateSeuratObject(x)
+        if ("SCT" %in% Assays(x)) return(x)
+        flog.info("Running sctransform --singlecell...")
+        SCTransform(x, ncells = opt$num_integration_features, verbose = FALSE)
+    })
+
+    singlecell <- lapply(singlecell, function(x) {
+        DefaultAssay(x) <- "SCT"
+        if ("umap" %in% Reductions(x) && "pca" %in% Reductions(x))
+            if (DefaultAssay(x[["pca"]]) == "SCT" && DefaultAssay(x[["umap"]]) == "SCT")
+                return(x)
+        flog.info("Running PCA and UMAP on --singlecell...")
+        RunPCA(x, verbose = TRUE) %>% RunUMAP(dims = 1:30)
+    })
+    flog.info("Clustering --singlecell...")
+    singlecell <- lapply(singlecell, FindNeighbors, verbose = FALSE)
+    singlecell <- lapply(singlecell, FindClusters, resolution = opt$resolution, verbose = FALSE)
+    if (opt$serialize) {
+        flog.info("Writing R data structure to %s...", filename_singlecell)
+        names(singlecell) <- labels
+        sttkit:::.serialize(singlecell, opt$outprefix, "_singlecell.rds")
+    }
+    find_pred <- TRUE
+}
+
+if (find_pred == TRUE) {
+    if (opt$integration_method == "seurat") {
         flog.info("Calculating transfer anchors...")
         anchors <- lapply(singlecell, function(x)
             FindTransferAnchors(reference = x, query = infile,
                 normalization.method = "SCT", dims = 1:30))
-        flog.info("Calculating transfer predictions....")
+        flog.info("Calculating transfer predictions...")
         prediction.assay <- lapply(seq_along(anchors), function(i)
             TransferData(anchorset = anchors[[i]], refdata = singlecell[[i]][[opt$refdata]][,1],
                 prediction.assay = TRUE, weight.reduction = infile[["pca"]], dims = 1:30))
@@ -226,16 +225,15 @@ if (find_pred == TRUE) {
         saveRDS(prediction.assay, filename_predictions)
 
     } else if (opt$integration_method == "celltrek") {
-        if (opt$force | !file.exists(filename_traint)) {
-            infile <- RenameCells(infile, new.names=make.names(Cells(infile)))
-            singlecell <- lapply(singlecell, function(sc) RenameCells(sc, new.names = make.names(Cells(sc))))
-            train <- lapply(singlecell, function(x)
-                CellTrek::traint(st_data = infile, sc_data = x,
-                    sc_assay = "RNA", cell_names = opt$refdata))
-            flog.info("Writing R data structure to %s ...", filename_traint)
-            saveRDS(train, filename_traint)
-        }
-        celltrek_model <- lapply(seq_along(singlecell), function(i) {
+        infile <- RenameCells(infile, new.names=make.names(Cells(infile)))
+        singlecell <- lapply(singlecell, function(sc) RenameCells(sc, new.names = make.names(Cells(sc))))
+        train <- lapply(singlecell, function(x)
+            CellTrek::traint(st_data = infile, sc_data = x,
+                sc_assay = "RNA", cell_names = opt$refdata))
+        flog.info("Writing R data structure to %s ...", filename_traint)
+        saveRDS(train, filename_traint)
+
+        celltrek_predictions <- lapply(seq_along(singlecell), function(i) {
             ctm <- CellTrek::celltrek(st_sc_int = train[[i]], int_assay = "traint",
                      sc_data = singlecell[[i]], sc_assay = "RNA",
                             reduction = "pca", intp = TRUE, intp_pnt = 5000,
@@ -245,10 +243,10 @@ if (find_pred == TRUE) {
             cidx <- which(colnames(ctm$celltrek@meta.data) == opt$refdata)
             ctm$celltrek$cell_type <- factor(ctm$celltrek@meta.data[, cidx],
                 levels = sort(unique(ctm$celltrek@meta.data[, cidx])))
-            ctm
+            ctm$celltrek
         })
-        flog.info("Writing R data structures to %s ...", filename_celltrek_model)
-        saveRDS(celltrek_model, filename_celltrek_model)
+        flog.info("Writing R data structures to %s ...", filename_celltrek)
+        saveRDS(celltrek_predictions, filename_celltrek)
     }
     if (opt$markers) {
         flog.info("Finding single cell cluster markers...")
@@ -303,7 +301,7 @@ if (find_pred == TRUE) {
         annotations <- rbind(annotations, pon_annotations)
         annotations[, 1] <- as.factor(annotations[, 1])
         ref_group_names <- c(ref_group_names, "PoN")
-    }    
+    }
     message("Refgroups: ", paste(ref_group_names, collapse = ","))
     infercnv_obj <- CreateInfercnvObject(
         raw_counts_matrix = count_matrix,
@@ -385,10 +383,9 @@ if (find_pred == TRUE) {
             }
         }
     }
-     if (!is.null(idents_ignore)) {
-         x <- x[, !Idents(x) %in% strsplit(idents_ignore, ":")[[1]]]
-
-     }
+    if (!is.null(idents_ignore)) {
+        x <- x[, !Idents(x) %in% strsplit(idents_ignore, ":")[[1]]]
+    }
     if (!is.null(opt[["infile_raw"]])) {
         flog.info("Reading --infile_raw (%s)...",
             basename(opt[["infile_raw"]]))
@@ -437,14 +434,14 @@ if (find_pred == TRUE) {
         }
         filename <- sttkit:::.get_sub_path(opt$outprefix, "advanced",
                 suffix = paste0("_labels", label, "_", libs[j], libs_label[j], ".pdf"))
-        ratio <- sttkit:::.get_image_ratio(min(6,length(features)))
+        ratio <- sttkit:::.get_image_ratio(min(6, length(features)))
         glist <- VlnPlot(x, features = features, group.by = field, pt.size = 0.25, combine = FALSE)
         glist <- lapply(glist, function(p) ggplotGrob(p + theme(legend.position = "none")))
         if (length(features) > 6) {
             glist <- gridExtra::marrangeGrob(glist, ncol = 3, nrow = 2)
         } else {
             glist <- patchwork::wrap_plots(glist)
-        }    
+        }
         ggsave(filename, glist,
                width = 10, height = 10 * ratio)
     } else {
@@ -456,72 +453,66 @@ if (find_pred == TRUE) {
 }
 
 .plot_he_ct <- function(x, y, i) {
-    if (!is.null(opt$feature_list)) {
-        feature.df <- read.csv(opt$feature_list)
-        features <- feature.df$Feature
-    } else {
-        features <- names(Matrix::rowSums(GetAssayData(x[[i]])) > 0)
-    }
+    cidx <- which(colnames(x[[i]]@meta.data) == opt$refdata)
+    features <- unique(x[[i]]@meta.data[, cidx])
+    features <- features[!is.na(features)]
     label <- if (is.null(labels[i])) "" else paste0("_", labels[i])
 
-    plot_features(object = y[[i]]$celltrek, features = features, prefix = opt$outprefix, subdir = "he",
+    plot_features(object = y[[i]], features = features, prefix = opt$outprefix, subdir = "he",
         suffix = paste0("_he_celltrek_labels", label, ".pdf"), png = opt$png, pt.size.factor = opt$dot_size)
 
-    c2 <- SpatialDimPlot(y[[i]]$celltrek, group.by = "cell_type",
+    c2 <- SpatialDimPlot(y[[i]], group.by = "cell_type",
         pt.size.factor = opt$dot_size, cols = rep("red", length(features)))[[1]] +
               facet_wrap(cell_type ~ .) + theme(legend.position = "none")
     filename <- file.path(dirname(opt$outprefix), "he", paste0(basename(opt$outprefix), "_he_celltrek_dots_labels", label, ".pdf"))
     pdf(filename, width = 10, height = 10)
     print(c2)
     dev.off()
-    if(opt$png) {
+    if (opt$png) {
         png(gsub(".pdf$", ".png", filename), width = 10, height = 10, units = "in", res = 150)
         print(patchwork::wrap_plots(c2))
         dev.off()
+        dev.off() # TODO: device flush not happening properly earlier
     }
-    t1 <- DimPlot(x[[i]], label = TRUE, label.size = 4.5, group.by = "type", pt.size = 0.8, shuffle = TRUE)
-    if (require(colorBlindness)) {
-        cidx <- which(colnames(x[[i]]@meta.data) == opt$refdata)
-        umap_pal <- paletteMartin
-        names(umap_pal) <- levels(x[[i]]@meta.data[, cidx])
-        t2 <- DimPlot(x[[i]][, which(x[[i]]$type == "sc")], label = TRUE, label.size = 4.5,
-                      group.by = opt$refdata, cols = umap_pal, pt.size = 0.8, shuffle = TRUE,
-                      na.value = "white")
-        t3 <- DimPlot(x[[i]][, which(x[[i]]$type != "sc")], label = TRUE, label.size = 4.5,
-                      group.by = opt$refdata, cols = umap_pal, pt.size = 0.8, shuffle = TRUE,
-                      na.value = "white")
+
+    library(Polychrome)
+    if (length(features <= 26)) {
+        umap_pal <- alphabet.colors(length(features))
+    } else if (length(features <= 36)) {
+        umap_pal <- palette36.colors(length(features))
     } else {
-        t2 <- DimPlot(x[[i]][, which(x[[i]]$type == "sc")], label = TRUE, label.size = 4.5,
-                      group.by = opt$refdata, pt.size = 0.8, shuffle = TRUE,
-                      na.value = "white")
-        t3 <- DimPlot(x[[i]][, which(x[[i]]$type != "sc")], label = TRUE, label.size = 4.5,
-                      group.by = opt$refdata, pt.size = 0.8, shuffle = TRUE,
-                      na.value = "white")
+        flog.warn("Too many cell-types to plot UMAP for (%d). Skipping...", length(features))
     }
+
+    names(umap_pal) <- features
+    t1 <- DimPlot(x[[i]], label = TRUE, label.size = 4.5, group.by = "type", pt.size = opt$dot_size, shuffle=TRUE)
+    t2 <- DimPlot(x[[i]][, which(x[[i]]$type == "sc")], label = TRUE, label.size = 4.5,
+                  group.by = opt$refdata, cols = umap_pal, pt.size = opt$dot_size, shuffle = TRUE,
+                  na.value = "white", repel = TRUE)
     filename <- sttkit:::.get_sub_path(opt$outprefix, "umap",
-            siffix = paste0("_umap_labels", label, ".pdf"))
+            suffix = paste0("_umap_labels", label, ".pdf"))
     pdf(filename, width = 10, height = 4.5)
-    gridExtra::grid.arrange(t1, t2, t3, ncol = 3)
+    t1 + t2 + patchwork::plot_layout(widths = c(1.2, 1.8))
     dev.off()
-    if(opt$png) {
-        png(gsub(".pdf$", ".png", filename), width = 10, height = 5, units = "in", res = 150)
-        print(gridExtra::grid.arrange(t1, t2, ncol = 2))
+    if (opt$png) {
+        png(gsub(".pdf$", ".png", filename), width = 10, height = 4.5, units = "in", res = 150)
+        t1 + t2 + patchwork::plot_layout(widths = c(1.2, 1.8))
         dev.off()
     }
 }
 
-for (i in seq_along(singlecell)) {
-    if(opt$integration_method == 'seurat') {
+for (i in seq_along(celltrek_predictions)) {
+    if (opt$integration_method == 'seurat') {
         .plot_he(infile, i)
-    } else if(opt$integration_method == 'celltrek') {
-        .plot_he_ct(train, celltrek_model, i)
+    } else if (opt$integration_method == 'celltrek') {
+        .plot_he_ct(train, celltrek_predictions, i)
     }
 }
 
 if (opt$infer_cna) {
-    if(opt$integration_method == 'celltrek') {
+    if (opt$integration_method == 'celltrek') {
         flog.warn("Works with 'seurat' integration only, not 'celltrek'), skipping...")
-    } else if(opt$integration_method=='seurat') {
+    } else if (opt$integration_method == 'seurat') {
         if (!require("infercnv")) {
             flog.warn("--infercnv requires the infercnv package.")
         } else {
@@ -530,34 +521,17 @@ if (opt$infer_cna) {
     }
 }
 
-if(opt$run_coloc) {
-    if(opt$integration_method=="seurat") {
+if (opt$run_coloc) {
+    if (opt$integration_method == "seurat") {
         flog.warn("Co-localization analysis works with 'celltrek' integration only, not 'seurat'), skipping...")
-    } else if(opt$integration_method == "celltrek") {
+    } else if (opt$integration_method == "celltrek") {
         opath <- file.path(dirname(opt$outprefix), "celltrek", "co-analysis")
         if (!dir.exists(opath)) {
             dir.create(opath)
         }
         library(tidygraph)
-        for(i in seq_along(celltrek_model)) {
-            ct <- celltrek_model[[i]]$celltrek
-
-            # Colocolization
-            #plot_cell <- names(sort(table(ct$cell_type), decreasing=TRUE)[1:8])
-            #names(plot_cell) <- make.names(plot_cell)
-            #ct_plot <- subset(ct, subset=cell_type %in% plot_cell)
-            #ct_plot$cell_type <- factor(ct_plot$cell_type, levels=plot_cell)
-
-            #sgraph_KL <- CellTrek::scoloc(ct_plot, col_cell='cell_type', use_method='KL', eps=1e-50)
-
-            ## We extract the minimum spanning tree (MST) result from the graph
-            #sgraph_KL_mst_cons <- sgraph_KL$mst_cons
-            #rownames(sgraph_KL_mst_cons) <- colnames(sgraph_KL_mst_cons) <- plot_cell[colnames(sgraph_KL_mst_cons)]
-
-            ## We then extract the metadata (including cell types and their frequencies)
-            #cell_class <- ct_plot@meta.data %>% dplyr::select(id=cell_type) %>% unique
-            #ct_count <- data.frame(freq = table(ct$cell_type))
-            #cell_class_new <- merge(cell_class, ct_count, by.x ="id", by.y = "freq.Var1")
+        for(i in seq_along(celltrek_predictions)) {
+            ct <- celltrek_predictions[[i]]
 
             label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
             fileprefix <- file.path(opath, paste0(basename(opt$outprefix)))
@@ -568,7 +542,7 @@ if(opt$run_coloc) {
             pdf(paste0(fileprefix, "_colocalization", label, ".pdf"))
             print(p)
             dev.off()
-            if(opt$png) {
+            if (opt$png) {
                 png(paste0(fileprefix, "_colocalization", label, ".png"))
                 print(p)
                 dev.off()
@@ -577,73 +551,83 @@ if(opt$run_coloc) {
     }
 }
 
-if(opt$run_coexp) {
-    if(opt$integration_method=="seurat") {
+if (opt$run_coexp) {
+    if (opt$integration_method == "seurat") {
         flog.warn("Co-expression analysis works with 'celltrek' integration only, not 'seurat'), skipping...")
-    } else if(opt$integration_method=="celltrek") {
-        cell_types <- unlist(strsplit(opt$coexp_cell_types, ","))
-        for(i in seq_along(celltrek_model)) {
-            ct <- celltrek_model[[i]]$celltrek
-            label <- if (is.null(labels[i])) "" else paste0("_",labels[i],"_")
+    } else if (opt$integration_method == "celltrek") {
+        for(i in seq_along(celltrek_predictions)) {
+            ct <- celltrek_predictions[[i]]
+            if (!is.null(opt$coexp_cell_types)) {
+                cell_types <- unlist(strsplit(opt$coexp_cell_types, ","))
+            } else {
+                cell_types <- levels(ct@meta.data$cell_type)
+            }
+            label <- if (is.null(labels[i])) "" else paste0("_", labels[i], "_")
             for (ctype in cell_types) {
                 flog.info("Co-expression analysis for %s", ctype)
-                if(length(which(ct$cell_type==ctype))==0)
+                if (length(which(ct$cell_type == ctype)) == 0)
                     next
-                ct <- subset(ct, subset=cell_type==ctype)
+                ct <- subset(ct, subset = cell_type==ctype)
                 ct@assays$RNA@scale.data <- matrix(NA, 1, 1)
-                fileprefix <- file.path(dirname(opt$outprefix),"celltrek","co-analysis",paste0(basename(opt$outprefix),label,ctype))
+                fileprefix <- file.path(dirname(opt$outprefix), "celltrek", "co-analysis",
+                                        paste0(basename(opt$outprefix), label, ctype))
 
                 ct <- FindVariableFeatures(ct)
-                vst_df <- ct@assays$RNA@meta.features %>% data.frame %>% mutate(id=rownames(.))
-                nz_test <- apply(as.matrix(ct[['RNA']]@data), 1, function(x) mean(x!=0)*100)
-                hz_gene <- names(nz_test)[nz_test<20]
-                mt_gene <- grep('^MT-', rownames(ct), value=T)
-                rp_gene <- grep('^RPL|^RPS', rownames(ct), value=T)
-                vst_df <- vst_df %>% dplyr::filter(!(id %in% c(mt_gene, rp_gene, hz_gene))) %>% arrange(., -vst.variance.standardized)
-                if(nrow(vst_df)>2000) {
+                vst_df <- ct@assays$RNA@meta.features %>% data.frame %>% mutate(id = rownames(.))
+                nz_test <- apply(as.matrix(ct[['RNA']]@data), 1, function(x) mean(x != 0) * 100)
+                hz_gene <- names(nz_test)[nz_test < 20]
+                mt_gene <- grep('^MT-', rownames(ct), value = TRUE)
+                rp_gene <- grep('^RPL|^RPS', rownames(ct), value = TRUE)
+                vst_df <- vst_df %>% dplyr::filter(!(id %in% c(mt_gene, rp_gene, hz_gene))) %>%
+                                     arrange(., -vst.variance.standardized)
+                if (nrow(vst_df) > 2000) {
                     feature_temp <- vst_df$id[1:2000]
                 } else {
                     feature_temp <- vst_df$id
                 }
 
-                ct_scoexp_res_cc <- scoexp(celltrek_inp=ct, assay='RNA', approach='cc', gene_select = feature_temp, 
-                                           sigm=140, avg_cor_min=.4, zero_cutoff=3, min_gen=40, max_gen=400)
-                ct <- AddModuleScore(ct, features=ct_scoexp_res_cc$gs, name='CC_', nbin=10, ctrl=50, seed=42)
+                ct_scoexp_res_cc <- scoexp(celltrek_inp=ct, assay = 'RNA', approach = 'cc',
+                                           gene_select = feature_temp, sigm = 140, avg_cor_min = .4,
+                                           zero_cutoff = 3, min_gen = 40, max_gen = 400)
+                ct <- AddModuleScore(ct, features = ct_scoexp_res_cc$gs, name = 'CC_',
+                                     nbin = 10, ctrl = 50, seed = 42)
 
-                ct_k <- data.frame(gene=unlist(ct_scoexp_res_cc$gs))
-                ct_k$G <- toupper(substr(rownames(ct_k),0,2))
+                ct_k <- data.frame(gene = unlist(ct_scoexp_res_cc$gs))
+                ct_k$G <- toupper(substr(rownames(ct_k), 0, 2))
 
                 write.csv(ct_k, paste0(fileprefix, "_cluster_genes.csv"), row.names=FALSE)
                 rownames(ct_k) <- ct_k$gene
                 ct_k$gene <- NULL
 
                 library(viridis)
-                ph <- pheatmap::pheatmap(ct_scoexp_res_cc$wcor[rownames(ct_k), rownames(ct_k)], 
-                           clustering_method='ward.D2', annotation_row=ct_k, show_rownames=F, show_colnames=F, 
-                           treeheight_row=10, treeheight_col=10, annotation_legend = T, fontsize=8,
-                           color=viridis(10), main=paste(ctype, 'co-expression'))
+                ph <- pheatmap::pheatmap(ct_scoexp_res_cc$wcor[rownames(ct_k), rownames(ct_k)],
+                           clustering_method = 'ward.D2', annotation_row = ct_k,
+                           show_rownames = FALSE, show_colnames = FALSE,
+                           treeheight_row = 10, treeheight_col = 10,
+                           annotation_legend = TRUE, fontsize = 8,
+                           color = viridis(10), main = paste(ctype, 'co-expression'))
                 dp <- DimPlot(ct, group.by = 'seurat_clusters')
-                fp <- FeaturePlot(ct, grep('CC_', colnames(ct@meta.data), value=T))
-                sp <- SpatialFeaturePlot(ct, grep('CC_', colnames(ct@meta.data), value=T))
+                fp <- FeaturePlot(ct, grep('CC_', colnames(ct@meta.data), value = TRUE))
+                sp <- SpatialFeaturePlot(ct, grep('CC_', colnames(ct@meta.data), value = TRUE))
 
                 vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
-                pdf(paste0(fileprefix, "_coexpression_plots.pdf"), width=10)
+                pdf(paste0(fileprefix, "_coexpression_plots.pdf"), width = 10)
                 grid.newpage()
-                pushViewport(viewport(layout = grid.layout(3,4)))
-                pushViewport(vplayout(1,1));print(dp, newpage=FALSE);popViewport()
-                pushViewport(vplayout(2,1));print(fp, newpage=FALSE);popViewport()
-                pushViewport(vplayout(3,1));print(sp, newpage=FALSE);popViewport()
-                pushViewport(vplayout(1:3,2:4));par(fig = gridFIG(), new = TRUE);ph;popViewport()
+                pushViewport(viewport(layout = grid.layout(3, 4)))
+                pushViewport(vplayout(1, 1)); print(dp, newpage = FALSE); popViewport()
+                pushViewport(vplayout(2, 1)); print(fp, newpage = FALSE); popViewport()
+                pushViewport(vplayout(3, 1)); print(sp, newpage = FALSE); popViewport()
+                pushViewport(vplayout(1:3, 2:4)); par(fig = gridFIG(), new = TRUE); ph; popViewport()
                 dev.off()
 
-                if(opt$png) {
-                    png(paste0(fileprefix, "_coexpression_plots.png"), width=720)
+                if (opt$png) {
+                    png(paste0(fileprefix, "_coexpression_plots.png"), width = 720)
                     grid.newpage()
-                    pushViewport(viewport(layout = grid.layout(3,4)))
-                    pushViewport(vplayout(1,1));print(dp, newpage=FALSE);popViewport()
-                    pushViewport(vplayout(2,1));print(fp, newpage=FALSE);popViewport()
-                    pushViewport(vplayout(3,1));print(sp, newpage=FALSE);popViewport()
-                    pushViewport(vplayout(1:3,2:4));par(fig = gridFIG(), new = TRUE);ph;popViewport()
+                    pushViewport(viewport(layout = grid.layout(3, 4)))
+                    pushViewport(vplayout(1, 1)); print(dp, newpage = FALSE); popViewport()
+                    pushViewport(vplayout(2, 1)); print(fp, newpage = FALSE); popViewport()
+                    pushViewport(vplayout(3, 1)); print(sp, newpage = FALSE); popViewport()
+                    pushViewport(vplayout(1:3, 2:4)); par(fig = gridFIG(), new = TRUE); ph; popViewport()
                     dev.off()
                 }
             }
@@ -651,13 +635,16 @@ if(opt$run_coexp) {
     }
 }
 
-if (length(prediction.assay) > 1) {
-    common_labels <- Reduce(intersect, lapply(prediction.assay, function(x) rownames(GetAssayData(x))))
-    if (length(common_labels)) {
-        m <- Reduce("+", lapply(prediction.assay, function(x) GetAssayData(x)[common_labels,]))/length(prediction.assay)
-        common_assay <- CreateAssayObject(data = m)
-        prediction.assay <- c(prediction.assay, common_assay)
-        labels <- c(labels, "consensus")
-        .plot_he(infile, length(singlecell) + 1)
+if(opt$integration_method == "seurat") {
+    if (length(prediction.assay) > 1) {
+        common_labels <- Reduce(intersect, lapply(prediction.assay, function(x) rownames(GetAssayData(x))))
+        if (length(common_labels)) {
+            m <- Reduce("+", lapply(prediction.assay, function(x) GetAssayData(x)[common_labels, ])) / length(prediction.assay)
+            common_assay <- CreateAssayObject(data = m)
+            prediction.assay <- c(prediction.assay, common_assay)
+            labels <- c(labels, "consensus")
+            .plot_he(infile, length(singlecell) + 1)
+        }
     }
 }
+
