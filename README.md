@@ -221,8 +221,6 @@ spatial locations using non-linear interpolation to augment the ST spots.
 We have adapted the same to work using command line inside of sttkit, and also
 splitting the various cell-types on to separate panels as shown below
 
-![brain_he_celltrek_dots_labels_brain](https://user-images.githubusercontent.com/405520/181096917-260e847f-074d-41ee-a225-54dab2121184.png)
-
 ```
  Rscript $STTKIT/st_integrate.R \
     --infile $OUTDIR/$SAMPLE/cluster/serialize/${SAMPLE}.rds \
@@ -232,6 +230,8 @@ splitting the various cell-types on to separate panels as shown below
     --refdata subclass --png --serialize \
     --integration_method celltrek
 ```
+![brain_he_celltrek_dots_labels_brain](https://user-images.githubusercontent.com/405520/181096917-260e847f-074d-41ee-a225-54dab2121184.png)
+
 ![ex_sagittal_1_he_celltrek_dots_labels_allen_cortex](https://user-images.githubusercontent.com/405520/181086643-de237893-006d-4a27-b41b-2d5c7c72ba64.png)
 
 The `CellTrek::celltrek_vis` function uses RShiny to visualize all cell-types
