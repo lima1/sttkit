@@ -213,12 +213,13 @@ Again, `--singlecell` can be a list of reference datasets.
 ![ex_sagittal_1_he_labels_allen_cortex_1_small](https://user-images.githubusercontent.com/364466/75380489-21e93080-58a5-11ea-8d1a-75950b0dd104.png)
 ![ex_sagittal_a1_he_labels_allen_cortex_1_small](https://user-images.githubusercontent.com/364466/75380495-2281c700-58a5-11ea-97d7-efa00e79914e.png)
 
-We also support the [CellTrek](https://github.com/navinlabcode/CellTrek) package that performs coembedding of the single-cell and spatial data to generate the training model. The single cells are then charted on to their spatial locations using non-linear interpolation to augment the ST spots.
+We also support the [CellTrek](https://github.com/navinlabcode/CellTrek)
+package that performs coembedding of the single-cell and spatial data to
+generate the training model. The single cells are then charted on to their
+spatial locations using non-linear interpolation to augment the ST spots.
 
-The CellTrek::celltrek_vis function uses RShiny to visualize all cell-types in the mouse brain sample. 
-<img width="752" alt="F4_schart_vis" src="https://user-images.githubusercontent.com/405520/181097821-6e4504be-45e1-411d-a7d7-4d0125622b9a.png">
-
-We have adapted the same to work using command line inside of sttkit, and also splitting the various cell-types on to separate panels as shown below
+We have adapted the same to work using command line inside of sttkit, and also
+splitting the various cell-types on to separate panels as shown below
 
 ![brain_he_celltrek_dots_labels_brain](https://user-images.githubusercontent.com/405520/181096917-260e847f-074d-41ee-a225-54dab2121184.png)
 
@@ -232,6 +233,29 @@ We have adapted the same to work using command line inside of sttkit, and also s
     --integration_method celltrek
 ```
 ![ex_sagittal_1_he_celltrek_dots_labels_allen_cortex](https://user-images.githubusercontent.com/405520/181086643-de237893-006d-4a27-b41b-2d5c7c72ba64.png)
+
+The `CellTrek::celltrek_vis` function uses RShiny to visualize all cell-types
+in the mouse brain sample.  We can easily load the `celltrek` object in R:
+
+```
+cd $OUTDIR/$SAMPLE/celltrek
+R
+```
+```
+library(CellTrek)
+library(dplyr)
+options("browser" = "google-chrome")
+# The serialized RDS object is a list for cases when multiple
+# single cell references were provided
+brain_celltrek <- readRDS("serialize/ex_sagittal_a2_celltrek.rds")[[1]]
+brain_celltrek$cell_type <- factor(brain_celltrek$cell_type, levels=sort(unique(brain_celltrek$cell_type)))
+CellTrek::celltrek_vis(brain_celltrek@meta.data %>% dplyr::select(coord_x, coord_y, cell_type:id_new),
+                       brain_celltrek@images$ex_sagittal_a2@image, brain_celltrek@images$ex_sagittal_a2@scale.factors$lowres)
+```
+
+Now choose `cell_type` under "Color" and then click "Plot".
+
+![celltrek_example_output](https://user-images.githubusercontent.com/364466/181936155-51c0f0c1-878b-4d3e-97d9-53b61f487f6d.png)
 
 ### st_enhance.R
 
