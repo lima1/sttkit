@@ -22,7 +22,8 @@ install.packages("Seurat")
 A few optional but recommended additional packages:
 
 ```
-remotes::install_github('satijalab/seurat-wrappers')
+remotes::install_github("satijalab/seurat-wrappers")
+remotes::install_github("navinlabcode/CellTrek")
 # following packages not necessary with conda_environment.yml
 BiocManager::install(c("batchelor",
     "harmony",
