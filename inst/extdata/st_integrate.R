@@ -78,6 +78,7 @@ option_list <- list(
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
+saveRDS(opt, "opt.RDS")
 
 if (is.null(opt[["infile"]])) {
     stop("Need --infile")
@@ -472,7 +473,7 @@ if (find_pred == TRUE) {
         png(gsub(".pdf$", ".png", filename), width = 10, height = 10, units = "in", res = 150)
         print(patchwork::wrap_plots(c2))
         dev.off()
-        dev.off() # TODO: device flush not happening properly earlier
+    #    dev.off() # TODO: device flush not happening properly earlier
     }
 
     library(Polychrome)
@@ -485,18 +486,18 @@ if (find_pred == TRUE) {
     }
 
     names(umap_pal) <- features
-    t1 <- DimPlot(x[[i]], label = TRUE, label.size = 4.5, group.by = "type", pt.size = opt$dot_size, shuffle=TRUE)
+    t1 <- DimPlot(x[[i]], label = TRUE, label.size = 4.5, group.by = "type", shuffle=TRUE)
     t2 <- DimPlot(x[[i]][, which(x[[i]]$type == "sc")], label = TRUE, label.size = 4.5,
-                  group.by = opt$refdata, cols = umap_pal, pt.size = opt$dot_size, shuffle = TRUE,
+                  group.by = opt$refdata, cols = umap_pal, shuffle = TRUE,
                   na.value = "white", repel = TRUE)
     filename <- sttkit:::.get_sub_path(opt$outprefix, "umap",
             suffix = paste0("_umap_labels", label, ".pdf"))
     pdf(filename, width = 10, height = 4.5)
-    t1 + t2 + patchwork::plot_layout(widths = c(1.2, 1.8))
+    print(t1 + t2 + patchwork::plot_layout(widths = c(1.2, 1.8)))
     dev.off()
     if (opt$png) {
         png(gsub(".pdf$", ".png", filename), width = 10, height = 4.5, units = "in", res = 150)
-        t1 + t2 + patchwork::plot_layout(widths = c(1.2, 1.8))
+        print(t1 + t2 + patchwork::plot_layout(widths = c(1.2, 1.8)))
         dev.off()
     }
 }
@@ -525,18 +526,15 @@ if (opt$run_coloc) {
     if (opt$integration_method == "seurat") {
         flog.warn("Co-localization analysis works with 'celltrek' integration only, not 'seurat'), skipping...")
     } else if (opt$integration_method == "celltrek") {
-        opath <- file.path(dirname(opt$outprefix), "celltrek", "co-analysis")
+        opath <- file.path(dirname(opt$outprefix), "co-analysis")
         if (!dir.exists(opath)) {
             dir.create(opath)
         }
-        library(tidygraph)
         for(i in seq_along(celltrek_predictions)) {
             ct <- celltrek_predictions[[i]]
 
             label <- if (is.null(labels[i])) "" else paste0("_",labels[i])
             fileprefix <- file.path(opath, paste0(basename(opt$outprefix)))
-            write.csv(sgraph_KL_mst_cons, paste0(fileprefix, '_sgraph_KL_mst_cons', label, ".csv"), row.names=FALSE)
-            write.csv(cell_class_new, paste0(fileprefix, '_cell_class', label, ".csv"), row.names=FALSE)
 
             p <- plot_scoloc(ct)
             pdf(paste0(fileprefix, "_colocalization", label, ".pdf"))
@@ -556,20 +554,20 @@ if (opt$run_coexp) {
         flog.warn("Co-expression analysis works with 'celltrek' integration only, not 'seurat'), skipping...")
     } else if (opt$integration_method == "celltrek") {
         for(i in seq_along(celltrek_predictions)) {
-            ct <- celltrek_predictions[[i]]
+            ctp <- celltrek_predictions[[i]]
             if (!is.null(opt$coexp_cell_types)) {
                 cell_types <- unlist(strsplit(opt$coexp_cell_types, ","))
             } else {
-                cell_types <- levels(ct@meta.data$cell_type)
+                cell_types <- levels(ctp@meta.data$cell_type)
             }
             label <- if (is.null(labels[i])) "" else paste0("_", labels[i], "_")
             for (ctype in cell_types) {
                 flog.info("Co-expression analysis for %s", ctype)
-                if (length(which(ct$cell_type == ctype)) == 0)
+                if (length(which(ctp$cell_type == ctype)) == 0)
                     next
-                ct <- subset(ct, subset = cell_type==ctype)
+                ct <- subset(ctp, subset = cell_type==ctype)
                 ct@assays$RNA@scale.data <- matrix(NA, 1, 1)
-                fileprefix <- file.path(dirname(opt$outprefix), "celltrek", "co-analysis",
+                fileprefix <- file.path(dirname(opt$outprefix), "co-analysis",
                                         paste0(basename(opt$outprefix), label, ctype))
 
                 ct <- FindVariableFeatures(ct)
@@ -589,6 +587,8 @@ if (opt$run_coexp) {
                 ct_scoexp_res_cc <- scoexp(celltrek_inp=ct, assay = 'RNA', approach = 'cc',
                                            gene_select = feature_temp, sigm = 140, avg_cor_min = .4,
                                            zero_cutoff = 3, min_gen = 40, max_gen = 400)
+                if (length(ct_scoexp_res_cc$gs) == 0)
+                    next
                 ct <- AddModuleScore(ct, features = ct_scoexp_res_cc$gs, name = 'CC_',
                                      nbin = 10, ctrl = 50, seed = 42)
 
@@ -600,6 +600,7 @@ if (opt$run_coexp) {
                 ct_k$gene <- NULL
 
                 library(viridis)
+                library(gridBase)
                 ph <- pheatmap::pheatmap(ct_scoexp_res_cc$wcor[rownames(ct_k), rownames(ct_k)],
                            clustering_method = 'ward.D2', annotation_row = ct_k,
                            show_rownames = FALSE, show_colnames = FALSE,
@@ -614,20 +615,20 @@ if (opt$run_coexp) {
                 pdf(paste0(fileprefix, "_coexpression_plots.pdf"), width = 10)
                 grid.newpage()
                 pushViewport(viewport(layout = grid.layout(3, 4)))
-                pushViewport(vplayout(1, 1)); print(dp, newpage = FALSE); popViewport()
-                pushViewport(vplayout(2, 1)); print(fp, newpage = FALSE); popViewport()
-                pushViewport(vplayout(3, 1)); print(sp, newpage = FALSE); popViewport()
-                pushViewport(vplayout(1:3, 2:4)); par(fig = gridFIG(), new = TRUE); ph; popViewport()
+                pushViewport(vplayout(1:2, 1:2)); print(dp, newpage = FALSE); popViewport()
+                pushViewport(vplayout(3, 1:2)); print(fp, newpage = FALSE); popViewport()
+                pushViewport(vplayout(3, 3:4)); print(sp, newpage = FALSE); popViewport()
+                pushViewport(vplayout(1:2, 3:4)); par(fig = gridFIG(), new = TRUE); print(ph); popViewport()
                 dev.off()
 
                 if (opt$png) {
-                    png(paste0(fileprefix, "_coexpression_plots.png"), width = 720)
+                    png(paste0(fileprefix, "_coexpression_plots.png"), height = 720, width=1080)
                     grid.newpage()
                     pushViewport(viewport(layout = grid.layout(3, 4)))
-                    pushViewport(vplayout(1, 1)); print(dp, newpage = FALSE); popViewport()
-                    pushViewport(vplayout(2, 1)); print(fp, newpage = FALSE); popViewport()
-                    pushViewport(vplayout(3, 1)); print(sp, newpage = FALSE); popViewport()
-                    pushViewport(vplayout(1:3, 2:4)); par(fig = gridFIG(), new = TRUE); ph; popViewport()
+                    pushViewport(vplayout(1:2, 1:2)); print(dp, newpage = FALSE); popViewport()
+                    pushViewport(vplayout(3, 1:2)); print(fp, newpage = FALSE); popViewport()
+                    pushViewport(vplayout(3, 3:4)); print(sp, newpage = FALSE); popViewport()
+                    pushViewport(vplayout(1:2, 3:4)); par(fig = gridFIG(), new = TRUE); print(ph); popViewport()
                     dev.off()
                 }
             }
