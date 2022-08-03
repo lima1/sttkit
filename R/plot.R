@@ -1048,6 +1048,9 @@ plot_scoloc <- function(celltrek_object, directed=FALSE) {
   ct_count <- data.frame(freq = table(celltrek_object$cell_type))
   cell_counts <- merge(cell_class, ct_count, by.x ="id", by.y = "freq.Var1")
 
+  write.csv(sgraph_KL_mst_cons, paste0(fileprefix, '_sgraph_KL_mst_cons', label, ".csv"), row.names=FALSE)
+  write.csv(cell_counts, paste0(fileprefix, '_cell_class', label, ".csv"), row.names=FALSE)
+
   mst_cons_am <- sgraph_KL_mst_cons
 
   if (!directed) mst_cons_am[upper.tri(mst_cons_am, diag = T)] <- NA
@@ -1083,6 +1086,8 @@ plot_scoloc <- function(celltrek_object, directed=FALSE) {
       size_df <- data.frame(id=cell_counts$id, value=as.numeric(cell_counts[, size_colmn])/sum(as.numeric(cell_counts[, size_colmn])))
       mst_cons_node$size <- size_df$value[match(mst_cons_node$label, size_df$id)]
     }
+      library(ggraph)
+      library(tidygraph)
       net.tidy <- tbl_graph(nodes=mst_cons_node, edges=mst_cons_edge, directed=directed)
       ggraph(net.tidy, layout = "graphopt") + geom_node_point(aes(colour=color, size=size)) +
           geom_edge_link(aes(width = weight), alpha = 0.5) + scale_edge_width(range = c(0.5, 5)) +
