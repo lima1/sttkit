@@ -500,6 +500,17 @@ if (find_pred == TRUE) {
         print(t1 + t2 + patchwork::plot_layout(widths = c(1.2, 1.8)))
         dev.off()
     }
+
+    filename <- sttkit:::.get_sub_path(opt$outprefix, "umap",
+            suffix = paste0("_single_cell_barplot", label, ".pdf"))
+    pdf(filename, width = 5, height = 4.5)
+    barplot(sort(table(celltrek_predictions[[i]]$cell_type)), col=umap_pal, las=2)
+    dev.off()
+    if (opt$png) {
+        png(gsub(".pdf$", ".png", filename), width = 5, height = 4.5, units = "in", res = 150)
+        barplot(sort(table(celltrek_predictions[[i]]$cell_type)), col=umap_pal, las=2)
+        dev.off()
+    }
 }
 
 for (i in seq_along(celltrek_predictions)) {
