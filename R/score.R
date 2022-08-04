@@ -271,6 +271,13 @@ find_signature_means <- function(obj, features, slot = "data", label = NULL, fun
     descr <- sapply(sigs, function(x) trimws(x[2]))
     sigs <- lapply(sigs, function(x) unique(sort(trimws(x[-(1:2)]))))
     attributes(sigs)$descr <- descr
+    empty <- names(which(sapply(sigs, function(x) any(nchar(x) < 1))))
+
+    if (length(empty)) {
+        flog.warn("%i signatures contain empty strings, removing them...",
+            length(empty))
+        sigs <- lapply(sigs, function(x) x[nchar(x) > 0])
+    }
     return(sigs)
 }
 

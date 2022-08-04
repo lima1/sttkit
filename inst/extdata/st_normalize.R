@@ -11,39 +11,39 @@ option_list <- list(
         help = "Path to SpaceRanger output for Visum data."),
     make_option(c("--sampleid"), action = "store", type = "character", default = NULL,
         help = "Sample id."),
-    make_option(c("--transpose"), action = "store_true", default = FALSE, 
+    make_option(c("--transpose"), action = "store_true", default = FALSE,
         help = "In case data is stored as rows genes, spots columns."),
     make_option(c("--outprefix"), action = "store", type = "character", default = NULL,
         help = "Outfile."),
-    make_option(c("--num_features"), action="store", type = "integer", default = 3000, 
+    make_option(c("--num_features"), action = "store", type = "integer", default = 3000,
         help = "Calculate that many variable features [default %default]"),
     make_option(c("--regressout"), action = "store", type = "character",
-        default = NULL, 
+        default = NULL,
         help = "Variables to regress out [default %default]"),
-    make_option(c("--normalization_method"), action = "store", default = "sctransform", 
+    make_option(c("--normalization_method"), action = "store", default = "sctransform",
         help = "Which normalization method to use, seurat, sctransform, sctransform2, or scran [default %default]."),
-    make_option(c("--normalization_backend_method"), action = "store", default = "poisson", 
+    make_option(c("--normalization_backend_method"), action = "store", default = "poisson",
         help = "Which backend normalization method to use, for example poisson or glmGamPoi [default %default]. Only relevant for sctransform and sctransform2."),
     make_option(c("--hejpeg"), action = "store", type = "character", default = NULL,
         help = "Optional path to a JPEG containing cropped HE image (Spatial Transcriptomics data)."),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.5,
         help = "Size of dots on H&E."),
-    make_option(c("--min_spots"), action="store", type = "integer", default = 2, 
+    make_option(c("--min_spots"), action = "store", type = "integer", default = 2,
         help = "Gene filter: Keep genes detected at that many spots or more [default %default]"),
-    make_option(c("--min_features"), action="store", type = "double", default = 300, 
+    make_option(c("--min_features"), action = "store", type = "double", default = 300,
         help = "Spot filter: Keep spots that detected that many genes or more [default %default]"),
-    make_option(c("--downsample_prob"), action="store", type = "double", default = NULL, 
+    make_option(c("--downsample_prob"), action = "store", type = "double", default = NULL,
         help = "Downsample count matrix. 0.2 randomly picks 20 percent of UMIs in each spot [default %default]"),
-    make_option(c("--gmt"), action = "store", type = "character", 
+    make_option(c("--gmt"), action = "store", type = "character",
         default = NULL, 
         help = "GMT file including genes of interest"),
-    make_option(c("--output_counts"), action = "store_true", default = FALSE, 
+    make_option(c("--output_counts"), action = "store_true", default = FALSE,
         help = "Output count matrix as TSV file."),
-    make_option(c("--no_crop"), action = "store_true", default = FALSE, 
+    make_option(c("--no_crop"), action = "store_true", default = FALSE,
         help = "Do not crop H&E image."),
-    make_option(c("--png"), action = "store_true", default = FALSE, 
+    make_option(c("--png"), action = "store_true", default = FALSE,
         help = "Generate PNG version of output plots."),
-    make_option(c("-f", "--force"), action = "store_true", default = FALSE, 
+    make_option(c("-f", "--force"), action = "store_true", default = FALSE,
         help = "Overwrite existing files")
 )
 
@@ -71,39 +71,39 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     if (sum(grep("^hg19", rownames(ndata)))) {
         features <- c("mm10", "hg19")
         if (paste0("nFeature_", assay, "_mm10") %in% colnames(ndata@meta.data)) {
-            features <- c(features, 
-                          paste0("nFeature_", assay, "_mm10"), 
+            features <- c(features,
+                          paste0("nFeature_", assay, "_mm10"),
                           paste0("nFeature_", assay, "_hg19"))
         }
 
-        plot_features(ndata, features = features, 
+        plot_features(ndata, features = features,
             pt.size.factor = opt$dot_size,
             prefix = prefix, suffix = "_he_ptx.pdf",
             ggcode = theme(legend.position = "right"),
             png = opt$png,
             labels = scales::percent, width = 8, height = 4,
             crop = !opt$no_crop)
-    }     
-    
+    }
+
     features <- c(paste0("nCount_", assay),
                   paste0("nFeature_", assay),
                   "percent.mito",
                   "percent.ribo")
-    plot_features(ndata, features = features, 
+    plot_features(ndata, features = features,
         pt.size.factor = opt$dot_size,
         prefix = prefix, suffix = "_he_counts.pdf",
         ggcode = theme(legend.position = "right"),
         png = opt$png,
         labels = scales::percent, width = 8, height = 4)
     if (sum(grep("S.Score|G2M.Score", colnames(ndata@meta.data)))) {
-        plot_features(ndata, features = c("S.Score", "G2M.Score"), 
+        plot_features(ndata, features = c("S.Score", "G2M.Score"),
             pt.size.factor = opt$dot_size,
             prefix = prefix, suffix = "_he_cell_cycle.pdf",
             ggcode = theme(legend.position = "right"),
             png = opt$png,
             crop = !opt$no_crop,
             width = 8, height = 4)
-    }    
+    }
 }
 .get_serialize_path <- function(prefix, suffix) {
     s_dir <- file.path(dirname(prefix), "serialize")
@@ -111,17 +111,17 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 }
 
 .write_tsv <- function(object, prefix, slot = "scale.data", suffix = "_all.tsv.gz") {
-    data <- GetAssayData(object, slot = "scale.data") 
+    data <- GetAssayData(object, slot = "scale.data")
     filename <- paste0(prefix, suffix)
     flog.info("Writing data to %s...", basename(filename))
     m <- t(as.matrix(data))
-    pos <- GetTissueCoordinates(object)[rownames(m),]
+    pos <- GetTissueCoordinates(object)[rownames(m), ]
     data.table::fwrite(data.table::as.data.table(data.frame(barcode = rownames(m), pos, m)), file = filename,
         sep = "\t", quote = FALSE)
     m
 }
 
-.parse_regressout <- function() { 
+.parse_regressout <- function() {
     if (is.null(opt$regressout)) NULL else strsplit(opt$regressout, ":")[[1]]
 }
 
@@ -134,9 +134,9 @@ if (!opt$force && file.exists(filename)) {
     if (!is.null(opt$gmt)) {
         gmt <- read_signatures(opt$gmt)
         required_features <- Reduce(union, gmt)
-    }    
+    }
     if (!is.null(opt$infile)) {
-        ndata <- read_spatial(opt$infile, min_spots = opt$min_spots, 
+        ndata <- read_spatial(opt$infile, min_spots = opt$min_spots,
                              min_features = opt$min_features,
                              required_features = required_features, 
                              image = opt$hejpeg,
@@ -147,22 +147,22 @@ if (!opt$force && file.exists(filename)) {
     } else {
         ndata <- read_visium(
                              opt$spaceranger_dir,
-                             min_spots = opt$min_spots, 
+                             min_spots = opt$min_spots,
                              min_features = opt$min_features,
-                             required_features = required_features, 
+                             required_features = required_features,
                              transpose = opt$transpose,
                              sampleid = opt$sampleid,
                              downsample_prob = opt$downsample_prob,
                              prefix = opt$outprefix)
-    }    
+    }
     if (opt$output_counts) {
         m <- .write_tsv(ndata, opt$outprefix, slot = "counts",
             suffix = "_all_counts.tsv.gz")
-    }    
-    ndata <- normalize_spatial(ndata, nfeatures = opt$num_features, 
+    }
+    ndata <- normalize_spatial(ndata, nfeatures = opt$num_features,
                          scale = opt$normalization_method != "scran",
                          center = opt$normalization_method != "scran",
-                         regressout = .parse_regressout(), 
+                         regressout = .parse_regressout(),
                          method = opt$normalization_method,
                          backend_method = opt$normalization_backend_method,
                          prefix = opt$outprefix)
