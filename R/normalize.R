@@ -25,7 +25,7 @@
 
 normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE,
                               correct_umi = TRUE,
-                              method = c("sctransform", "sctransform2", "seurat2", "scran"), 
+                              method = c("sctransform", "sctransform2", "seurat2", "scran"),
                               backend_method = "poisson",
                               cell_cycle_score = TRUE,
                               regressout = NULL, assay = "Spatial",
@@ -41,7 +41,7 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
     if (method == "sctransform2") {
         method <- "sctransform"
         vst.flavor <- "v2"
-    }    
+    }
     if (method == "sctransform" && requireNamespace("sctransform")) {
         scale_alt_assay <- DefaultAssay(obj)
         flog.info("Using sctransform with %i features...", nfeatures)
@@ -71,7 +71,7 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
     } else if (method == "scran" && requireNamespace("scran")) {
         scale_alt_assay <- DefaultAssay(obj)
         flog.info("Using scran normalization...")
-        sce <- SingleCellExperiment::SingleCellExperiment(assays = 
+        sce <- SingleCellExperiment::SingleCellExperiment(assays =
             list(counts = as.matrix(GetAssayData(obj, "counts")))) # read data from Seurat
         clusters <- NULL
         sizes <- seq(21, 101, 5)
@@ -79,17 +79,17 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
             flog.warn("Not enough cells (%i) for clustered scran normalization.",
                 ncol(obj))
             sizes <-seq(min(21, ncol(obj)), max(101, ncol(obj)))
-        } else {    
+        } else {
             clusters <- scran::quickCluster(sce, min.size = 100)
-        } 
+        }
         obj@meta.data$scran.cluster <- if (is.null(clusters)) "0" else clusters
         sce <- scran::computeSumFactors(sce, sizes = sizes, clusters = clusters)
         sce <- scater::normalize(sce, return_log = FALSE) # without(!) log transform
         obj <- NormalizeData(object = obj)
-        obj@misc[["seurat_norm_data"]] = as.matrix(x = GetAssayData(obj)) # backup Seurat's norm data
-        SetAssayData(obj, slot = "data", new.data = 
+        obj@misc[["seurat_norm_data"]] <- as.matrix(x = GetAssayData(obj)) # backup Seurat's norm data
+        SetAssayData(obj, slot = "data", new.data =
             log(x = SummarizedExperiment::assay(sce, "normcounts") + 1))
-    }    
+    }
     flog.info("Finding %i variable features...", nfeatures)
     obj <- FindVariableFeatures(object = obj, selection.method = "vst",
         nfeatures = nfeatures, verbose = FALSE)
@@ -104,13 +104,13 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
         flog.info("Scaling alternative assay %s...", scale_alt_assay)
         obj <- ScaleData(object = obj, vars.to.regress = regressout,
             do.scale = scale, do.center = center, assay = scale_alt_assay)
-    }    
+    }
     flog.info("Default assay is set to %s.", DefaultAssay(obj))
     if (serialize) {
         flog.info("Writing R data structure to %s...", paste0(prefix, "_scaled.rds"))
         .serialize(obj, prefix, "_scaled.rds")
-    }    
-    obj     
+    }
+    obj
 }
 
 .check_regressout <- function(obj, regressout) {
@@ -119,4 +119,4 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
         if (!length(regressout)) regressout <- NULL
     }
     regressout
-}        
+}

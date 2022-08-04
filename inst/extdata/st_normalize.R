@@ -35,7 +35,7 @@ option_list <- list(
     make_option(c("--downsample_prob"), action = "store", type = "double", default = NULL,
         help = "Downsample count matrix. 0.2 randomly picks 20 percent of UMIs in each spot [default %default]"),
     make_option(c("--gmt"), action = "store", type = "character",
-        default = NULL, 
+        default = NULL,
         help = "GMT file including genes of interest"),
     make_option(c("--output_counts"), action = "store_true", default = FALSE,
         help = "Output count matrix as TSV file."),
@@ -94,6 +94,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
         prefix = prefix, suffix = "_he_counts.pdf",
         ggcode = theme(legend.position = "right"),
         png = opt$png,
+        crop = !opt$no_crop,
         labels = scales::percent, width = 8, height = 4)
     if (sum(grep("S.Score|G2M.Score", colnames(ndata@meta.data)))) {
         plot_features(ndata, features = c("S.Score", "G2M.Score"),
@@ -138,7 +139,7 @@ if (!opt$force && file.exists(filename)) {
     if (!is.null(opt$infile)) {
         ndata <- read_spatial(opt$infile, min_spots = opt$min_spots,
                              min_features = opt$min_features,
-                             required_features = required_features, 
+                             required_features = required_features,
                              image = opt$hejpeg,
                              transpose = opt$transpose,
                              sampleid = opt$sampleid,
@@ -175,8 +176,8 @@ m <- .write_tsv(ndata, opt$outprefix)
 
 .plot_he_scran_cluster <- function(ndata, prefix) {
     flog.info("Plotting clusters on H&E...")
-    plot_features(ndata, features = "scran.cluster",  
-        labels = waiver(), labels_title = "", 
+    plot_features(ndata, features = "scran.cluster",
+        labels = waiver(), labels_title = "",
         prefix = prefix,
         suffix = "_he_scran_cluster.pdf",
         png = opt$png,

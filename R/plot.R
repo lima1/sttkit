@@ -73,11 +73,11 @@ plot_violin <- function(object, features, cells = NULL, pt_size = 0.25, slot = "
 .order_clusters <- function(s) {
     s <- unique(as.character(s))
     if (length(s) < 2) return(s)
-    s[order(gsub("_\\d+$","", s), as.numeric(gsub("^.*_","", s)))]
+    s[order(gsub("_\\d+$", "", s), as.numeric(gsub("^.*_", "", s)))]
 }
 
 .get_image_slice <- function(object) {
-    Images(object)[which.max(sapply(Images(object), function(i) 
+    Images(object)[which.max(sapply(Images(object), function(i)
         length(intersect(Cells(object[[i]]), Cells(object)))))]
 }
 
@@ -86,13 +86,13 @@ plot_violin <- function(object, features, cells = NULL, pt_size = 0.25, slot = "
     object <- object[, n]
     if (length(Images(object))) {
         image_idx <- .get_image_slice(object)
-        return(object[[image_idx]]@coordinates[,c("imagecol", "imagerow")])
+        return(object[[image_idx]]@coordinates[, c("imagecol", "imagerow")])
     }
     # ST
-    n <- gsub("_\\d+$","", n)
-    n <- gsub("^\\d+_","", n)
-    apply(do.call(rbind, strsplit(n, split = "x")), 2, as.numeric)[,cols]
-}  
+    n <- gsub("_\\d+$", "", n)
+    n <- gsub("^\\d+_", "", n)
+    apply(do.call(rbind, strsplit(n, split = "x")), 2, as.numeric)[, cols]
+}
 
 #' plot_signatures
 #'
@@ -140,10 +140,10 @@ plot_signatures <- function(obj_spatial, file, gmt, nbin = 24,
 
 .get_image_ratio <- function(l) {
     ratio <- 1
-    if (( l > 9 &&  l < 13 )  || 
-        ( l > 4 &&  l < 7 ) ) ratio <- 3/4
-    if ( l == 3 ) ratio <- 1/3
-    if ( l == 2 ) ratio <- 1/2
+    if ((l > 9 &&  l < 13)  ||
+        (l > 4 &&  l < 7)) ratio <- 3/4
+    if (l == 3) ratio <- 1/3
+    if (l == 2) ratio <- 1/2
     ratio
 }
 
@@ -895,7 +895,7 @@ plot_qc_read <- function(object, prefix, assay) {
     pdf(paste0(prefix, "_qc.pdf"))
     assays <- assay
     for (assay in assays) {
-        print(VlnPlot(object = object, 
+        print(VlnPlot(object = object,
             features = c(paste0("nFeature_", assay), 
                          paste0("nCount_", assay), 
                          "percent.mito", "percent.ribo"),
