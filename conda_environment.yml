@@ -28,6 +28,7 @@ dependencies:
   - bioconductor-genomicalignments
   - bioconductor-genomicfeatures
   - bioconductor-genomicranges
+  - bioconductor-glmgampoi
   - bioconductor-infercnv
   - bioconductor-iranges
   - bioconductor-keggrest
@@ -134,6 +135,7 @@ dependencies:
   - r-getopt
   - r-ggalt
   - r-ggbeeswarm
+  - r-ggforce
   - r-ggplot2
   - r-ggrastr
   - r-ggrepel
@@ -328,3 +330,4 @@ dependencies:
   - r-yaml
   - r-zip
   - r-zoo
+  - zstd
