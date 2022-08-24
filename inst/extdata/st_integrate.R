@@ -61,9 +61,9 @@ option_list <- list(
         help = "Put inferCNV output in this sub-directory [default %default]."),
     make_option(c("--cna_assay"), action = "store", type = "character", default = "Spatial",
         help = "Extract counts from this assay [default %default]."),
-    make_option(c("--run_coloc"), action = "store", type = "character", default = FALSE,
+    make_option(c("--run_coloc"), action = "store", default = FALSE,
         help = "Run Co-locolization analysis (--integration_method should be 'celltrek')"),
-    make_option(c("--run_coexp"), action = "store", type = "character", default = FALSE,
+    make_option(c("--run_coexp"), action = "store", default = FALSE,
         help = "Run Co-expression analysis (--integration_method should be 'celltrek')"),
     make_option(c("--coexp_cell_types"), action="store", type="character", default=NULL,
         help = "Cell type(s) for co-expression analysis (use with '--run_coexp')"),
@@ -574,7 +574,7 @@ if (opt$run_coexp) {
             label <- if (is.null(labels[i])) "" else paste0("_", labels[i], "_")
             for (ctype in cell_types) {
                 flog.info("Co-expression analysis for %s", ctype)
-                if (length(which(ctp$cell_type == ctype)) == 0)
+                if (length(which(ctp$cell_type == ctype)) < 10)
                     next
                 ct <- subset(ctp, subset = cell_type==ctype)
                 ct@assays$RNA@scale.data <- matrix(NA, 1, 1)
