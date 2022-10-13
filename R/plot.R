@@ -612,9 +612,10 @@ plot_signatures_fake_bulk <- function(objs, gmt, assay = "Spatial", log_trans = 
     x_melt <- NULL
     if (plot_bar) {
         if (is.null(gmt)) stop("plot_bar requires gmt.")
-        x <- sapply(gmt, function(x) find_signature_means(gg_data_casted, features = make.names(x), fun = median))
-        x <- data.frame(Id=unique(gg_data$Id), x)
+        x <- lapply(gmt, function(x) find_signature_means(gg_data_casted, features = make.names(x), fun = median))
+        x <- do.call(rbind, x)
         x_melt <- melt(x)
+        colnames(x_melt)[1:2] <- c("variable", "Id")
         x_melt$Id <- factor(x_melt$Id, levels=sort(levels(x_melt$Id)))
         gp <- ggplot(x_melt,aes(Id, value))+
             geom_col()+
