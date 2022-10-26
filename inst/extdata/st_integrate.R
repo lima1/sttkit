@@ -513,14 +513,13 @@ if (find_pred == TRUE) {
     }
 }
 
-for (i in seq_along(celltrek_predictions)) {
+for (i in seq_along(singlecell)) {
     if (opt$integration_method == 'seurat') {
         .plot_he(infile, i)
     } else if (opt$integration_method == 'celltrek') {
         .plot_he_ct(train, celltrek_predictions, i)
     }
 }
-
 if (opt$infer_cna) {
     if (opt$integration_method == 'celltrek') {
         flog.warn("Works with 'seurat' integration only, not 'celltrek'), skipping...")
