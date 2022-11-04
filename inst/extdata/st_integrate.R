@@ -39,6 +39,8 @@ option_list <- list(
     make_option(c("--simulation"), action = "store_true",
         default = FALSE,
         help = "Subcluster the reference cells, specified by the call attribute [default %default]"),
+    make_option(c("--gmt"), action = "store", type = "character", default = NULL, 
+        help="Input GMT file(s) for celltrek visualization. Signature names must pattern match cell types in --refdata."),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.6,
         help = "Size of dots on H&E [default %default]"),
     make_option(c("--infer_cna"), action = "store_true", default = FALSE,
@@ -453,19 +455,61 @@ if (find_pred == TRUE) {
     }
 }
 
+.plot_signature <- function(ndata, prefix, label, gmt, cells = NULL) {
+    # make sure he subdir exists
+    filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "tmp.pdf")
+
+    filename <- sttkit:::.get_sub_path(prefix, "he", paste0("_he_celltrek_signature_scores", label, ".pdf"))
+    ndata <- plot_signatures(ndata, file = filename, gmt = gmt, 
+        cells = cells, pt.size.factor = opt$dot_size, png = opt$png)
+
+    ndata_rna <- ndata
+    DefaultAssay(ndata_rna) <- names(ndata@assays)[1]
+    features <- sort(unique(unlist(gmt)))
+    features <- features[features %in% rownames(ndata_rna)]
+
+    flog.info("Plotting single feature counts...")
+    plot_features(filename, object = ndata_rna, 
+          features = features, 
+          prefix = prefix, 
+          suffix = paste0("_he_celltrek_features", label, ".pdf"),
+          subdir = "he",
+          cells = cells, pt.size.factor = opt$dot_size,
+          image.alpha = 0, png = opt$png,
+          plot_correlations = TRUE)
+
+    flog.info("Plotting scaled single feature counts...", filename)
+    plot_features(filename, object = ndata, 
+          features = features, 
+          prefix = prefix, 
+          suffix = paste0("_he_celltrek_features_scaled", label, ".pdf"),
+          subdir = "he",
+          cells = cells, pt.size.factor = opt$dot_size, 
+          image.alpha = 0, png = opt$png,
+          plot_correlations = TRUE)
+}
+
 .plot_he_ct <- function(x, y, i) {
     cidx <- which(colnames(x[[i]]@meta.data) == opt$refdata)
     features <- unique(x[[i]]@meta.data[, cidx])
     features <- features[!is.na(features)]
     label <- if (is.null(labels[i])) "" else paste0("_", labels[i])
 
-    plot_features(object = y[[i]], features = features, prefix = opt$outprefix, subdir = "he",
-        suffix = paste0("_he_celltrek_labels", label, ".pdf"), png = opt$png, pt.size.factor = opt$dot_size)
+    if(!is.null(opt$gmt)) {
+      gmt <- read_signatures(opt$gmt, y[[i]])
+
+      ctypes <- unique(gsub(" ", "", y[[i]]@meta.data$cell_type))
+      ctypes <- unlist(strsplit(ctypes, split="/"))
+      gmt <- gmt[names(gmt) %in% grep(paste(ctypes, collapse="|"), names(gmt), value = TRUE)]
+      if(length(gmt) > 0) {
+        .plot_signature(y[[i]], prefix = opt$outprefix, label = label, gmt = gmt)
+      }
+    }
 
     c2 <- SpatialDimPlot(y[[i]], group.by = "cell_type",
         pt.size.factor = opt$dot_size, cols = rep("red", length(features)))[[1]] +
               facet_wrap(cell_type ~ .) + theme(legend.position = "none")
-    filename <- file.path(dirname(opt$outprefix), "he", paste0(basename(opt$outprefix), "_he_celltrek_dots_labels", label, ".pdf"))
+    filename <- file.path(dirname(opt$outprefix), "he", paste0(basename(opt$outprefix), "_he_celltrek_labels", label, ".pdf"))
     pdf(filename, width = 10, height = 10)
     print(c2)
     dev.off()
@@ -520,6 +564,7 @@ for (i in seq_along(singlecell)) {
         .plot_he_ct(train, celltrek_predictions, i)
     }
 }
+
 if (opt$infer_cna) {
     if (opt$integration_method == 'celltrek') {
         flog.warn("Works with 'seurat' integration only, not 'celltrek'), skipping...")
