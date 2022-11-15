@@ -468,6 +468,13 @@ if (find_pred == TRUE) {
     features <- sort(unique(unlist(gmt)))
     features <- features[features %in% rownames(ndata_rna)]
 
+    feature.matrix <- GetAssayData(ndata, slot = "data")
+    cells <- which(colSums(feature.matrix[which(rownames(feature.matrix) %in% features),])>0)
+
+    #feature.matrix[apply(feature.matrix, 2, function(x) {x==0})] <- NA
+    #ndata.trimmed <- SetAssayData(ndata, slot = "data", new.data = feature.matrix)
+
+    #my.pal <- brewer.pal(9, "Reds")
     flog.info("Plotting single feature counts...")
     plot_features(filename, object = ndata_rna, 
           features = features, 
@@ -478,15 +485,15 @@ if (find_pred == TRUE) {
           image.alpha = 0, png = opt$png,
           plot_correlations = TRUE)
 
-    flog.info("Plotting scaled single feature counts...", filename)
-    plot_features(filename, object = ndata, 
-          features = features, 
-          prefix = prefix, 
-          suffix = paste0("_he_celltrek_features_scaled", label, ".pdf"),
-          subdir = "he",
-          cells = cells, pt.size.factor = opt$dot_size, 
-          image.alpha = 0, png = opt$png,
-          plot_correlations = TRUE)
+    #flog.info("Plotting scaled single feature counts...", filename)
+    #plot_features(filename, object = ndata,
+    #      features = features, 
+    #      prefix = prefix, 
+    #      suffix = paste0("_he_celltrek_features_scaled", label, ".pdf"),
+    #      subdir = "he",
+    #      cells = cells, pt.size.factor = opt$dot_size, 
+    #      image.alpha = 0, cols = my.pal, png = opt$png,
+    #      plot_correlations = TRUE)
 }
 
 .plot_he_ct <- function(x, y, i) {
@@ -509,7 +516,9 @@ if (find_pred == TRUE) {
     c2 <- SpatialDimPlot(y[[i]], group.by = "cell_type",
         pt.size.factor = opt$dot_size, cols = rep("red", length(features)))[[1]] +
               facet_wrap(cell_type ~ .) + theme(legend.position = "none")
-    filename <- file.path(dirname(opt$outprefix), "he", paste0(basename(opt$outprefix), "_he_celltrek_labels", label, ".pdf"))
+    filename <- sttkit:::.get_sub_path(opt$outprefix, "he",
+            suffix = paste0("_he_celltrek_labels", label, ".pdf"))
+    #filename <- file.path(dirname(opt$outprefix), "he", paste0(basename(opt$outprefix), "_he_celltrek_labels", label, ".pdf"))
     pdf(filename, width = 10, height = 10)
     print(c2)
     dev.off()
