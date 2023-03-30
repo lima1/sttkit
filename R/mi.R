@@ -1,6 +1,6 @@
-#' cell-cell interaction analysis using method CellPhoneDB
+#' Cluster neighborhoods 
 #'
-#' This function allows you to use an CellPhoneDB on Seurat Object
+#' This function provides the neighborhood of clusters
 #'
 #' @param obj Seurat Object
 #' @param max.dist Defines neighborhood as maximum distance in number
@@ -82,3 +82,47 @@ find_cluster_neighborhoods <- function(obj, max.dist = 3, fun.aggregate = mean) 
 }    
 
 
+#' Spatial Correlation
+#'
+#' This function provides the spatial correlation of two features. If both are the
+#' same, this corresponds to Moran's I.
+#'
+#' @param obj Seurat Object
+#' @param image Passed to the GetTissueCoordinates function
+#' @param slot Passed to the FetchData function
+#' @param feature.1 First feature
+#' @param feature.2 Second feature(s)
+#' @return spatial correlation
+#'
+#' @examples
+#'
+#' @export calculate_spatial_correlation
+calculate_spatial_correlation <- function(obj, image = NULL, slot = "data",
+    feature.1, feature.2 = rownames(obj)) {
+
+    coord <- GetTissueCoordinates(obj, image = image)
+    pos.dist <- dist(coord)
+    pos.dist.mat <- as.matrix(x = pos.dist)
+    weights <- 1/pos.dist.mat^2
+    diag(x = weights) <- 0
+    if(length(feature.1) > 1) {
+        flog.warn("feature.1 contains multiple values, using only the first")
+        feature.1 <- feature.1[1]
+    }
+    x_values <- as.numeric(FetchData(obj, feature.1, slot = slot)[rownames(coord), 1])
+    x_values <- (x_values - mean(x_values))/sqrt(var(x_values))
+    y_values_all <- FetchData(obj, feature.2, slot = slot)
+
+    .spatial_corr <- function(gene){
+        y_values <- as.numeric(y_values_all[rownames(coord), gene])
+        y_values <- (y_values - mean(y_values))/sqrt(var(y_values))
+        corr <- sum(outer(x_values, y_values) * weights)/sum(weights)
+        return(corr)
+    }
+
+    results <- sapply(feature.2, .spatial_corr)
+    crosscorr <- as.numeric(results)
+    names(crosscorr) <- feature.2
+    crosscorr <- sort(crosscorr, decreasing = TRUE)
+    return(crosscorr)
+}    

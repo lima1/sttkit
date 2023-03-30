@@ -2,6 +2,7 @@
 
 export(as_SingleCellExperiment)
 export(calculate_nmf_gse)
+export(calculate_spatial_correlation)
 export(cellphone_for_seurat)
 export(cli_check_file_list)
 export(cli_check_lib_ids)

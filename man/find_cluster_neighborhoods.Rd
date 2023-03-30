@@ -2,7 +2,7 @@
 % Please edit documentation in R/mi.R
 \name{find_cluster_neighborhoods}
 \alias{find_cluster_neighborhoods}
-\title{cell-cell interaction analysis using method CellPhoneDB}
+\title{Cluster neighborhoods}
 \usage{
 find_cluster_neighborhoods(obj, max.dist = 3, fun.aggregate = mean)
 }
@@ -18,5 +18,5 @@ of spots}
 output pairwise cluster neighborhood overlaps
 }
 \description{
-This function allows you to use an CellPhoneDB on Seurat Object
+This function provides the neighborhood of clusters
 }
