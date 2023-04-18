@@ -69,6 +69,8 @@ option_list <- list(
         help = "Run Co-expression analysis (--integration_method should be 'celltrek')"),
     make_option(c("--coexp_cell_types"), action="store", type="character", default=NULL,
         help = "Cell type(s) for co-expression analysis (use with '--run_coexp')"),
+    make_option(c("--no_crop"), action = "store_true", default = FALSE,
+        help = "Do not crop H&E image."),
     make_option(c("--png"), action = "store_true", default = FALSE,
         help = "Generate PNG version of output plots."),
     make_option(c("--serialize"), action = "store_true", default = FALSE,
@@ -192,7 +194,13 @@ if (!opt$force && file.exists(filename_singlecell)) {
         x <- UpdateSeuratObject(x)
         if ("SCT" %in% Assays(x)) return(x)
         flog.info("Running sctransform --singlecell...")
-        SCTransform(x, ncells = opt$num_integration_features, verbose = FALSE)
+        vst.flavor <- any(grepl("vst.flavor", x@commands$SCTransform.Spatial@call.string))
+        if (vst.flavor) {
+            flog.info("I think v2 of sctransform was used. Try normalizing the single cell data manually if it fails.")
+            SCTransform(x, ncells = opt$num_integration_features, vst.flavor = "v2", verbose = FALSE)
+        } else {
+            SCTransform(x, ncells = opt$num_integration_features, verbose = FALSE)
+        }    
     })
 
     singlecell <- lapply(singlecell, function(x) {
@@ -419,7 +427,7 @@ if (find_pred == TRUE) {
             plot_features(object = x_split[[j]], features = features,
                 prefix = opt$outprefix, subdir = "he",
                 suffix = paste0("_he_labels", label, "_", libs[j], libs_label[j], ".pdf"),
-                png = opt$png, pt.size.factor = opt$dot_size)
+                png = opt$png, pt.size.factor = opt$dot_size, crop = !opt$no_crop)
             filename <- sttkit:::.get_sub_path(opt$outprefix, "he",
                     suffix = paste0("_he_labels_call", label, "_", libs[j], libs_label[j], ".pdf"))
             gp <- SpatialDimPlot(x_split[[j]], label = TRUE,
@@ -451,7 +459,8 @@ if (find_pred == TRUE) {
         plot_features(object = x, features = features,
             prefix = opt$outprefix, subdir = "he",
             suffix = paste0("_he_labels", label, ".pdf"),
-            png = opt$png, pt.size.factor = opt$dot_size)
+            png = opt$png, pt.size.factor = opt$dot_size,
+            crop = !opt$no_crop)
     }
 }
 
@@ -483,6 +492,7 @@ if (find_pred == TRUE) {
           subdir = "he",
           cells = cells, pt.size.factor = opt$dot_size,
           image.alpha = 0, png = opt$png,
+          crop = !opt$no_crop,
           plot_correlations = TRUE)
 
     #flog.info("Plotting scaled single feature counts...", filename)
