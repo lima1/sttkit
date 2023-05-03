@@ -66,6 +66,8 @@ if (grepl("list$",opt$infile)) {
     if (length(infiles)>1) single_input <- FALSE
 }
 
+pseudo_only <- FALSE
+
 if (!is.null(opt$htseq)) {
     if (grepl("list$",opt$htseq)) {
         htseqs <- .check_file_list(opt$htseq)
@@ -73,7 +75,8 @@ if (!is.null(opt$htseq)) {
         htseqs <- opt$htseq
     }
 } else {
-    stop("Need --htseq.")
+    pseudo_only <- TRUE
+    flog.warn("Need --htseq for bulk comparison. Will only dump pseudo bulk counts.")
 }
 
 gtf <- NULL
@@ -158,7 +161,7 @@ if (!is.null(opt$gtf)) {
     }
 }
 
-.plot_fake_bulk <- function(objs, bulk_norm, labels = NULL, hide_r2 = FALSE) {
+.plot_fake_bulk <- function(objs, bulk_norm, labels = NULL, hide_r2 = FALSE, pseudo_only = FALSE) {
     idx <- sapply(objs, is, "Seurat")
     objs <- objs[idx]
     if (!is.null(labels)) labels <- labels[idx]
@@ -166,6 +169,9 @@ if (!is.null(opt$gtf)) {
     gg_data <- do.call(rbind, lapply(seq_along(objs), function(i) {
         obj <- objs[[i]]
         counts <- Matrix::rowSums(GetAssayData(obj, slot = "counts"))
+        filename <- paste0(opt$outprefix, "_pseudo_bulk_gene_counts.cts")
+        write.table(counts, filename, sep = "\t", col.names = FALSE, quote = FALSE)
+        if (pseudo_only) return(NULL)
         # make sure we don't miss genes because of make.names
         names(counts) <- make.names(names(counts))
         rownames(bulk_norm) <- make.names(rownames(bulk_norm))
@@ -229,23 +235,27 @@ if (!is.null(opt$gmt)) {
     .plot_venn_bulk(ndata, bdata[[j]]$counts$counts, prefix_csv)
     dev.off()
 }
-   
-for (i in seq_along(ndata)) {
-    num1 <- if (single_input) "" else paste0("_", libs[i])
-    for (j in seq_along(bdata)) {
-        num2 <- if (length(bdata) == 1) "" else paste0("_bulk", j)
-        .plot_benchmark(ndata[[i]], j, num1, num2)
-        if (!single_input && i == 1) {
-            filename <- paste0(opt$outprefix, "_benchmark_merged", num2, ".pdf")
-            pdf(filename, width = 4, height = 3.6)
-            ndata_merged <- sttkit:::.merge_safely(ndata)
-            print(.plot_fake_bulk(list(ndata_merged), bdata[[j]]$normalized, hide_r2 = opt$hide_r2))
-            dev.off()
-            filename <- paste0(opt$outprefix, "_venn_merged", num2, ".pdf")
-            prefix_csv <- paste0(opt$outprefix, "_venn_merged", num2)
-            pdf(filename, width = 4, height = 4)
-            .plot_venn_bulk(ndata_merged, bdata[[j]]$counts$counts, prefix_csv)
-            dev.off()
+
+if (pseudo_only) {
+    .plot_fake_bulk(ndata, pseudo_only = TRUE)
+} else {    
+    for (i in seq_along(ndata)) {
+        num1 <- if (single_input) "" else paste0("_", libs[i])
+        for (j in seq_along(bdata)) {
+            num2 <- if (length(bdata) == 1) "" else paste0("_bulk", j)
+            .plot_benchmark(ndata[[i]], j, num1, num2)
+            if (!single_input && i == 1) {
+                filename <- paste0(opt$outprefix, "_benchmark_merged", num2, ".pdf")
+                pdf(filename, width = 4, height = 3.6)
+                ndata_merged <- sttkit:::.merge_safely(ndata)
+                print(.plot_fake_bulk(list(ndata_merged), bdata[[j]]$normalized, hide_r2 = opt$hide_r2))
+                dev.off()
+                filename <- paste0(opt$outprefix, "_venn_merged", num2, ".pdf")
+                prefix_csv <- paste0(opt$outprefix, "_venn_merged", num2)
+                pdf(filename, width = 4, height = 4)
+                .plot_venn_bulk(ndata_merged, bdata[[j]]$counts$counts, prefix_csv)
+                dev.off()
+            }
         }
     }
-}
+}    
