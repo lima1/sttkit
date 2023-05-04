@@ -203,7 +203,8 @@ if (!opt$force && file.exists(filename_singlecell)) {
         x <- UpdateSeuratObject(x)
         if ("SCT" %in% Assays(x) || !opt$integration_method %in% method_wants_sct) return(x)
         flog.info("Running sctransform --singlecell...")
-        vst.flavor <- any(grepl("vst.flavor", x@commands$SCTransform.Spatial@call.string))
+        vst.flavor <- !is.null(infile@commands$SCTransform.Spatial) &&
+            any(grepl("vst.flavor", infile@commands$SCTransform.Spatial@call.string))
         if (vst.flavor) {
             flog.info("I think v2 of sctransform was used. Try normalizing the single cell data manually if it fails.")
             SCTransform(x, ncells = opt$num_integration_features, vst.flavor = "v2", verbose = FALSE)
