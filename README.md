@@ -19,11 +19,13 @@ Otherwise install Seurat directly from CRAN:
 install.packages("Seurat")
 ```
 
-A few optional but recommended additional packages:
+A few optional additional packages extending functionality:
 
 ```
 remotes::install_github("satijalab/seurat-wrappers")
 remotes::install_github("navinlabcode/CellTrek")
+remotes::install_github("dmcable/spacexr", build_vignettes = FALSE)
+
 # following packages not necessary with conda_environment.yml
 BiocManager::install(c("batchelor",
     "harmony",
@@ -209,7 +211,9 @@ Rscript $STTKIT/st_integrate.R \
 Here, the reference scRNA-seq dataset is expected to be normalized by `sctransform` and 
 contains cell type annotation in a `type` meta data column (the column can be changed
 with `--refdata` as in this example).
-Again, `--singlecell` can be a list of reference datasets. 
+Again, `--singlecell` can be a list of reference datasets. Specify `--integration_method rctd`
+to use [RCDT](https://github.com/dmcable/spacexr) instead. Output files and plots are equivalent. 
+
 
 ![ex_sagittal_1_he_labels_allen_cortex_1_small](https://user-images.githubusercontent.com/364466/75380489-21e93080-58a5-11ea-8d1a-75950b0dd104.png)
 ![ex_sagittal_a1_he_labels_allen_cortex_1_small](https://user-images.githubusercontent.com/364466/75380495-2281c700-58a5-11ea-97d7-efa00e79914e.png)
@@ -218,6 +222,8 @@ We also support the [CellTrek](https://github.com/navinlabcode/CellTrek)
 package that performs coembedding of the single-cell and spatial data to
 generate the training model. The single cells are then charted on to their
 spatial locations using non-linear interpolation to augment the ST spots.
+This method works especially well when matched single cell and spatial data
+are available.
 
 We have adapted the same to work using command line inside of sttkit, and also
 splitting the various cell-types on to separate panels as shown below

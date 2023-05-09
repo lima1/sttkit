@@ -18,7 +18,7 @@ option_list <- list(
     make_option(c("--refdata"), action = "store", type = "character", default = "type",
         help = "Meta data column with prediction labels in --singlecell"),
     make_option(c("--integration_method"), action = "store", type = "character", default = "seurat",
-        help = "Integration: Choose between 'seurat' (default), 'celltrek', and 'rctd' as integration method"),
+        help = "Integration: Choose between 'seurat' (default), 'celltrek', 'rctd' (alias for 'rctd_multi'), 'rctd_full' as integration method"),
     make_option(c("--downsample_cells"), action = "store", type = "integer", default = 3000,
         help = "Integration: Use that many random cells per refdata [default %default]"),
     make_option(c("--condition"), action = "store", type = "character", default = NULL,
@@ -98,7 +98,7 @@ if (is.null(opt$singlecell)) {
     stop("Need --singlecell")
 }
 
-if (!opt$integration_method %in% c("seurat", "celltrek", "rctd")) {
+if (!opt$integration_method %in% c("seurat", "celltrek", "rctd", "rctd_full", "rctd_multi")) {
   stop("Integration: Choose between 'seurat' (default), 'celltrek', and 'rctd' as integration method")
 }
 
@@ -130,9 +130,16 @@ if (!is.null(opt$nmf_ident)) {
 }
 
 find_pred <- TRUE
+tmp <- strsplit(opt$integration_method, "_")[[1]]
+opt$integration_method <- tmp[1]
+if (length(tmp) > 1) opt$sub_integration_method <- tmp[2]
+
+
 if (opt$integration_method == "seurat") {
-    filename_predictions_old <- sttkit:::.get_serialize_path(opt$outprefix, "_transfer_predictions.rds")
-    filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix, paste0("_", digest(labels), "_transfer_predictions.rds"))
+    filename_predictions_old <- sttkit:::.get_serialize_path(opt$outprefix,
+        paste0("_", digest(labels), "_transfer_predictions.rds"))
+    filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix,
+        paste0("_", digest(labels), "_", opt$integration_method, "_transfer_predictions.rds"))
 #TODO remove
     if (file.exists(filename_predictions_old)) {
           file.copy(filename_predictions_old, filename_predictions)
@@ -144,10 +151,11 @@ if (opt$integration_method == "seurat") {
         find_pred <- FALSE
     }
 } else if (opt$integration_method == "rctd") {
-    filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix, paste0("_", digest(labels), "_rctd_results.rds"))
+    filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix,
+        paste0("_", digest(labels), "_", opt$integration_method, "_transfer_predictions.rds"))
     if (!opt$force && file.exists(filename_predictions)) {
         flog.warn("%s exists. Skipping RCDT prediction. Use --force to overwrite.", filename_predictions)
-        rctd_results <- readRDS(filename_predictions)
+        prediction.assay <- readRDS(filename_predictions)
         find_pred <- FALSE
     }
     suppressPackageStartupMessages(library(spacexr))
@@ -187,6 +195,7 @@ if (!opt$force && file.exists(filename_singlecell)) {
                 sample(y, min(length(y), opt$downsample_cells), replace = FALSE)))])
     }
     if (!is.null(opt$condition)) {
+        flog.info("Splitting --singlecell according --condition %s", opt$condition)
         singlecell <- lapply(singlecell, SplitObject, opt$condition)
         labels_new <- lapply(seq_along(labels), function(i)
             paste0(labels[[i]], "_", names(singlecell[[i]])))
@@ -199,6 +208,7 @@ if (!opt$force && file.exists(filename_singlecell)) {
     }
     method_wants_sct <- c("seurat", "celltrek")
 
+    flog.info("Making sure --singlecell is compatible with current Seurat version...")
     singlecell <- lapply(singlecell, function(x) {
         x <- UpdateSeuratObject(x)
         if ("SCT" %in% Assays(x) || !opt$integration_method %in% method_wants_sct) return(x)
@@ -231,6 +241,7 @@ if (!opt$force && file.exists(filename_singlecell)) {
         names(singlecell) <- labels
         sttkit:::.serialize(singlecell, opt$outprefix, "_singlecell.rds")
     }
+    flog.info("Done preprocessing --singlecell. If you plan to use this reference for multiple samples, use --serialize to skip those steps for future samples.")
 }
 
 if (find_pred == TRUE) {
@@ -254,16 +265,22 @@ if (find_pred == TRUE) {
         flog.info("Preparing RCTD...")
         myRCTDs <- lapply(singlecell_rctd, function(sc) spacexr::create.RCTD(infile_rctd, sc, max_cores = 1, CELL_MIN_INSTANCE = 3))
         flog.info("Running RCTD...")
-        myRCTDs <- lapply(myRCTDs, spacexr::run.RCTD, doublet_mode = "doublet")
+        doublet_mode <- ifelse(is.null(opt$sub_integration_method), "multi", opt$sub_integration_method)
+        flog.info("Using doublet mode %s.", doublet_mode)
+        myRCTDs <- lapply(myRCTDs, spacexr::run.RCTD, doublet_mode = doublet_mode)
         rctd_results <- lapply(myRCTDs, function(x) x@results)
         singlecell_rctd <- NULL
         infile_rctd <- NULL
+        filename_rctd_results <- sttkit:::.get_serialize_path(opt$outprefix,
+            paste0("_", digest(labels), "_rctd_results.rds"))
+        flog.info("Writing R data structure to %s...", filename_rctd_results)
+        saveRDS(rctd_results, filename_rctd_results)
+        prediction.assay <- lapply(myRCTDs, as_AssayObject)
         myRCTDs <- NULL
         flog.info("Writing R data structure to %s...", filename_predictions)
-        saveRDS(rctd_results, filename_predictions)
-
+        saveRDS(prediction.assay, filename_predictions)
     } else if (opt$integration_method == "celltrek") {
-        infile <- RenameCells(infile, new.names=make.names(Cells(infile)))
+        infile <- RenameCells(infile, new.names = make.names(Cells(infile)))
         singlecell <- lapply(singlecell, function(sc) RenameCells(sc, new.names = make.names(Cells(sc))))
         train <- lapply(singlecell, function(x)
             CellTrek::traint(st_data = infile, sc_data = x,
@@ -603,13 +620,6 @@ if (find_pred == TRUE) {
     }
 }
 
-if (opt$integration_method == 'rctd') {
-    prediction.assay <- lapply(rctd_results, function(x) {
-        m <- Matrix::t(x$weights)
-        m <- rbind(m, max = apply(m, 2, max))
-        CreateAssayObject(data = m)
-    })
-}    
 for (i in seq_along(singlecell)) {
     if (opt$integration_method %in% c('seurat', 'rctd') ) {
         .plot_he(infile, i)
