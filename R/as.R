@@ -82,6 +82,8 @@ as_Reference <- function(object, refdata, assay = "RNA", slot = "counts",  ...) 
 #' Convert deconvolution output object to a TransferPrediction object
 
 #' @param object Currently supported is RCDT output
+#' @importFrom data.table data.table dcast rbindlist
+#' @importFrom methods as
 #' @export as_AssayObject
 #' @examples
 #' # as_AssayObject(object)
@@ -107,7 +109,7 @@ as_AssayObject <- function(object) {
             swm <- as.matrix(swd[, -1])
             rownames(swm) <- swd$barcode
             swm <- t(spacexr::normalize_weights(swm))
-            swm <- rbind(swm, max = apply(swm[-match("unassigned", rownames(swm)), ], 2, max))
+            swm <- rbind(swm, max = apply(swm[!rownames(swm) %in% "unassigned", ], 2, max))
             swm <- as(swm, "sparseMatrix")
             return(CreateAssayObject(data = swm))
         }

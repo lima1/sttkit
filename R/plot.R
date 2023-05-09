@@ -398,6 +398,7 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
 #' If \code{NULL}, just use indices.
 #' @param average_nn Include the 4 nearest neighbors (top, bottom,
 #' right, left) in the correlation
+#' @importFrom stats var
 #' @export plot_correlation_heatmap
 #' @examples
 #' plot_correlation_heatmap
