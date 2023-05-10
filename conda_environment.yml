@@ -1,7 +1,10 @@
 name: sttkit
 channels:
-  - defaults
+  - conda-forge
+  - bioconda
 dependencies:
+  - binutils_impl_linux-64
+  - binutils_linux-64
   - bioconductor-annotationdbi
   - bioconductor-batchelor
   - bioconductor-bayesspace
@@ -17,7 +20,6 @@ dependencies:
   - bioconductor-biostrings
   - bioconductor-bluster
   - bioconductor-bsgenome
-  - bioconductor-consensusclusterplus
   - bioconductor-delayedarray
   - bioconductor-delayedmatrixstats
   - bioconductor-dnacopy
@@ -28,7 +30,6 @@ dependencies:
   - bioconductor-genomicalignments
   - bioconductor-genomicfeatures
   - bioconductor-genomicranges
-  - bioconductor-glmgampoi
   - bioconductor-infercnv
   - bioconductor-iranges
   - bioconductor-keggrest
@@ -53,9 +54,96 @@ dependencies:
   - bioconductor-variantannotation
   - bioconductor-xvector
   - bioconductor-zlibbioc
+  - bwidget
+  - bzip2
+  - ca-certificates
+  - cairo
+  - c-ares
+  - certifi
+  - colormath
+  - curl
+  - decorator
+  - expat
+  - fontconfig
+  - fonts-conda-ecosystem
+  - fonts-conda-forge
+  - font-ttf-dejavu-sans-mono
+  - font-ttf-inconsolata
+  - font-ttf-source-code-pro
+  - font-ttf-ubuntu
+  - freetype
+  - fribidi
+  - gcc_impl_linux-64
+  - gcc_linux-64
+  - geos
+  - gettext
+  - gfortran_impl_linux-64
+  - gfortran_linux-64
+  - git
+  - gmp
+  - graphite2
+  - gsl
+  - gxx_impl_linux-64
+  - gxx_linux-64
+  - harfbuzz
   - hdf5
+  - icu
+  - jags
+  - jbig
+  - jpeg
+  - kernel-headers_linux-64
+  - keyutils
+  - krb5
+  - ld_impl_linux-64
+  - lerc
+  - libblas
+  - libcblas
+  - libcurl
+  - libdeflate
+  - libedit
+  - libev
+  - libffi
+  - libgcc-devel_linux-64
+  - libgcc-ng
+  - libgfortran5
+  - libgfortran-ng
+  - libgit2
+  - libglib
+  - libgomp
+  - libiconv
+  - liblapack
+  - libnghttp2
+  - libnsl
+  - libopenblas
+  - libpng
+  - libssh2
+  - libstdcxx-devel_linux-64
+  - libstdcxx-ng
+  - libtiff
+  - libuuid
+  - libwebp-base
+  - libxcb
+  - libxgboost
+  - libxml2
+  - libzlib
+  - lz4-c
+  - make
   - mpi
+  - ncurses
+  - networkx
+  - numpy
   - openmpi
+  - openssl
+  - pango
+  - pcre
+  - pcre2
+  - perl
+  - pip
+  - pixman
+  - proj
+  - pthread-stubs
+  - python
+  - python_abi
   - r-abind
   - r-ape
   - r-argparse
@@ -88,6 +176,7 @@ dependencies:
   - r-coin
   - r-colorspace
   - r-commonmark
+  - r-compquadform
   - r-corrplot
   - r-covr
   - r-cowplot
@@ -99,9 +188,11 @@ dependencies:
   - r-data.table
   - r-dbi
   - r-dbplyr
+  - r-dbscan
   - r-deldir
   - r-desc
   - r-devtools
+  - r-dichromat
   - r-diffobj
   - r-digest
   - r-dirichletreg
@@ -109,6 +200,7 @@ dependencies:
   - r-dplyr
   - r-dqrng
   - r-dt
+  - readline
   - r-ellipsis
   - r-evaluate
   - r-extrafont
@@ -117,6 +209,7 @@ dependencies:
   - r-farver
   - r-fastcluster
   - r-fastmap
+  - r-fields
   - r-filelock
   - r-findpython
   - r-fitdistrplus
@@ -182,17 +275,22 @@ dependencies:
   - r-lifecycle
   - r-listenv
   - r-lmtest
+  - r-locfdr
   - r-locfit
   - r-lsei
+  - r-magick
   - r-magrittr
   - r-maps
   - r-markdown
   - r-mass
+  - r-mathjaxr
   - r-matrix
   - r-matrixstats
   - r-maxlik
   - r-mclust
   - r-memoise
+  - r-metadat
+  - r-metafor
   - r-mgcv
   - r-mime
   - r-miniui
@@ -202,11 +300,11 @@ dependencies:
   - r-munsell
   - r-mvtnorm
   - r-nlme
-  - r-nloptr
   - r-nmf
   - r-npsurv
   - r-openssl
   - r-optparse
+  - r-pals
   - r-parallelly
   - r-patchwork
   - r-pbapply
@@ -231,6 +329,7 @@ dependencies:
   - r-promises
   - r-ps
   - r-purrr
+  - r-quadprog
   - r-r6
   - r-ragg
   - r-randomforestsrc
@@ -243,10 +342,12 @@ dependencies:
   - r-rcpparmadillo
   - r-rcppdist
   - r-rcppeigen
+  - r-rcppgsl
   - r-rcpphnsw
   - r-rcppparallel
   - r-rcppprogress
   - r-rcpptoml
+  - r-rcppziggurat
   - r-rcurl
   - r-registry
   - r-rematch2
@@ -256,6 +357,7 @@ dependencies:
   - r-restfulr
   - r-reticulate
   - r-rex
+  - r-rfast
   - r-rgeos
   - r-rjags
   - r-rjson
@@ -289,6 +391,7 @@ dependencies:
   - r-snow
   - r-sourcetools
   - r-sp
+  - r-spam
   - r-spatstat
   - r-spatstat.core
   - r-spatstat.data
@@ -304,6 +407,7 @@ dependencies:
   - r-sys
   - r-systemfonts
   - r-tensor
+  - r-terra
   - r-testthat
   - r-textshaping
   - r-th.data
@@ -330,4 +434,27 @@ dependencies:
   - r-yaml
   - r-zip
   - r-zoo
+  - sed
+  - setuptools
+  - spectra
+  - sqlite
+  - sysroot_linux-64
+  - tk
+  - tktable
+  - tzdata
+  - wheel
+  - xorg-kbproto
+  - xorg-libice
+  - xorg-libsm
+  - xorg-libx11
+  - xorg-libxau
+  - xorg-libxdmcp
+  - xorg-libxext
+  - xorg-libxrender
+  - xorg-libxt
+  - xorg-renderproto
+  - xorg-xextproto
+  - xorg-xproto
+  - xz
+  - zlib
   - zstd
