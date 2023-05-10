@@ -1,6 +1,6 @@
 Package: sttkit
 Title: Utility Functions for SpatialTranscriptomics
-Version: 0.1.7
+Version: 0.2.0
 Authors@R: person("Markus", "Riester", email = "markus.riester@novartis.com", role = c("aut", "cre"))
 Description: Utility Functions for SpatialTranscriptomics
 Depends: R (>= 3.5.0), Seurat (>= 3.0.0), ggplot2
@@ -9,7 +9,6 @@ Imports: data.table (>= 1.12.4),
          methods, 
          scales, 
          utils, 
-         digest,
          RANN,
          gridExtra,
          patchwork,
@@ -24,10 +23,10 @@ Suggests: BayesSpace,
           EnhancedVolcano,
           NMF,
           SC3,
+          digest,
           SeuratWrappers,
           SingleCellExperiment,
           corrplot,
-          digest,
           edgeR,
           ggpmisc,
           ggthemes,
@@ -41,8 +40,9 @@ Suggests: BayesSpace,
           pheatmap,
           scran,
           scater,
-          sctransform
-License: Artistic-2.0
+          sctransform,
+          spacexr
+License: Artistic-2.0 + file LICENSE
 URL: https://github.com/lima1/sttkit
 Encoding: UTF-8
 LazyData: true

@@ -18,7 +18,7 @@ option_list <- list(
     make_option(c("--refdata"), action = "store", type = "character", default = "type",
         help = "Meta data column with prediction labels in --singlecell"),
     make_option(c("--integration_method"), action = "store", type = "character", default = "seurat",
-        help = "Integration: Choose between 'seurat' (default) and 'celltrek' as integration method"),
+        help = "Integration: Choose between 'seurat' (default), 'celltrek', 'rctd' (alias for 'rctd_multi'), 'rctd_full' as integration method"),
     make_option(c("--downsample_cells"), action = "store", type = "integer", default = 3000,
         help = "Integration: Use that many random cells per refdata [default %default]"),
     make_option(c("--condition"), action = "store", type = "character", default = NULL,
@@ -39,8 +39,8 @@ option_list <- list(
     make_option(c("--simulation"), action = "store_true",
         default = FALSE,
         help = "Subcluster the reference cells, specified by the call attribute [default %default]"),
-    make_option(c("--gmt"), action = "store", type = "character", default = NULL, 
-        help="Input GMT file(s) for celltrek visualization. Signature names must pattern match cell types in --refdata."),
+    make_option(c("--gmt"), action = "store", type = "character", default = NULL,
+        help = "Input GMT file(s) for celltrek visualization. Signature names must pattern match cell types in --refdata."),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.6,
         help = "Size of dots on H&E [default %default]"),
     make_option(c("--infer_cna"), action = "store_true", default = FALSE,
@@ -67,7 +67,7 @@ option_list <- list(
         help = "Run Co-locolization analysis (--integration_method should be 'celltrek')"),
     make_option(c("--run_coexp"), action = "store", default = FALSE,
         help = "Run Co-expression analysis (--integration_method should be 'celltrek')"),
-    make_option(c("--coexp_cell_types"), action="store", type="character", default=NULL,
+    make_option(c("--coexp_cell_types"), action = "store", type = "character", default = NULL,
         help = "Cell type(s) for co-expression analysis (use with '--run_coexp')"),
     make_option(c("--no_crop"), action = "store_true", default = FALSE,
         help = "Do not crop H&E image."),
@@ -98,8 +98,8 @@ if (is.null(opt$singlecell)) {
     stop("Need --singlecell")
 }
 
-if (opt$integration_method != "seurat" && opt$integration_method != "celltrek") {
-  stop("Integration: Choose between 'seurat' (default) and 'celltrek' as integration method")
+if (!opt$integration_method %in% c("seurat", "celltrek", "rctd", "rctd_full", "rctd_multi")) {
+  stop("Integration: Choose between 'seurat' (default), 'celltrek', and 'rctd' as integration method")
 }
 
 flog.info("Loading Seurat...")
@@ -130,9 +130,16 @@ if (!is.null(opt$nmf_ident)) {
 }
 
 find_pred <- TRUE
+tmp <- strsplit(opt$integration_method, "_")[[1]]
+opt$integration_method <- tmp[1]
+if (length(tmp) > 1) opt$sub_integration_method <- tmp[2]
+
+
 if (opt$integration_method == "seurat") {
-    filename_predictions_old <- sttkit:::.get_serialize_path(opt$outprefix, "_transfer_predictions.rds")
-    filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix, paste0("_", digest(labels), "_transfer_predictions.rds"))
+    filename_predictions_old <- sttkit:::.get_serialize_path(opt$outprefix,
+        paste0("_", digest(labels), "_transfer_predictions.rds"))
+    filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix,
+        paste0("_", digest(labels), "_", opt$integration_method, "_transfer_predictions.rds"))
 #TODO remove
     if (file.exists(filename_predictions_old)) {
           file.copy(filename_predictions_old, filename_predictions)
@@ -143,6 +150,15 @@ if (opt$integration_method == "seurat") {
         prediction.assay <- readRDS(filename_predictions)
         find_pred <- FALSE
     }
+} else if (opt$integration_method == "rctd") {
+    filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix,
+        paste0("_", digest(labels), "_", opt$integration_method, "_transfer_predictions.rds"))
+    if (!opt$force && file.exists(filename_predictions)) {
+        flog.warn("%s exists. Skipping RCDT prediction. Use --force to overwrite.", filename_predictions)
+        prediction.assay <- readRDS(filename_predictions)
+        find_pred <- FALSE
+    }
+    suppressPackageStartupMessages(library(spacexr))
 } else if (opt$integration_method == "celltrek") {
     filename_traint <- sttkit:::.get_serialize_path(opt$outprefix, "_traint.rds")
     filename_celltrek <- sttkit:::.get_serialize_path(opt$outprefix, "_celltrek.rds")
@@ -179,6 +195,7 @@ if (!opt$force && file.exists(filename_singlecell)) {
                 sample(y, min(length(y), opt$downsample_cells), replace = FALSE)))])
     }
     if (!is.null(opt$condition)) {
+        flog.info("Splitting --singlecell according --condition %s", opt$condition)
         singlecell <- lapply(singlecell, SplitObject, opt$condition)
         labels_new <- lapply(seq_along(labels), function(i)
             paste0(labels[[i]], "_", names(singlecell[[i]])))
@@ -189,12 +206,15 @@ if (!opt$force && file.exists(filename_singlecell)) {
         flog.warn("--singlecell already contains labels.")
         labels <- names(singlecell)
     }
+    method_wants_sct <- c("seurat", "celltrek")
 
+    flog.info("Making sure --singlecell is compatible with current Seurat version...")
     singlecell <- lapply(singlecell, function(x) {
         x <- UpdateSeuratObject(x)
-        if ("SCT" %in% Assays(x)) return(x)
+        if ("SCT" %in% Assays(x) || !opt$integration_method %in% method_wants_sct) return(x)
         flog.info("Running sctransform --singlecell...")
-        vst.flavor <- any(grepl("vst.flavor", x@commands$SCTransform.Spatial@call.string))
+        vst.flavor <- !is.null(infile@commands$SCTransform.Spatial) &&
+            any(grepl("vst.flavor", infile@commands$SCTransform.Spatial@call.string))
         if (vst.flavor) {
             flog.info("I think v2 of sctransform was used. Try normalizing the single cell data manually if it fails.")
             SCTransform(x, ncells = opt$num_integration_features, vst.flavor = "v2", verbose = FALSE)
@@ -202,24 +222,26 @@ if (!opt$force && file.exists(filename_singlecell)) {
             SCTransform(x, ncells = opt$num_integration_features, verbose = FALSE)
         }    
     })
-
-    singlecell <- lapply(singlecell, function(x) {
-        DefaultAssay(x) <- "SCT"
-        if ("umap" %in% Reductions(x) && "pca" %in% Reductions(x))
-            if (DefaultAssay(x[["pca"]]) == "SCT" && DefaultAssay(x[["umap"]]) == "SCT")
-                return(x)
-        flog.info("Running PCA and UMAP on --singlecell...")
-        RunPCA(x, verbose = TRUE) %>% RunUMAP(dims = 1:30)
-    })
-    flog.info("Clustering --singlecell...")
-    singlecell <- lapply(singlecell, FindNeighbors, verbose = FALSE)
-    singlecell <- lapply(singlecell, FindClusters, resolution = opt$resolution, verbose = FALSE)
+    method_wants_clustering <- c("seurat", "celltrek")
+    if (opt$integration_method %in% method_wants_clustering) {
+        singlecell <- lapply(singlecell, function(x) {
+            DefaultAssay(x) <- "SCT"
+            if ("umap" %in% Reductions(x) && "pca" %in% Reductions(x))
+                if (DefaultAssay(x[["pca"]]) == "SCT" && DefaultAssay(x[["umap"]]) == "SCT")
+                    return(x)
+            flog.info("Running PCA and UMAP on --singlecell...")
+            RunPCA(x, verbose = TRUE) %>% RunUMAP(dims = 1:30)
+        })
+        flog.info("Clustering --singlecell...")
+        singlecell <- lapply(singlecell, FindNeighbors, verbose = FALSE)
+        singlecell <- lapply(singlecell, FindClusters, resolution = opt$resolution, verbose = FALSE)
+    }
     if (opt$serialize) {
         flog.info("Writing R data structure to %s...", filename_singlecell)
         names(singlecell) <- labels
         sttkit:::.serialize(singlecell, opt$outprefix, "_singlecell.rds")
     }
-    find_pred <- TRUE
+    flog.info("Done preprocessing --singlecell. If you plan to use this reference for multiple samples, use --serialize to skip those steps for future samples.")
 }
 
 if (find_pred == TRUE) {
@@ -230,13 +252,35 @@ if (find_pred == TRUE) {
                 normalization.method = "SCT", dims = 1:30))
         flog.info("Calculating transfer predictions...")
         prediction.assay <- lapply(seq_along(anchors), function(i)
-            TransferData(anchorset = anchors[[i]], refdata = singlecell[[i]][[opt$refdata]][,1],
+            TransferData(anchorset = anchors[[i]], refdata = singlecell[[i]][[opt$refdata]][, 1],
                 prediction.assay = TRUE, weight.reduction = infile[["pca"]], dims = 1:30))
         flog.info("Writing R data structure to %s...", filename_predictions)
         saveRDS(prediction.assay, filename_predictions)
 
+    } else if (opt$integration_method == "rctd") {
+        flog.info("Converting --singlecell to spacexr format...")
+        singlecell_rctd <- lapply(singlecell, as_Reference, refdata = opt$refdata, require_int = FALSE)
+        flog.info("Converting --infile to spacexr format...")
+        infile_rctd <- as_SpatialRNA(infile)
+        flog.info("Preparing RCTD...")
+        myRCTDs <- lapply(singlecell_rctd, function(sc) spacexr::create.RCTD(infile_rctd, sc, max_cores = 1, CELL_MIN_INSTANCE = 3))
+        flog.info("Running RCTD...")
+        doublet_mode <- ifelse(is.null(opt$sub_integration_method), "multi", opt$sub_integration_method)
+        flog.info("Using doublet mode %s.", doublet_mode)
+        myRCTDs <- lapply(myRCTDs, spacexr::run.RCTD, doublet_mode = doublet_mode)
+        rctd_results <- lapply(myRCTDs, function(x) x@results)
+        singlecell_rctd <- NULL
+        infile_rctd <- NULL
+        filename_rctd_results <- sttkit:::.get_serialize_path(opt$outprefix,
+            paste0("_", digest(labels), "_rctd_results.rds"))
+        flog.info("Writing R data structure to %s...", filename_rctd_results)
+        saveRDS(rctd_results, filename_rctd_results)
+        prediction.assay <- lapply(myRCTDs, as_AssayObject)
+        myRCTDs <- NULL
+        flog.info("Writing R data structure to %s...", filename_predictions)
+        saveRDS(prediction.assay, filename_predictions)
     } else if (opt$integration_method == "celltrek") {
-        infile <- RenameCells(infile, new.names=make.names(Cells(infile)))
+        infile <- RenameCells(infile, new.names = make.names(Cells(infile)))
         singlecell <- lapply(singlecell, function(sc) RenameCells(sc, new.names = make.names(Cells(sc))))
         train <- lapply(singlecell, function(x)
             CellTrek::traint(st_data = infile, sc_data = x,
@@ -426,10 +470,10 @@ if (find_pred == TRUE) {
         for (j in seq_along(libs)) {
             plot_features(object = x_split[[j]], features = features,
                 prefix = opt$outprefix, subdir = "he",
-                suffix = paste0("_he_labels", label, "_", libs[j], libs_label[j], ".pdf"),
+                suffix = paste0("_he_labels", label, "_", libs[j], libs_label[j], "_", opt$integration_method,".pdf"),
                 png = opt$png, pt.size.factor = opt$dot_size, crop = !opt$no_crop)
             filename <- sttkit:::.get_sub_path(opt$outprefix, "he",
-                    suffix = paste0("_he_labels_call", label, "_", libs[j], libs_label[j], ".pdf"))
+                    suffix = paste0("_he_labels_call", label, "_", libs[j], libs_label[j], "_", opt$integration_method, ".pdf"))
             gp <- SpatialDimPlot(x_split[[j]], label = TRUE,
                 image = sttkit:::.get_image_slice(x_split[[j]]),
                 pt.size.factor = opt$dot_size, label.size = 3)
@@ -444,7 +488,7 @@ if (find_pred == TRUE) {
             }
         }
         filename <- sttkit:::.get_sub_path(opt$outprefix, "advanced",
-                suffix = paste0("_labels", label, "_", libs[j], libs_label[j], ".pdf"))
+                suffix = paste0("_labels", label, "_", libs[j], libs_label[j], "_", opt$integration_method, ".pdf"))
         ratio <- sttkit:::.get_image_ratio(min(6, length(features)))
         glist <- VlnPlot(x, features = features, group.by = field, pt.size = 0.25, combine = FALSE)
         glist <- lapply(glist, function(p) ggplotGrob(p + theme(legend.position = "none")))
@@ -458,7 +502,7 @@ if (find_pred == TRUE) {
     } else {
         plot_features(object = x, features = features,
             prefix = opt$outprefix, subdir = "he",
-            suffix = paste0("_he_labels", label, ".pdf"),
+            suffix = paste0("_he_labels", label, "_", opt$integration_method, ".pdf"),
             png = opt$png, pt.size.factor = opt$dot_size,
             crop = !opt$no_crop)
     }
@@ -577,7 +621,7 @@ if (find_pred == TRUE) {
 }
 
 for (i in seq_along(singlecell)) {
-    if (opt$integration_method == 'seurat') {
+    if (opt$integration_method %in% c('seurat', 'rctd') ) {
         .plot_he(infile, i)
     } else if (opt$integration_method == 'celltrek') {
         .plot_he_ct(train, celltrek_predictions, i)

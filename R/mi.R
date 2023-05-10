@@ -36,24 +36,24 @@ find_cluster_neighborhoods <- function(obj, max.dist = 3, fun.aggregate = mean) 
 
 .find_nn <- function(obj) {
     xy <- .parse_coords(obj, colnames(obj))
-    xy[,2] <- 1- xy[,2]
-    d <- dist(xy, method="manhattan")
+    xy[, 2] <- 1 - xy[, 2]
+    d <- dist(xy, method = "manhattan")
     dm <- as.matrix(d)
-    nn <- lapply(seq(nrow(dm)), function(i) as.vector(which(dm[i,] > 0 & dm[i, ] < 1.1)))
-    nn <- do.call(rbind, lapply(nn, function(x) c(x, rep(NA, 4-length(x)))))
+    nn <- lapply(seq(nrow(dm)), function(i) as.vector(which(dm[i, ] > 0 & dm[i, ] < 1.1)))
+    nn <- do.call(rbind, lapply(nn, function(x) c(x, rep(NA, 4 - length(x)))))
 }
 .cor_nn_vector <- function(obj, nn, f1, f2, zero_offset, method, slot = "data") {
     nn <- cbind(1:nrow(nn), nn)
-    weights <- apply(nn, 2, function(x) 1-sum(is.na(x))/length(x))
+    weights <- apply(nn, 2, function(x) 1-sum(is.na(x)) / length(x))
     idx <- weights > 0
-    nn <- nn[,idx]
+    nn <- nn[, idx]
     weights <- weights[idx]
     weighted.mean(apply(nn, 2, function(i) {
         p <- .fix_offset_in_pair(
-            FetchData(obj, vars = f1, slot = slot)[,1], 
-            FetchData(obj, vars = f2, slot = slot)[,1], 
+            FetchData(obj, vars = f1, slot = slot)[, 1],
+            FetchData(obj, vars = f2, slot = slot)[, 1],
             zero_offset)
-        cor(p[,1], p[,2], use="complete.obs", method = method)
+        cor(p[, 1], p[, 2], use = "complete.obs", method = method)
         }),
         w = weights)
 }
@@ -103,20 +103,20 @@ calculate_spatial_correlation <- function(obj, image = NULL, slot = "data",
     coord <- GetTissueCoordinates(obj, image = image)
     pos.dist <- dist(coord)
     pos.dist.mat <- as.matrix(x = pos.dist)
-    weights <- 1/pos.dist.mat^2
+    weights <- 1 / pos.dist.mat^2
     diag(x = weights) <- 0
     if(length(feature.1) > 1) {
         flog.warn("feature.1 contains multiple values, using only the first")
         feature.1 <- feature.1[1]
     }
     x_values <- as.numeric(FetchData(obj, feature.1, slot = slot)[rownames(coord), 1])
-    x_values <- (x_values - mean(x_values))/sqrt(var(x_values))
+    x_values <- (x_values - mean(x_values)) / sqrt(var(x_values))
     y_values_all <- FetchData(obj, feature.2, slot = slot)
 
-    .spatial_corr <- function(gene){
+    .spatial_corr <- function(gene) {
         y_values <- as.numeric(y_values_all[rownames(coord), gene])
-        y_values <- (y_values - mean(y_values))/sqrt(var(y_values))
-        corr <- sum(outer(x_values, y_values) * weights)/sum(weights)
+        y_values <- (y_values - mean(y_values)) / sqrt(var(y_values))
+        corr <- sum(outer(x_values, y_values) * weights) / sum(weights)
         return(corr)
     }
 
@@ -125,4 +125,4 @@ calculate_spatial_correlation <- function(obj, image = NULL, slot = "data",
     names(crosscorr) <- feature.2
     crosscorr <- sort(crosscorr, decreasing = TRUE)
     return(crosscorr)
-}    
+}

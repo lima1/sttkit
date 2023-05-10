@@ -12,7 +12,7 @@ as_SingleCellExperiment(object, ...)
 \item{...}{Arguments passed to \code{spatialPreprocess}}
 }
 \description{
-Convert Seurat Visium object for BayesSpace. Currently only works for single 
+Convert Seurat Visium object for BayesSpace. Currently only works for single
 sample objects.
 }
 \examples{
