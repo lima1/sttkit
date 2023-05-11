@@ -143,6 +143,7 @@ dependencies:
   - proj
   - pthread-stubs
   - python
+  - python-louvain
   - python_abi
   - r-abind
   - r-ape

@@ -1,6 +1,6 @@
 Package: sttkit
 Title: Utility Functions for SpatialTranscriptomics
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: person("Markus", "Riester", email = "markus.riester@novartis.com", role = c("aut", "cre"))
 Description: Utility Functions for SpatialTranscriptomics
 Depends: R (>= 3.5.0), Seurat (>= 3.0.0), ggplot2
@@ -46,7 +46,7 @@ License: Artistic-2.0 + file LICENSE
 URL: https://github.com/lima1/sttkit
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.1
 NeedsCompilation: no
 Packaged: 2020-01-12 15:49:22 UTC; riestma1
 Author: Markus Riester [aut, cre]
