@@ -81,7 +81,7 @@ as_Reference <- function(object, refdata, assay = "RNA", slot = "counts",  ...) 
 #'
 #' Convert deconvolution output object to a TransferPrediction object
 
-#' @param object Currently supported is RCDT output
+#' @param object Currently supported is RCDT and Giotto (spatEnrObj) output
 #' @importFrom data.table data.table dcast rbindlist
 #' @importFrom methods as
 #' @export as_AssayObject
@@ -92,9 +92,18 @@ as_AssayObject <- function(object) {
         if (!requireNamespace("spacexr", quietly = TRUE)) {
             stop("Install spacexr.")
         }
+        .as_AssayObject_rcdt(object)
+    } else if (is(object, "spatEnrObj")) {
+        if (!requireNamespace("spacexr", quietly = TRUE)) {
+            stop("Install spacexr.")
+        }
+        .as_AssayObject_giotto(object)
     } else {
-        stop("Only RCTD objects supported")
+        stop("Only spacexr::RCTD and Giotto::spatEnrObj objects supported")
     }
+}
+
+.as_AssayObject_rcdt <- function(object) {
     r <- object@results
     if (length(r) > 1) {
         if (!is.null(r[[1]]$sub_weights)) {
@@ -118,6 +127,14 @@ as_AssayObject <- function(object) {
         m <- rbind(m, max = apply(m, 2, max))
         return(CreateAssayObject(data = m))
     }
+}
+
+.as_AssayObject_giotto <- function(object) {
+    m <- as.matrix(object@enrichDT[,-1])
+    rownames(m) <- object@enrichDT$cell_ID
+    m <- t(m)
+    m <- rbind(m, max = apply(m, 2, max))
+    return(CreateAssayObject(data = m))
 }
 
 #' as_GiottoObject
