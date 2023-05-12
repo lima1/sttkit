@@ -226,6 +226,24 @@ equivalent.
 ![ex_sagittal_1_he_labels_allen_cortex_1_small](https://user-images.githubusercontent.com/364466/75380489-21e93080-58a5-11ea-8d1a-75950b0dd104.png)
 ![ex_sagittal_a1_he_labels_allen_cortex_1_small](https://user-images.githubusercontent.com/364466/75380495-2281c700-58a5-11ea-97d7-efa00e79914e.png)
 
+All celltype predictions can be easily loaded in Seurat and compared:
+
+```
+ls $OUTDIR/$SAMPLE/integrate/serialize/*transfer*
+LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_giotto_transfer_predictions.rds
+LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_rctd_transfer_predictions.rds
+LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_seurat_transfer_predictions.rds
+``
+
+In R:
+
+```
+x <- readRDS("cluster/serialize/LIB-021633rd1.rds")
+x$predictions <- readRDS("integrate/serialize/LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_rctd_transfer_predictions.rds")
+```
+
+This can now be used following the Seurat best practices.
+
 We also support the [CellTrek](https://github.com/navinlabcode/CellTrek)
 package that performs coembedding of the single-cell and spatial data to
 generate the training model. The single cells are then charted on to their

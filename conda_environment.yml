@@ -30,6 +30,7 @@ dependencies:
   - bioconductor-genomicalignments
   - bioconductor-genomicfeatures
   - bioconductor-genomicranges
+  - bioconductor-glmgampoi
   - bioconductor-infercnv
   - bioconductor-iranges
   - bioconductor-keggrest
