@@ -7,7 +7,7 @@
 as_AssayObject(object)
 }
 \arguments{
-\item{object}{Currently supported is RCDT output}
+\item{object}{Currently supported is RCDT and Giotto (spatEnrObj) output}
 }
 \description{
 Convert deconvolution output object to a TransferPrediction object

@@ -3,6 +3,7 @@ suppressPackageStartupMessages(library(futile.logger))
 suppressPackageStartupMessages(library(reshape2))
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(digest))
+suppressPackageStartupMessages(library(data.table))
 
 ### Parsing command line ------------------------------------------------------
 
@@ -18,7 +19,7 @@ option_list <- list(
     make_option(c("--refdata"), action = "store", type = "character", default = "type",
         help = "Meta data column with prediction labels in --singlecell"),
     make_option(c("--integration_method"), action = "store", type = "character", default = "seurat",
-        help = "Integration: Choose between 'seurat' (default), 'celltrek', 'rctd' (alias for 'rctd_multi'), 'rctd_full' as integration method"),
+        help = "Integration: Choose between 'seurat' (default), 'celltrek', 'rctd' (alias for 'rctd_multi'), 'rctd_full', 'giotto' as integration method"),
     make_option(c("--downsample_cells"), action = "store", type = "integer", default = 3000,
         help = "Integration: Use that many random cells per refdata [default %default]"),
     make_option(c("--condition"), action = "store", type = "character", default = NULL,
@@ -98,7 +99,7 @@ if (is.null(opt$singlecell)) {
     stop("Need --singlecell")
 }
 
-if (!opt$integration_method %in% c("seurat", "celltrek", "rctd", "rctd_full", "rctd_multi")) {
+if (!opt$integration_method %in% c("seurat", "celltrek", "rctd", "rctd_full", "rctd_multi", "giotto")) {
   stop("Integration: Choose between 'seurat' (default), 'celltrek', and 'rctd' as integration method")
 }
 
@@ -150,15 +151,17 @@ if (opt$integration_method == "seurat") {
         prediction.assay <- readRDS(filename_predictions)
         find_pred <- FALSE
     }
-} else if (opt$integration_method == "rctd") {
+} else if (opt$integration_method %in% c("rctd", "giotto")) {
     filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix,
         paste0("_", digest(labels), "_", opt$integration_method, "_transfer_predictions.rds"))
     if (!opt$force && file.exists(filename_predictions)) {
-        flog.warn("%s exists. Skipping RCDT prediction. Use --force to overwrite.", filename_predictions)
+        flog.warn("%s exists. Skipping %s prediction. Use --force to overwrite.",
+            opt$integration_method, filename_predictions)
         prediction.assay <- readRDS(filename_predictions)
         find_pred <- FALSE
     }
-    suppressPackageStartupMessages(library(spacexr))
+    if (opt$integration_method == "rctd") suppressPackageStartupMessages(library(spacexr))
+    if (opt$integration_method == "giotto") suppressPackageStartupMessages(library(Giotto))
 } else if (opt$integration_method == "celltrek") {
     filename_traint <- sttkit:::.get_serialize_path(opt$outprefix, "_traint.rds")
     filename_celltrek <- sttkit:::.get_serialize_path(opt$outprefix, "_celltrek.rds")
@@ -279,6 +282,79 @@ if (find_pred == TRUE) {
         myRCTDs <- NULL
         flog.info("Writing R data structure to %s...", filename_predictions)
         saveRDS(prediction.assay, filename_predictions)
+    } else if (opt$integration_method == "giotto") {
+        instrs <- createGiottoInstructions()
+
+        flog.info("Converting --singlecell to giotto format...")
+        singlecell_giotto <- lapply(singlecell, function(x) {
+           tmp <- x@meta.data
+           cell_metadata <- data.table(cell_ID = rownames(tmp), tmp)
+
+            createGiottoObject(
+                expression = GetAssayData(x, assay = "RNA", slot = "counts"),
+                cell_metadata = list(cell = list(rna = cell_metadata)),
+                instructions = instrs
+            )
+        })
+
+        flog.info("Normalizing --singlecell with giotto...")
+        singlecell_giotto <- lapply(singlecell_giotto, function(gobject) {
+            gobject <- normalizeGiotto(gobject = gobject)
+            gobject <- calculateHVF(gobject = gobject, show_plot = FALSE, return_plot = FALSE)
+            return(gobject)
+        })
+        flog.info("Clustering --singlecell with giotto...")
+        singlecell_giotto <- lapply(singlecell_giotto, function(gobject) {
+            gene_metadata <- fDataDT(gobject)
+            featgenes <- gene_metadata[hvf == 'yes']$feat_ID
+            gobject <- Giotto::runPCA(gobject = gobject, feats_to_use = featgenes, scale_unit = FALSE)
+            signPCA(gobject, feats_to_use = featgenes, scale_unit = FALSE, show_plot = FALSE, return_plot = FALSE)
+            return(gobject)
+        })
+        flog.info("Finding markers for --singlecell with giotto...")
+        scran_markers_subclusters <- lapply(singlecell_giotto, findMarkers_one_vs_all,
+               method = 'scran',
+               expression_values = 'normalized',
+               cluster_column = opt$refdata)
+        
+        sign_matrix <- lapply(seq_along(singlecell_giotto), function(i) {
+            sig_scran <- unique(scran_markers_subclusters[[i]]$feats[which(scran_markers_subclusters[[i]]$ranking <= 100)])
+            norm_exp <- 2^(singlecell_giotto[[i]]@expression$cell$rna$normalized@exprMat) - 1
+            id <- pDataDT(singlecell_giotto[[i]])[[opt$refdata]]
+            expr_subset <-norm_exp[sig_scran, ]
+            sig_exp <- NULL
+            for (i in unique(id)){
+              sig_exp <- cbind(sig_exp, (apply(expr_subset, 1, function(y) mean(y[which(id==i)]))))
+            }
+            colnames(sig_exp) <- unique(id)
+            sig_exp
+        })
+        flog.info("Converting --infile to giotto format...")
+        infile_giotto <- as_GiottoObject(infile, instructions = instrs)
+        flog.info("Normalizing --infile with giotto..")
+        infile_giotto <- normalizeGiotto(gobject = infile_giotto)
+        infile_giotto <- calculateHVF(gobject = infile_giotto, show_plot = FALSE, return_plot = FALSE)
+        flog.info("Clustering --infile with giotto..")
+        gene_metadata <- fDataDT(infile_giotto)
+        featgenes <- gene_metadata[hvf == 'yes']$feat_ID
+        infile_giotto <- runPCA(gobject = infile_giotto, feats_to_use = featgenes, scale_unit = FALSE)
+        signPCA(infile_giotto, feats_to_use = featgenes, scale_unit = FALSE, show_plot = FALSE, return_plot = FALSE)
+        infile_giotto <- runUMAP(infile_giotto, dimensions_to_use = 1:10)
+        infile_giotto <- createNearestNetwork(gobject = infile_giotto, dimensions_to_use = 1:10, k = 15)
+        infile_giotto <- doLeidenCluster(gobject = infile_giotto, resolution = 0.4, n_iterations = 1000)
+        for (i in seq_along(singlecell_giotto)) {
+            infile_giotto <- runDWLSDeconv(infile_giotto,sign_matrix = sign_matrix[[i]], n_cell = 20, name = paste0("DWLS.", i))
+        }
+
+        singlecell_giotto <- NULL
+        filename_giotto_results <- sttkit:::.get_serialize_path(opt$outprefix,
+            paste0("_", digest(labels), "_giotto_results.rds"))
+        flog.info("Writing R data structure to %s...", filename_giotto_results)
+        saveRDS(infile_giotto, filename_giotto_results)
+        prediction.assay <- lapply(infile_giotto@spatial_enrichment$cell$rna, as_AssayObject)
+        flog.info("Writing R data structure to %s...", filename_predictions)
+        saveRDS(prediction.assay, filename_predictions)
+        infile_giotto <- NULL
     } else if (opt$integration_method == "celltrek") {
         infile <- RenameCells(infile, new.names = make.names(Cells(infile)))
         singlecell <- lapply(singlecell, function(sc) RenameCells(sc, new.names = make.names(Cells(sc))))
@@ -621,7 +697,7 @@ if (find_pred == TRUE) {
 }
 
 for (i in seq_along(singlecell)) {
-    if (opt$integration_method %in% c('seurat', 'rctd') ) {
+    if (opt$integration_method %in% c('seurat', 'rctd', 'giotto') ) {
         .plot_he(infile, i)
     } else if (opt$integration_method == 'celltrek') {
         .plot_he_ct(train, celltrek_predictions, i)

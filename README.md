@@ -4,6 +4,10 @@ This is a collection of command line R scripts for analyzing spatial
 transcriptomics data.  It is based on Seurat 3.2 workflows with a focus on
 multi-sample analyses (technical replicates and treatment/control pairs).
 
+The main purpose of this effort is to implement best practices that can be
+launched in automated pipelines. If further provides converter functions that
+make it easier to use methods implemented in different workspaces.
+
 ## Installation
 
 These scripts require Seurat 3.2 or later with Visium support. 
