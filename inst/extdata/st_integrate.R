@@ -3,6 +3,7 @@ suppressPackageStartupMessages(library(futile.logger))
 suppressPackageStartupMessages(library(reshape2))
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(digest))
+suppressPackageStartupMessages(library(data.table))
 
 ### Parsing command line ------------------------------------------------------
 
@@ -98,7 +99,7 @@ if (is.null(opt$singlecell)) {
     stop("Need --singlecell")
 }
 
-if (!opt$integration_method %in% c("seurat", "celltrek", "rctd", "rctd_full", "rctd_multi")) {
+if (!opt$integration_method %in% c("seurat", "celltrek", "rctd", "rctd_full", "rctd_multi", "giotto")) {
   stop("Integration: Choose between 'seurat' (default), 'celltrek', and 'rctd' as integration method")
 }
 
