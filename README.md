@@ -5,7 +5,7 @@ transcriptomics data.  It is based on Seurat 3.2 workflows with a focus on
 multi-sample analyses (technical replicates and treatment/control pairs).
 
 The main purpose of this effort is to implement best practices that can be
-launched in automated pipelines. If further provides converter functions that
+launched in automated pipelines. It further provides converter functions that
 make it easier to use methods implemented in different workspaces.
 
 ## Installation
@@ -84,6 +84,14 @@ Rscript $STTKIT/st_hejpeg.R  --infile LP_L10012_S085_TGFB_EX2_LIB-026528rd1.jpg 
 A simple script that takes data from the ST pipeline and uses several Seurat
 features to normalize counts and to generate QC plots.
 
+10X Visium SpaceRanger example:
+```
+PIPELINE="standard"
+Rscript $STTKIT/st_normalize.R --spaceranger_dir $SAMPLE/${PIPELINE}_pipeline/ \
+     --sampleid $SAMPLE \ 
+     --outprefix OUTDIR/${PIPELINE}/$SAMPLE/normalize/$SAMPLE 
+```
+
 SpatialTranscriptomics example:
 ```
 PIPELINE="standard"
@@ -93,13 +101,6 @@ Rscript $STTKIT/st_snormalize.R --infile $SAMPLE/${PIPELINE}_pipeline/${SAMPLE}_
      --outprefix OUTDIR/${PIPELINE}/$SAMPLE/normalize/$SAMPLE \
 ```
 
-10X Visium SpaceRanger  example:
-```
-PIPELINE="standard"
-Rscript $STTKIT/st_normalize.R --spaceranger_dir $SAMPLE/${PIPELINE}_pipeline/ \
-     --sampleid $SAMPLE \ 
-     --outprefix OUTDIR/${PIPELINE}/$SAMPLE/normalize/$SAMPLE 
-```
 
 This script will generate a few files with `--outprefix` as filename prefix.
 Note that `--hejpeg` is ignored for Visium data. 
@@ -212,11 +213,14 @@ Rscript $STTKIT/st_integrate.R \
     --refdata subclass
 ```
 
-Here, the reference scRNA-seq dataset is expected to be normalized by `sctransform` and 
-contains cell type annotation in a `type` meta data column (the column can be changed
-with `--refdata` as in this example).
-Again, `--singlecell` can be a list of reference datasets. Specify `--integration_method rctd`
-to use [RCDT](https://github.com/dmcable/spacexr) instead. Output files and plots are equivalent. 
+Here, the reference scRNA-seq dataset is expected to be normalized by
+`sctransform` and contains cell type annotation in a `type` meta data column
+(the column can be changed with `--refdata` as in this example).  Again,
+`--singlecell` can be a list of reference datasets. Specify
+`--integration_method rctd` to use [RCDT](https://github.com/dmcable/spacexr)
+or `--integration_method giotto` for [SpatialDWLS from
+Giotto](https://github.com/drieslab/Giotto) instead. Output files and plots are
+equivalent.
 
 
 ![ex_sagittal_1_he_labels_allen_cortex_1_small](https://user-images.githubusercontent.com/364466/75380489-21e93080-58a5-11ea-8d1a-75950b0dd104.png)
