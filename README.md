@@ -233,7 +233,7 @@ ls $OUTDIR/$SAMPLE/integrate/serialize/*transfer*
 LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_giotto_transfer_predictions.rds
 LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_rctd_transfer_predictions.rds
 LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_seurat_transfer_predictions.rds
-``
+```
 
 In R:
 
