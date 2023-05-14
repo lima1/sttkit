@@ -131,6 +131,8 @@ if (!is.null(opt$nmf_ident)) {
 }
 
 find_pred <- TRUE
+if (opt$integration_method == "rctd") opt$integration_method <- "rctd_multi"
+label_integration_method <- opt$integration_method
 tmp <- strsplit(opt$integration_method, "_")[[1]]
 opt$integration_method <- tmp[1]
 if (length(tmp) > 1) opt$sub_integration_method <- tmp[2]
@@ -140,7 +142,7 @@ if (opt$integration_method == "seurat") {
     filename_predictions_old <- sttkit:::.get_serialize_path(opt$outprefix,
         paste0("_", digest(labels), "_transfer_predictions.rds"))
     filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix,
-        paste0("_", digest(labels), "_", opt$integration_method, "_transfer_predictions.rds"))
+        paste0("_", digest(labels), "_", label_integration_method, "_transfer_predictions.rds"))
 #TODO remove
     if (file.exists(filename_predictions_old)) {
           file.copy(filename_predictions_old, filename_predictions)
@@ -153,10 +155,10 @@ if (opt$integration_method == "seurat") {
     }
 } else if (opt$integration_method %in% c("rctd", "giotto")) {
     filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix,
-        paste0("_", digest(labels), "_", opt$integration_method, "_transfer_predictions.rds"))
+        paste0("_", digest(labels), "_", label_integration_method, "_transfer_predictions.rds"))
     if (!opt$force && file.exists(filename_predictions)) {
         flog.warn("%s exists. Skipping %s prediction. Use --force to overwrite.",
-            opt$integration_method, filename_predictions)
+            label_integration_method, filename_predictions)
         prediction.assay <- readRDS(filename_predictions)
         find_pred <- FALSE
     }
@@ -193,9 +195,11 @@ if (!opt$force && file.exists(filename_singlecell)) {
     if (!is.null(opt$downsample_cells)) {
         flog.info("Downsampling --singlecell to %i cells per %s annotation",
             opt$downsample_cells, opt$refdata)
-        singlecell <- lapply(singlecell, function(x)
+        singlecell <- lapply(singlecell, function(x) {
+            if (max(table(x[[opt$refdata]]), na.rm = TRUE) <= opt$downsample_cells * 1.1) return(x)
             x[, unlist(lapply(split(Cells(x), x[[opt$refdata]]), function(y)
-                sample(y, min(length(y), opt$downsample_cells), replace = FALSE)))])
+                sample(y, min(length(y), opt$downsample_cells), replace = FALSE)))]
+        })
     }
     if (!is.null(opt$condition)) {
         flog.info("Splitting --singlecell according --condition %s", opt$condition)
@@ -546,10 +550,10 @@ if (find_pred == TRUE) {
         for (j in seq_along(libs)) {
             plot_features(object = x_split[[j]], features = features,
                 prefix = opt$outprefix, subdir = "he",
-                suffix = paste0("_he_labels", label, "_", libs[j], libs_label[j], "_", opt$integration_method,".pdf"),
+                suffix = paste0("_he_labels", label, "_", libs[j], libs_label[j], "_", label_integration_method,".pdf"),
                 png = opt$png, pt.size.factor = opt$dot_size, crop = !opt$no_crop)
             filename <- sttkit:::.get_sub_path(opt$outprefix, "he",
-                    suffix = paste0("_he_labels_call", label, "_", libs[j], libs_label[j], "_", opt$integration_method, ".pdf"))
+                    suffix = paste0("_he_labels_call", label, "_", libs[j], libs_label[j], "_", label_integration_method, ".pdf"))
             gp <- SpatialDimPlot(x_split[[j]], label = TRUE,
                 image = sttkit:::.get_image_slice(x_split[[j]]),
                 pt.size.factor = opt$dot_size, label.size = 3)
@@ -564,7 +568,7 @@ if (find_pred == TRUE) {
             }
         }
         filename <- sttkit:::.get_sub_path(opt$outprefix, "advanced",
-                suffix = paste0("_labels", label, "_", libs[j], libs_label[j], "_", opt$integration_method, ".pdf"))
+                suffix = paste0("_labels", label, "_", libs[j], libs_label[j], "_", label_integration_method, ".pdf"))
         ratio <- sttkit:::.get_image_ratio(min(6, length(features)))
         glist <- VlnPlot(x, features = features, group.by = field, pt.size = 0.25, combine = FALSE)
         glist <- lapply(glist, function(p) ggplotGrob(p + theme(legend.position = "none")))
@@ -578,7 +582,7 @@ if (find_pred == TRUE) {
     } else {
         plot_features(object = x, features = features,
             prefix = opt$outprefix, subdir = "he",
-            suffix = paste0("_he_labels", label, "_", opt$integration_method, ".pdf"),
+            suffix = paste0("_he_labels", label, "_", label_integration_method, ".pdf"),
             png = opt$png, pt.size.factor = opt$dot_size,
             crop = !opt$no_crop)
     }

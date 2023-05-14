@@ -464,3 +464,64 @@ find_nearest_neighbors <- function(object, split.by = "library") {
 }
 
 
+#' find_assayobject_consensus
+#'
+#' Averages multiple cell type prediction into one AssayObject
+#' @param x list of \code{AssayObject}s
+#' @param min_fraction Set all probabilities smaller this value to 0
+#' @param drop_zero Drop cell types never assigned
+#' @param labels Labels of \code{x}, usually the method identifier
+#' @param plot_correlations Plot heatmap of correlations across \code{x} 
+#' @export find_assayobject_consensus
+#' @examples
+#' find_assayobject_consensus()
+find_assayobject_consensus <- function(x, min_fraction = 0.05, drop_zero = TRUE,
+    labels = names(x), plot_correlations = FALSE) {
+    names(x) <- labels
+    # first make sure all have the same set of features
+    features <- Reduce(union, lapply(x, rownames))
+    features <- features[features != "max"]
+    x <- lapply(x, function(y) {
+        missing <- features[!features %in% rownames(y)]
+        if (!length(missing)) return(y)
+        m <- GetAssayData(y)
+        m_missing <- matrix(0, nrow = length(missing), ncol = ncol(m))
+        rownames(m_missing) <- missing
+        if (is(m, "dgCMatrix")) {
+            m_missing <- as(m_missing, "dgCMatrix")
+        }
+        m <- rbind(m, m_missing)
+        CreateAssayObject(m)
+   })
+   if (plot_correlations) {
+       print(.plot_assayobject_consensus(x, features))
+   }     
+   m <- Reduce("+", lapply(x, function(y) GetAssayData(y)[features,] / length(x)))
+   m <- sweep(m, 2, Matrix::colSums(m), "/")
+   m[m < min_fraction] <- 0
+   m <- sweep(m, 2, Matrix::colSums(m), "/")
+   if (drop_zero) {
+        m <- m[Matrix::rowSums(m) > 0, ]
+   }    
+   m <- rbind(m, max = apply(m, 2, max))
+   m <- as(m, "sparseMatrix")
+   CreateAssayObject(data = m)
+}
+
+.plot_assayobject_consensus <- function(x, features) {
+    m_cor <- lapply(features, function(f) suppressWarnings(cor(do.call(cbind,
+        lapply(x, function(y) GetAssayData(y)[f, ])))))
+    names(m_cor) <- features
+    dt_cor <- rbindlist(lapply(names(m_cor), function(i) melt(data.table(
+        cell_type = i,
+        method = rownames(m_cor[[i]]),
+        m_cor[[i]]), id.vars = c("cell_type", "method"))))
+    dt_cor <- dt_cor[dt_cor$cell_type != "unassigned",]
+    gp <- ggplot(dt_cor, aes(method, variable, fill = value)) +
+        geom_tile() +
+        facet_wrap(~cell_type) +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), strip.text.x = element_text(size = 8)) +
+        xlab("") + ylab("") + labs(fill = "Pearson Cor") +
+        scale_fill_gradientn(colours = rev(RColorBrewer::brewer.pal(7,"RdBu")), limits = c(-1, 1))
+    return(gp)    
+}
