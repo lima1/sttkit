@@ -8,6 +8,7 @@ find_assayobject_consensus(
   x,
   min_fraction = 0.05,
   drop_zero = TRUE,
+  ignore_unassigned = TRUE,
   labels = names(x),
   plot_correlations = FALSE
 )
@@ -18,6 +19,9 @@ find_assayobject_consensus(
 \item{min_fraction}{Set all probabilities smaller this value to 0}
 
 \item{drop_zero}{Drop cell types never assigned}
+
+\item{ignore_unassigned}{Ignore the unassigned category (not all methods
+support them - currently only rctd_multi)}
 
 \item{labels}{Labels of \code{x}, usually the method identifier}
 

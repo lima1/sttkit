@@ -470,17 +470,22 @@ find_nearest_neighbors <- function(object, split.by = "library") {
 #' @param x list of \code{AssayObject}s
 #' @param min_fraction Set all probabilities smaller this value to 0
 #' @param drop_zero Drop cell types never assigned
+#' @param ignore_unassigned Ignore the unassigned category (not all methods
+#' support them - currently only rctd_multi)
 #' @param labels Labels of \code{x}, usually the method identifier
 #' @param plot_correlations Plot heatmap of correlations across \code{x} 
 #' @export find_assayobject_consensus
 #' @examples
 #' find_assayobject_consensus()
 find_assayobject_consensus <- function(x, min_fraction = 0.05, drop_zero = TRUE,
-    labels = names(x), plot_correlations = FALSE) {
+    ignore_unassigned = TRUE, labels = names(x), plot_correlations = FALSE) {
     names(x) <- labels
     # first make sure all have the same set of features
     features <- Reduce(union, lapply(x, rownames))
     features <- features[features != "max"]
+    if (ignore_unassigned) {
+        features <- features[features != "unassigned"]
+    }
     x <- lapply(x, function(y) {
         missing <- features[!features %in% rownames(y)]
         if (!length(missing)) return(y)
@@ -520,7 +525,7 @@ find_assayobject_consensus <- function(x, min_fraction = 0.05, drop_zero = TRUE,
     gp <- ggplot(dt_cor, aes(method, variable, fill = value)) +
         geom_tile() +
         facet_wrap(~cell_type) +
-        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), strip.text.x = element_text(size = 8)) +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
         xlab("") + ylab("") + labs(fill = "Pearson Cor") +
         scale_fill_gradientn(colours = rev(RColorBrewer::brewer.pal(7,"RdBu")), limits = c(-1, 1))
     return(gp)    
