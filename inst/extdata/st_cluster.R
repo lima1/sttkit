@@ -250,13 +250,17 @@ if (grepl("list$",opt$infile)) {
     reference_list <- lapply(reference_list, UpdateSeuratObject)
 
     if (!is.null(opt$gmt)) {
+        if (!single_input) {
+            flog.info("Doing a simple initial merge of --infile")
+        }
         ndata_merged <- Reduce(merge, reference_list)
+        flog.info("Loading --gmt...")
         gmt <- read_signatures(opt$gmt, ndata_merged)
         if (!length(gmt)) {
             stop("No signatures available in --gmt.")
-        }    
-    }    
-} 
+        }
+    }
+}
 
 
 .find_integration_features <- function(reference_list, gmt, prefix) {
