@@ -80,6 +80,12 @@ as_GiottoObject <- function(object, assay = "Spatial", slot = "counts", ...) {
 #' # 
 as_spatEnrObj <- function(object, slot = "data", ignore = c("max", "unassigned"),
     method = "DWLS", name = method, spat_unit = "cell", feat_type = "rna", ...) {
+    if (!is(object, "Assay")) {
+        stop("Only Assay objects supported")
+    }
+    if (!requireNamespace("Giotto", quietly = TRUE)) {
+        stop("Install Giotto.")
+    }
     spot_proportion <- GetAssayData(object, slot = slot)
     spot_proportion <- spot_proportion[!rownames(spot_proportion) %in% ignore, ]
     deconvolutionDT <- data.table::data.table(cell_ID = colnames(spot_proportion))
