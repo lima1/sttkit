@@ -38,5 +38,8 @@ Convert \code{Seurat::AssayObject} to a \code{Giotto::spatEnrObj}
 \examples{
 # giotto_enrichment <- as_spatEnrObj(x$predictions)
 # giotto_object <- as_GiottoObject(x)
+# giotto_object <- set_spatial_enrichment(gobject = giotto_object,
+#                                         spatenrichment = giotto_enrichment)
+# spatDeconvPlot(giotto_object, radius = 150)
 # 
 }

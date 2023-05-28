@@ -40,13 +40,24 @@ as_GiottoObject <- function(object, assay = "Spatial", slot = "counts", ...) {
     images <- list(mg_object)
     names(images) <- Images(object)[1]
 
-    Giotto::createGiottoObject(
+    gobject <- Giotto::createGiottoObject(
         expression = raw_matrix,
         expression_feat = "rna",
         spatial_locs = spatial_locs,
         cell_metadata = list(cell = list(rna = cell_metadata)),
         images = images,
         ...)
+
+    if ("SCT" %in% Assays(object)) {
+        flog.info("SCT found in object. Will use it for normalized data.")
+        norm_exp <- Seurat::GetAssayData(object = object, 
+                        slot = "data", assay = "SCT")
+        expr_obj <- new("exprObj", name = "normalized", exprMat = norm_exp,
+                spat_unit = "cell", feat_type = "rna", provenance = "cell")
+        gobject <- set_expression_values(gobject = gobject, values = expr_obj, 
+            set_defaults = FALSE)
+    }
+    return(gobject) 
 }    
 
 .as_AssayObject_giotto <- function(object) {
@@ -61,7 +72,7 @@ as_GiottoObject <- function(object, assay = "Spatial", slot = "counts", ...) {
 #' as_spatEnrObj
 #'
 #' Convert \code{Seurat::AssayObject} to a \code{Giotto::spatEnrObj}
-
+#'
 #' @param object Seurat \code{AssayObject}
 #' @param slot Seurat slot in \code{object} 
 #' @param ignore Features to be ignored

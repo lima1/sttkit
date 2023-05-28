@@ -531,63 +531,6 @@ if (find_pred == TRUE) {
     .run_infer(x, seurat_raw_obj = seurat_raw_obj, ref_group_names = ref_group_names, out_dir = out_dir, cutoff = opt$cna_cutoff, HMM = opt$cna_hmm)
 }
 
-.plot_he <- function(x, i) {
-    x$predictions <- prediction.assay[[i]]
-    DefaultAssay(x) <- "predictions"
-    Idents(x) <- GetTransferPredictions(x)
-    features <- names(Matrix::rowSums(GetAssayData(x)) > 0)
-    label <- if (is.null(labels[i])) "" else paste0("_", labels[i])
-    flog.info("Generating output plots for %s ...", label)
-    if (length(Images(x)) > 1 && "library" %in% colnames(x@meta.data)) {
-        x_split <- SplitObject(x, split.by = "library")
-        libs <- sapply(x_split, function(y) y$library[1])
-        libs_label <- rep("", length(libs))
-        field <- "library"
-        if ("label" %in% colnames(x@meta.data)) {
-            libs_label <- paste0("_", sapply(x_split, function(y) y$label[1]))
-            field <- "label"
-        }
-        for (j in seq_along(libs)) {
-            plot_features(object = x_split[[j]], features = features,
-                prefix = opt$outprefix, subdir = "he",
-                suffix = paste0("_he_labels", label, "_", libs[j], libs_label[j], "_", label_integration_method,".pdf"),
-                png = opt$png, pt.size.factor = opt$dot_size, crop = !opt$no_crop)
-            filename <- sttkit:::.get_sub_path(opt$outprefix, "he",
-                    suffix = paste0("_he_labels_call", label, "_", libs[j], libs_label[j], "_", label_integration_method, ".pdf"))
-            gp <- SpatialDimPlot(x_split[[j]], label = TRUE,
-                image = sttkit:::.get_image_slice(x_split[[j]]),
-                pt.size.factor = opt$dot_size, label.size = 3)
-            pdf(filename, width = 4, height = 3.9)
-            print(gp)
-            invisible(dev.off())
-            if (opt$png) {
-                png(gsub("pdf$", "png", filename), width = 4,
-                    height = 3.9, units = "in", res = 150)
-                print(gp)
-                invisible(dev.off())
-            }
-        }
-        filename <- sttkit:::.get_sub_path(opt$outprefix, "advanced",
-                suffix = paste0("_labels", label, "_", libs[j], libs_label[j], "_", label_integration_method, ".pdf"))
-        ratio <- sttkit:::.get_image_ratio(min(6, length(features)))
-        glist <- VlnPlot(x, features = features, group.by = field, pt.size = 0.25, combine = FALSE)
-        glist <- lapply(glist, function(p) ggplotGrob(p + theme(legend.position = "none")))
-        if (length(features) > 6) {
-            glist <- gridExtra::marrangeGrob(glist, ncol = 3, nrow = 2)
-        } else {
-            glist <- patchwork::wrap_plots(glist)
-        }
-        ggsave(filename, glist,
-               width = 10, height = 10 * ratio)
-    } else {
-        plot_features(object = x, features = features,
-            prefix = opt$outprefix, subdir = "he",
-            suffix = paste0("_he_labels", label, "_", label_integration_method, ".pdf"),
-            png = opt$png, pt.size.factor = opt$dot_size,
-            crop = !opt$no_crop)
-    }
-}
-
 .plot_signature <- function(ndata, prefix, label, gmt, cells = NULL) {
     # make sure he subdir exists
     filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "tmp.pdf")
@@ -702,7 +645,10 @@ if (find_pred == TRUE) {
 
 for (i in seq_along(singlecell)) {
     if (opt$integration_method %in% c('seurat', 'rctd', 'giotto') ) {
-        .plot_he(infile, i)
+        sttkit::plot_predictions(infile, prediction.assay[[i]], 
+            label = labels[i], label_integration_method = label_integration_method, 
+            prefix = opt[["outprefix"]], png = opt$png, pt.size.factor = opt$dot_size,
+            crop = !opt$no_crop)
     } else if (opt$integration_method == 'celltrek') {
         .plot_he_ct(train, celltrek_predictions, i)
     }
@@ -834,16 +780,17 @@ if (opt$run_coexp) {
     }
 }
 
-if(opt$integration_method == "seurat") {
+
+if(!opt$integration_method %in% c("celltrek")) {
     if (length(prediction.assay) > 1) {
         common_labels <- Reduce(intersect, lapply(prediction.assay, function(x) rownames(GetAssayData(x))))
         if (length(common_labels)) {
-            m <- Reduce("+", lapply(prediction.assay, function(x) GetAssayData(x)[common_labels, ])) / length(prediction.assay)
-            common_assay <- CreateAssayObject(data = m)
-            prediction.assay <- c(prediction.assay, common_assay)
-            labels <- c(labels, "consensus")
-            .plot_he(infile, length(singlecell) + 1)
+            common_assay <- sttkit::find_assayobject_consensus(prediction.assay)
+            sttkit::plot_predictions(infile, predictions = common_assay,
+                label = "consensus", label_integration_method = label_integration_method,
+                prefix = opt[["outprefix"]], png = opt$png, pt.size.factor = opt$dot_size, crop = !opt$no_crop)
         }
     }
 }
+
 

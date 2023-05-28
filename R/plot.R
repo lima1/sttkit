@@ -1097,3 +1097,86 @@ plot_scoloc <- function(celltrek_object, directed=FALSE) {
   }
 }
 
+
+
+#' plot_predictions
+#'
+#' Plots predictions in a Seurat object on HE slides. Supports multi-page
+#' plot when lots of features are requested.
+#' @param object Seurat object
+#' @param predictions object with transfer predictions
+#' @param label Label of single cell dataset
+#' @param label_integration_method Label of integration method
+#' @param prefix Output file prefix
+#' @param subdir Put files in a subdirectory
+#' @param width Output PDF width
+#' @param height Output PDF height
+#' @param ncol Number of columns to plot genes for multi-page plots
+#' @param nrow Number of rows to plot genes for multi-page plots
+#' @param png Create, in addition to PDF, PNG files
+#' @param ... Arguments passed to \code{plot_features}.
+#' @export plot_predictions
+#' @examples
+#' plot_predictions()
+plot_predictions <- function(object, predictions = NULL, 
+                          label = NULL, label_integration_method = "default", prefix, 
+                          subdir = "he", png = FALSE,
+                          ...) {
+    if (is.null(predictions) && is.null(object[["predictions"]])) {
+        stop("object needs a predictions object if not provided.")
+    }
+    if (!is.null(predictions)) {
+        object$predictions <- predictions
+        DefaultAssay(object) <- "predictions"
+    }
+    Idents(object) <- GetTransferPredictions(object)
+    features <- names(Matrix::rowSums(GetAssayData(object)) > 0)
+    label <- if (is.null(label)) "" else paste0("_", label)
+    flog.info("Generating output plots for %s ...", label)
+    if (length(Images(object)) > 1 && "library" %in% colnames(object@meta.data)) {
+        x_split <- SplitObject(object, split.by = "library")
+        libs <- sapply(x_split, function(y) y$library[1])
+        libs_label <- rep("", length(libs))
+        field <- "library"
+        if ("label" %in% colnames(object@meta.data)) {
+            libs_label <- paste0("_", sapply(x_split, function(y) y$label[1]))
+            field <- "label"
+        }
+        for (j in seq_along(libs)) {
+            plot_features(object = x_split[[j]], features = features,
+                prefix = prefix, subdir = subdir,
+                suffix = paste0("_he_labels", label, "_", libs[j], libs_label[j], "_", label_integration_method,".pdf"),
+                ...)
+            filename <- .get_sub_path(prefix, "he",
+                    suffix = paste0("_he_labels_call", label, "_", libs[j], libs_label[j], "_", label_integration_method, ".pdf"))
+            gp <- SpatialDimPlot(x_split[[j]], label = TRUE,
+                images = .get_image_slice(x_split[[j]]),
+                label.size = 3)
+            pdf(filename, width = 4, height = 3.9)
+            print(gp)
+            invisible(dev.off())
+            if (png) {
+                png(gsub("pdf$", "png", filename), width = 4,
+                    height = 3.9, units = "in", res = 150)
+                print(gp)
+                invisible(dev.off())
+            }
+        }
+        filename <- .get_sub_path(prefix, "advanced",
+                suffix = paste0("_labels", label, "_", libs[j], libs_label[j], "_", label_integration_method, ".pdf"))
+        ratio <- .get_image_ratio(min(6, length(features)))
+        glist <- VlnPlot(object, features = features, group.by = field, pt.size = 0.25, combine = FALSE)
+        glist <- lapply(glist, function(p) ggplotGrob(p + theme(legend.position = "none")))
+        if (length(features) > 6) {
+            glist <- gridExtra::marrangeGrob(glist, ncol = 3, nrow = 2)
+        } else {
+            glist <- patchwork::wrap_plots(glist)
+        }
+        ggsave(filename, glist,
+               width = 10, height = 10 * ratio)
+    } else {
+        plot_features(object = object, features = features,
+            prefix = prefix, subdir = subdir,
+            suffix = paste0("_he_labels", label, "_", label_integration_method, ".pdf"), ...)
+    }
+}
