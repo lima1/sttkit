@@ -505,6 +505,10 @@ find_assayobject_consensus <- function(x, min_fraction = 0.05, drop_zero = TRUE,
    m <- sweep(m, 2, Matrix::colSums(m), "/")
    m[m < min_fraction] <- 0
    m <- sweep(m, 2, Matrix::colSums(m), "/")
+   idx_na_cols <- is.na(Matrix::colSums(m))
+   if (any(idx_na_cols)) {
+        m[, idx_na_cols] <- 0
+   }           
    if (drop_zero) {
         m <- m[Matrix::rowSums(m) > 0, ]
    }    

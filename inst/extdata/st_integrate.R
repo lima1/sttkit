@@ -781,7 +781,7 @@ if (opt$run_coexp) {
 }
 
 
-if(!opt$integration_method %in% c("celltrek")) {
+if (!opt$integration_method %in% c("celltrek")) {
     if (length(prediction.assay) > 1) {
         common_labels <- Reduce(intersect, lapply(prediction.assay, function(x) rownames(GetAssayData(x))))
         if (length(common_labels)) {
@@ -791,6 +791,43 @@ if(!opt$integration_method %in% c("celltrek")) {
                 prefix = opt[["outprefix"]], png = opt$png, pt.size.factor = opt$dot_size, crop = !opt$no_crop)
         }
     }
+
+    if (require("Giotto", quietly = TRUE)) {
+        filename_interactions <- sttkit:::.get_serialize_path(opt$outprefix,
+            paste0("_", digest(labels), "_", label_integration_method, "_celltype_interactions.rds"))
+        if (!opt$force && file.exists(filename_interactions)) {
+            flog.warn("%s exists. Skipping cell-type proximity analysis. Use --force to overwrite.", filename_interactions)
+        } else {    
+            flog.info("Running Giotto spatial cell-type proximity enrichment analysis. Might take a while...")
+            giotto_object <- as_GiottoObject(infile)
+            cpes <- lapply(seq_along(prediction.assay), function(i) {
+                giotto_enrichment <- as_spatEnrObj(prediction.assay[[i]])
+                giotto_object <- set_spatial_enrichment(gobject = giotto_object, spatenrichment = giotto_enrichment)
+                giotto_object <- createSpatialNetwork(giotto_object)
+                cpe <- cellProximityEnrichmentSpots(giotto_object,
+                    spatial_network_name = "Delaunay_network", cells_in_spot = 3)
+                filename_heatmap <- sttkit:::.get_sub_path(opt$outprefix, 
+                    "advanced", suffix = paste0("_", labels[i], "_",
+                        label_integration_method, "_cell_proximity_enrichment.pdf"))
+                pdf(filename_heatmap)
+                ret <- try(cellProximityHeatmap(giotto_object, cpe))
+                dev.off()
+                if (is(ret, "try_error")) {
+                    flog.warn("Could not generate cell proximity heatmap.")
+                    file.remove(filename_heatmap)
+                } else if (png) {
+                    pdf(filename_heatmap)
+                    png(gsub(".pdf$", ".png", filename_heatmap), width = 7, height = 7, units = "in", res = 150)
+                    cellProximityHeatmap(giotto_object, cpe)
+                    dev.off()
+                }
+                return(cpe)
+            })
+            flog.info("Writing R data structure to %s...", basename(filename_interactions))
+            saveRDS(cpes, filename_interactions)
+        }
+    } else {
+        flog.info("Install the Giotto package for cell-type interaction analyses.")
+    }    
 }
-
-
+flog.info("Done.")
