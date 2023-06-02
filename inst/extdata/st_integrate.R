@@ -37,6 +37,8 @@ option_list <- list(
     make_option(c("--markers"), action = "store_true",
         default = FALSE,
         help = "Find markers for --singlecell clusters."),
+    make_option(c("--num_cells_per_spot"), action = "store", type = "integer", default = 20,
+        help = "Deconvolution: Average number of cells per spot [default %default]"),
     make_option(c("--simulation"), action = "store_true",
         default = FALSE,
         help = "Subcluster the reference cells, specified by the call attribute [default %default]"),
@@ -177,7 +179,14 @@ if (opt$integration_method == "seurat") {
         find_pred <- FALSE
     }
 }
+filename_giotto_matrix <- sttkit:::.get_serialize_path(opt$outprefix,
+    paste0("_", digest(labels), "_giotto_sign_matrix.rds"))
 
+sign_matrix <- NULL
+if (file.exists(filename_giotto_matrix)) {
+    sign_matrix <- readRDS(filename_giotto_matrix)
+}
+    
 filename_singlecell <- sttkit:::.get_serialize_path(opt$outprefix, "_singlecell.rds")
 if (!opt$force && file.exists(filename_singlecell)) {
     flog.warn("%s exists. Skipping normalization and clustering. Use --force to overwrite.",
@@ -316,29 +325,16 @@ if (find_pred == TRUE) {
             return(gobject)
         })
         flog.info("Finding markers for --singlecell with giotto...")
-        scran_markers_subclusters <- lapply(singlecell_giotto, findMarkers_one_vs_all,
-               method = 'scran',
-               expression_values = 'normalized',
-               cluster_column = opt$refdata)
-        
-        sign_matrix <- lapply(seq_along(singlecell_giotto), function(i) {
-            sig_scran <- unique(scran_markers_subclusters[[i]]$feats[which(scran_markers_subclusters[[i]]$ranking <= 100)])
-            norm_exp <- 2^(singlecell_giotto[[i]]@expression$cell$rna$normalized@exprMat) - 1
-            id <- pDataDT(singlecell_giotto[[i]])[[opt$refdata]]
-            expr_subset <-norm_exp[sig_scran, ]
-            sig_exp <- NULL
-            for (i in unique(id)){
-              sig_exp <- cbind(sig_exp, (apply(expr_subset, 1, function(y) mean(y[which(id==i)]))))
-            }
-            colnames(sig_exp) <- unique(id)
-            sig_exp
-        })
+        sign_matrix <- find_giotto_dwls_matrix(singlecell_giotto, opt$refdata)
+        flog.info("Writing R data structure to %s...", filename_giotto_matrix)
+        saveRDS(sign_matrix, filename_giotto_matrix)
+
         flog.info("Converting --infile to giotto format...")
         infile_giotto <- as_GiottoObject(infile, instructions = instrs)
-        flog.info("Normalizing --infile with giotto..")
+        flog.info("Normalizing --infile with giotto...")
         infile_giotto <- normalizeGiotto(gobject = infile_giotto)
         infile_giotto <- calculateHVF(gobject = infile_giotto, show_plot = FALSE, return_plot = FALSE)
-        flog.info("Clustering --infile with giotto..")
+        flog.info("Clustering --infile with giotto...")
         gene_metadata <- fDataDT(infile_giotto)
         featgenes <- gene_metadata[hvf == 'yes']$feat_ID
         infile_giotto <- runPCA(gobject = infile_giotto, feats_to_use = featgenes, scale_unit = FALSE)
@@ -346,8 +342,10 @@ if (find_pred == TRUE) {
         infile_giotto <- runUMAP(infile_giotto, dimensions_to_use = 1:10)
         infile_giotto <- createNearestNetwork(gobject = infile_giotto, dimensions_to_use = 1:10, k = 15)
         infile_giotto <- doLeidenCluster(gobject = infile_giotto, resolution = 0.4, n_iterations = 1000)
+        flog.info("Running DWLS. Might take a while...")
         for (i in seq_along(singlecell_giotto)) {
-            infile_giotto <- runDWLSDeconv(infile_giotto,sign_matrix = sign_matrix[[i]], n_cell = 20, name = paste0("DWLS.", i))
+            infile_giotto <- runDWLSDeconv(infile_giotto, sign_matrix = sign_matrix[[i]]$matrix[sign_matrix[[i]]$sig_feats, ],
+                n_cell = opt$num_cells_per_spot, name = paste0("DWLS.", i))
         }
 
         singlecell_giotto <- NULL
@@ -355,6 +353,7 @@ if (find_pred == TRUE) {
             paste0("_", digest(labels), "_giotto_results.rds"))
         flog.info("Writing R data structure to %s...", filename_giotto_results)
         saveRDS(infile_giotto, filename_giotto_results)
+
         prediction.assay <- lapply(infile_giotto@spatial_enrichment$cell$rna, as_AssayObject)
         flog.info("Writing R data structure to %s...", filename_predictions)
         saveRDS(prediction.assay, filename_predictions)
@@ -795,36 +794,60 @@ if (!opt$integration_method %in% c("celltrek")) {
     if (require("Giotto", quietly = TRUE)) {
         filename_interactions <- sttkit:::.get_serialize_path(opt$outprefix,
             paste0("_", digest(labels), "_", label_integration_method, "_celltype_interactions.rds"))
-        if (!opt$force && file.exists(filename_interactions)) {
-            flog.warn("%s exists. Skipping cell-type proximity analysis. Use --force to overwrite.", filename_interactions)
+        filename_interactions_feats <- sttkit:::.get_serialize_path(opt$outprefix,
+            paste0("_", digest(labels), "_", label_integration_method, "_celltype_interactions_features.rds"))
+        if (!opt$force && file.exists(filename_interactions) && file.exists(filename_interactions_feats)) {
+            flog.warn("%s and %s exist. Skipping cell-type proximity analysis. Use --force to overwrite.",
+                filename_interactions, filename_interactions_feats)
         } else {    
             flog.info("Running Giotto spatial cell-type proximity enrichment analysis. Might take a while...")
             giotto_object <- as_GiottoObject(infile)
+
             cpes <- lapply(seq_along(prediction.assay), function(i) {
                 giotto_enrichment <- as_spatEnrObj(prediction.assay[[i]])
                 giotto_object <- set_spatial_enrichment(gobject = giotto_object, spatenrichment = giotto_enrichment)
                 giotto_object <- createSpatialNetwork(giotto_object)
                 cpe <- cellProximityEnrichmentSpots(giotto_object,
-                    spatial_network_name = "Delaunay_network", cells_in_spot = 3)
+                    spatial_network_name = "Delaunay_network", cells_in_spot = opt$num_cells_per_spot)
+                return(cpe)
+            })
+            names(cpes) <- labels
+            flog.info("Writing R data structure to %s...", basename(filename_interactions))
+            saveRDS(cpes, filename_interactions)
+            if (!is.null(sign_matrix)) {
+                flog.info("Running Giotto spatial cell-type proximity differential expression analysis. Might take a while...")
+
+                icfs <- lapply(seq_along(prediction.assay), function(i) {
+                    giotto_enrichment <- as_spatEnrObj(prediction.assay[[i]])
+                    giotto_object <- set_spatial_enrichment(gobject = giotto_object, spatenrichment = giotto_enrichment)
+                    giotto_object <- createSpatialNetwork(giotto_object)
+                    icf <- findICFSpot(giotto_object, ave_celltype_exp = sign_matrix[[i]]$matrix,
+                        selected_features = rownames(sign_matrix[[i]]$matrix), feat_type = "rna", spat_unit = "cell")
+                    return(icf)
+                })
+                names(icfs) <- labels
+                flog.info("Writing R data structure to %s...", basename(filename_interactions_feats))
+                saveRDS(icfs, filename_interactions_feats)
+            }
+            for (i in seq_along(cpes)) {
+                giotto_enrichment <- as_spatEnrObj(prediction.assay[[i]])
+                giotto_object <- set_spatial_enrichment(gobject = giotto_object, spatenrichment = giotto_enrichment)
+                giotto_object <- createSpatialNetwork(giotto_object)
                 filename_heatmap <- sttkit:::.get_sub_path(opt$outprefix, 
                     "advanced", suffix = paste0("_", labels[i], "_",
                         label_integration_method, "_cell_proximity_enrichment.pdf"))
                 pdf(filename_heatmap)
-                ret <- try(cellProximityHeatmap(giotto_object, cpe))
+                ret <- try(cellProximityHeatmap(giotto_object, cpes[[i]]))
                 dev.off()
                 if (is(ret, "try_error")) {
                     flog.warn("Could not generate cell proximity heatmap.")
                     file.remove(filename_heatmap)
-                } else if (png) {
-                    pdf(filename_heatmap)
+                } else if (opt$png) {
                     png(gsub(".pdf$", ".png", filename_heatmap), width = 7, height = 7, units = "in", res = 150)
-                    cellProximityHeatmap(giotto_object, cpe)
+                    ret <- try(cellProximityHeatmap(giotto_object, cpes[[i]]))
                     dev.off()
                 }
-                return(cpe)
-            })
-            flog.info("Writing R data structure to %s...", basename(filename_interactions))
-            saveRDS(cpes, filename_interactions)
+            }
         }
     } else {
         flog.info("Install the Giotto package for cell-type interaction analyses.")

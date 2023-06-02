@@ -104,3 +104,33 @@ as_spatEnrObj <- function(object, slot = "data", ignore = c("max", "unassigned")
     new("spatEnrObj", name = name, method = method, enrichDT = deconvolutionDT,
         spat_unit = spat_unit, feat_type = feat_type, ...)
 }
+
+#' find_giotto_dwls_matrix
+#'
+#'
+#' @param singlecell_giotto List of Giotto objects 
+#' @param refdata Column with cell type information
+#' @param method Name of the method used to find markers
+#' @param expression_values Giotto expression values slot
+#' @param num_markers Number of significant markers per cell type
+#' @export find_giotto_dwls_matrix
+#' @examples
+#' #
+find_giotto_dwls_matrix <- function(singlecell_giotto, refdata, method = "scran", expression_values = "normalized",
+                                    num_markers = 100) {
+    scran_markers_subclusters <- lapply(singlecell_giotto, findMarkers_one_vs_all,
+           method = method,
+           expression_values = expression_values,
+           cluster_column = refdata)
+    
+    sign_matrix <- lapply(seq_along(singlecell_giotto), function(i) {
+        sig_scran <- unique(scran_markers_subclusters[[i]]$feats[which(scran_markers_subclusters[[i]]$ranking <= num_markers)])
+        gene_metadata <- fDataDT(singlecell_giotto[[i]])
+        feats <- rownames(infile)
+        feats <- unique(c(sig_scran, feats[feats %in% fDataDT(singlecell_giotto[[1]])$feat_ID]))
+        id <- pDataDT(singlecell_giotto[[i]])[[opt$refdata]]
+        exp <- makeSignMatrixDWLS(singlecell_giotto[[1]], cell_type_vector = id, sign_gene = feats)
+        list(matrix = exp, sig_feats = sig_scran)
+    })
+    return(sign_matrix)
+}
