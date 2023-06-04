@@ -31,14 +31,6 @@ plot_predictions(
 \item{png}{Create, in addition to PDF, PNG files}
 
 \item{...}{Arguments passed to \code{plot_features}.}
-
-\item{width}{Output PDF width}
-
-\item{height}{Output PDF height}
-
-\item{ncol}{Number of columns to plot genes for multi-page plots}
-
-\item{nrow}{Number of rows to plot genes for multi-page plots}
 }
 \description{
 Plots predictions in a Seurat object on HE slides. Supports multi-page

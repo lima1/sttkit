@@ -474,11 +474,13 @@ find_nearest_neighbors <- function(object, split.by = "library") {
 #' support them - currently only rctd_multi)
 #' @param labels Labels of \code{x}, usually the method identifier
 #' @param plot_correlations Plot heatmap of correlations across \code{x} 
+#' @param plot_cor_method Method used in the \code{cor} function
 #' @export find_assayobject_consensus
 #' @examples
 #' find_assayobject_consensus()
 find_assayobject_consensus <- function(x, min_fraction = 0.05, drop_zero = TRUE,
-    ignore_unassigned = TRUE, labels = names(x), plot_correlations = FALSE) {
+    ignore_unassigned = TRUE, labels = names(x), plot_correlations = FALSE,
+    plot_cor_method = "pearson") {
     names(x) <- labels
     # first make sure all have the same set of features
     features <- Reduce(union, lapply(x, rownames))
@@ -499,7 +501,7 @@ find_assayobject_consensus <- function(x, min_fraction = 0.05, drop_zero = TRUE,
         CreateAssayObject(m)
    })
    if (plot_correlations) {
-       print(.plot_assayobject_consensus(x, features))
+       print(.plot_assayobject_consensus(x, features, cor_method = plot_cor_method))
    }     
    m <- Reduce("+", lapply(x, function(y) GetAssayData(y)[features,] / length(x)))
    m <- sweep(m, 2, Matrix::colSums(m), "/")
@@ -517,20 +519,22 @@ find_assayobject_consensus <- function(x, min_fraction = 0.05, drop_zero = TRUE,
    CreateAssayObject(data = m)
 }
 
-.plot_assayobject_consensus <- function(x, features) {
+.plot_assayobject_consensus <- function(x, features, cor_method = "pearson") {
     m_cor <- lapply(features, function(f) suppressWarnings(cor(do.call(cbind,
-        lapply(x, function(y) GetAssayData(y)[f, ])))))
+        lapply(x, function(y) GetAssayData(y)[f, ])), method = cor_method)))
     names(m_cor) <- features
     dt_cor <- rbindlist(lapply(names(m_cor), function(i) melt(data.table(
         cell_type = i,
         method = rownames(m_cor[[i]]),
         m_cor[[i]]), id.vars = c("cell_type", "method"))))
     dt_cor <- dt_cor[dt_cor$cell_type != "unassigned",]
+    cor_method_label <- paste(cor_method, "Cor")
+    substr(cor_method_label, 1, 1) <- toupper(substr(cor_method_label, 1, 1))
     gp <- ggplot(dt_cor, aes(method, variable, fill = value)) +
         geom_tile() +
         facet_wrap(~cell_type) +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-        xlab("") + ylab("") + labs(fill = "Pearson Cor") +
+        xlab("") + ylab("") + labs(fill = cor_method_label) +
         scale_fill_gradientn(colours = rev(RColorBrewer::brewer.pal(7,"RdBu")), limits = c(-1, 1))
     return(gp)    
 }

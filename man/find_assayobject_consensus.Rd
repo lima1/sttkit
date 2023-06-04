@@ -10,7 +10,8 @@ find_assayobject_consensus(
   drop_zero = TRUE,
   ignore_unassigned = TRUE,
   labels = names(x),
-  plot_correlations = FALSE
+  plot_correlations = FALSE,
+  plot_cor_method = "pearson"
 )
 }
 \arguments{
@@ -26,6 +27,8 @@ support them - currently only rctd_multi)}
 \item{labels}{Labels of \code{x}, usually the method identifier}
 
 \item{plot_correlations}{Plot heatmap of correlations across \code{x}}
+
+\item{plot_cor_method}{Method used in the \code{cor} function}
 }
 \description{
 Averages multiple cell type prediction into one AssayObject
