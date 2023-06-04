@@ -41,6 +41,14 @@ BiocManager::install(c("batchelor",
     "patchwork"))
 ```
  
+For the [scvi-tools](https://github.com/scverse/scvi-tools) wrapper, we recommend using our
+conda environment and additionally installing the following packages:
+
+```
+conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
+conda install jax jaxlib -c conda-forge
+conda install scvi-tools -c conda-forge
+```
 
 ### sttkit
 
@@ -218,7 +226,8 @@ Here, the reference scRNA-seq dataset is expected to be normalized by
 `sctransform` and contains cell type annotation in a `type` meta data column
 (the column can be changed with `--refdata` as in this example).  Again,
 `--singlecell` can be a list of reference datasets. Specify
-`--integration_method rctd` to use [RCDT](https://github.com/dmcable/spacexr)
+`--integration_method rctd` to use [RCDT](https://github.com/dmcable/spacexr),
+`--integration_method scvi_destvi` to use [DestVI](https://github.com/scverse/scvi-tools)
 or `--integration_method giotto` for [SpatialDWLS from
 Giotto](https://github.com/drieslab/Giotto) instead. Output files and plots are
 equivalent.
@@ -232,7 +241,8 @@ All celltype predictions can be easily loaded in Seurat and compared:
 ```
 ls $OUTDIR/$SAMPLE/integrate/serialize/*transfer*
 LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_giotto_transfer_predictions.rds
-LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_rctd_transfer_predictions.rds
+LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_rctd_multi_transfer_predictions.rds
+LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_scvi_destvi_transfer_predictions.rds
 LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_seurat_transfer_predictions.rds
 ```
 

@@ -1109,10 +1109,6 @@ plot_scoloc <- function(celltrek_object, directed=FALSE) {
 #' @param label_integration_method Label of integration method
 #' @param prefix Output file prefix
 #' @param subdir Put files in a subdirectory
-#' @param width Output PDF width
-#' @param height Output PDF height
-#' @param ncol Number of columns to plot genes for multi-page plots
-#' @param nrow Number of rows to plot genes for multi-page plots
 #' @param png Create, in addition to PDF, PNG files
 #' @param ... Arguments passed to \code{plot_features}.
 #' @export plot_predictions

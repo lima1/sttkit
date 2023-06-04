@@ -19,7 +19,7 @@ option_list <- list(
     make_option(c("--refdata"), action = "store", type = "character", default = "type",
         help = "Meta data column with prediction labels in --singlecell"),
     make_option(c("--integration_method"), action = "store", type = "character", default = "seurat",
-        help = "Integration: Choose between 'seurat' (default), 'celltrek', 'rctd' (alias for 'rctd_multi'), 'rctd_full', 'giotto' as integration method"),
+        help = "Integration: Choose between 'seurat' (default), 'celltrek', 'rctd' (alias for 'rctd_multi'), 'rctd_full', 'giotto', 'scvi_destvi' as integration method"),
     make_option(c("--downsample_cells"), action = "store", type = "integer", default = 3000,
         help = "Integration: Use that many random cells per refdata [default %default]"),
     make_option(c("--condition"), action = "store", type = "character", default = NULL,
@@ -101,8 +101,8 @@ if (is.null(opt$singlecell)) {
     stop("Need --singlecell")
 }
 
-if (!opt$integration_method %in% c("seurat", "celltrek", "rctd", "rctd_full", "rctd_multi", "giotto")) {
-  stop("Integration: Choose between 'seurat' (default), 'celltrek', and 'rctd' as integration method")
+if (!opt$integration_method %in% c("seurat", "celltrek", "rctd", "rctd_full", "rctd_multi", "giotto", "scvi", "scvi_destvi")) {
+  stop("Integration: unknown integration method seleted.")
 }
 
 flog.info("Loading Seurat...")
@@ -134,6 +134,7 @@ if (!is.null(opt$nmf_ident)) {
 
 find_pred <- TRUE
 if (opt$integration_method == "rctd") opt$integration_method <- "rctd_multi"
+if (opt$integration_method == "scvi") opt$integration_method <- "scvi_destvi"
 label_integration_method <- opt$integration_method
 tmp <- strsplit(opt$integration_method, "_")[[1]]
 opt$integration_method <- tmp[1]
@@ -155,7 +156,7 @@ if (opt$integration_method == "seurat") {
         prediction.assay <- readRDS(filename_predictions)
         find_pred <- FALSE
     }
-} else if (opt$integration_method %in% c("rctd", "giotto")) {
+} else if (opt$integration_method %in% c("rctd", "giotto", "scvi")) {
     filename_predictions <- sttkit:::.get_serialize_path(opt$outprefix,
         paste0("_", digest(labels), "_", label_integration_method, "_transfer_predictions.rds"))
     if (!opt$force && file.exists(filename_predictions)) {
@@ -166,6 +167,14 @@ if (opt$integration_method == "seurat") {
     }
     if (opt$integration_method == "rctd") suppressPackageStartupMessages(library(spacexr))
     if (opt$integration_method == "giotto") suppressPackageStartupMessages(library(Giotto))
+    if (opt$integration_method == "scvi") {
+        suppressPackageStartupMessages(library(reticulate))
+        suppressPackageStartupMessages(library(sceasy))
+        suppressPackageStartupMessages(library(anndata))
+        if (dir.exists(Sys.getenv("CONDA_PREFIX"))) {
+            reticulate::use_condaenv(Sys.getenv("CONDA_PREFIX"))
+        }
+    }         
 } else if (opt$integration_method == "celltrek") {
     filename_traint <- sttkit:::.get_serialize_path(opt$outprefix, "_traint.rds")
     filename_celltrek <- sttkit:::.get_serialize_path(opt$outprefix, "_celltrek.rds")
@@ -179,6 +188,9 @@ if (opt$integration_method == "seurat") {
         find_pred <- FALSE
     }
 }
+
+filename_giotto_results <- sttkit:::.get_serialize_path(opt$outprefix,
+    paste0("_", digest(labels), "_giotto_results.rds"))
 filename_giotto_matrix <- sttkit:::.get_serialize_path(opt$outprefix,
     paste0("_", digest(labels), "_giotto_sign_matrix.rds"))
 
@@ -349,8 +361,6 @@ if (find_pred == TRUE) {
         }
 
         singlecell_giotto <- NULL
-        filename_giotto_results <- sttkit:::.get_serialize_path(opt$outprefix,
-            paste0("_", digest(labels), "_giotto_results.rds"))
         flog.info("Writing R data structure to %s...", filename_giotto_results)
         saveRDS(infile_giotto, filename_giotto_results)
 
@@ -358,6 +368,31 @@ if (find_pred == TRUE) {
         flog.info("Writing R data structure to %s...", filename_predictions)
         saveRDS(prediction.assay, filename_predictions)
         infile_giotto <- NULL
+    } else if (opt$integration_method == "scvi") {
+        flog.info("Loading scanpy and scvi python packages...")
+        sc <- import("scanpy", convert = FALSE)
+        scvi <- import("scvi", convert = FALSE)
+        prediction.assay <- lapply(singlecell, function(sc) {
+            feats <- intersect(rownames(sc), rownames(infile))
+            feats <- feats[feats %in% union(VariableFeatures(sc), VariableFeatures(infile))]
+            flog.info("Converting --singlecell and --infile to anndata...")
+            sc_adata <- convertFormat(sc[feats,], from = "seurat",
+                to = "anndata", main_layer = "counts", drop_single_values = FALSE)
+            infile_adata <- convertFormat(infile[feats,], from = "seurat", to = "anndata",
+                assay = "Spatial", main_layer = "counts", drop_single_values = FALSE)
+            flog.info("Running DestVI scLVM. Will take a while...")
+            scvi$model$CondSCVI$setup_anndata(sc_adata, labels_key = opt$refdata)
+            sclvm <- scvi$model$CondSCVI(sc_adata, weight_obs = TRUE)
+            sclvm$train(max_epochs = as.integer(250))
+            scvi$model$DestVI$setup_anndata(infile_adata)
+            stlvm <- scvi$model$DestVI$from_rna_model(infile_adata, sclvm)
+            flog.info("Running DestVI stLVM. Will take a while...")
+            stlvm$train(max_epochs = as.integer(2500))
+            infile_adata$obsm["proportions"] <- stlvm$get_proportions()
+            as_AssayObject(infile_adata)
+        })
+        flog.info("Writing R data structure to %s...", filename_predictions)
+        saveRDS(prediction.assay, filename_predictions)
     } else if (opt$integration_method == "celltrek") {
         infile <- RenameCells(infile, new.names = make.names(Cells(infile)))
         singlecell <- lapply(singlecell, function(sc) RenameCells(sc, new.names = make.names(Cells(sc))))
@@ -814,6 +849,7 @@ if (!opt$integration_method %in% c("celltrek")) {
             names(cpes) <- labels
             flog.info("Writing R data structure to %s...", basename(filename_interactions))
             saveRDS(cpes, filename_interactions)
+            if (0) {
             if (!is.null(sign_matrix)) {
                 flog.info("Running Giotto spatial cell-type proximity differential expression analysis. Might take a while...")
 
@@ -828,6 +864,7 @@ if (!opt$integration_method %in% c("celltrek")) {
                 names(icfs) <- labels
                 flog.info("Writing R data structure to %s...", basename(filename_interactions_feats))
                 saveRDS(icfs, filename_interactions_feats)
+            }
             }
             for (i in seq_along(cpes)) {
                 giotto_enrichment <- as_spatEnrObj(prediction.assay[[i]])

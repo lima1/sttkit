@@ -95,8 +95,13 @@ as_AssayObject <- function(object) {
             stop("Install spacexr.")
         }
         .as_AssayObject_giotto(object)
+    } else if (is(object, "python.builtin.object")) {
+        if (!requireNamespace("reticulate", quietly = TRUE)) {
+            stop("Install reticulate.")
+        }
+        .as_AssayObject_scvi(object)
     } else {
-        stop("Only spacexr::RCTD and Giotto::spatEnrObj objects supported")
+        stop("Only spacexr::RCTD, Giotto::spatEnrObj and annData (from scvi) objects supported")
     }
 }
 
