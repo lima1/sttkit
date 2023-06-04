@@ -255,6 +255,18 @@ x$predictions <- readRDS("integrate/serialize/LIB-021633rd1_742abcb4d6052d8416d7
 
 This can now be used following the Seurat best practices.
 
+We also provide a convenient way of averaging prediction in a simple consensus
+method:
+
+```
+files <- dir("integrate/serialize", pattern = "transfer_predictions.rds",
+    full.names = TRUE)
+tp_consensus <- find_assayobject_consensus(lapply(files, function(x)
+    readRDS(x)[[1]]), labels = labels, plot_correlations = run_plots,
+        plot_cor_method = "kendall")
+x$predictions <- tp_consensus
+```
+
 We also support the [CellTrek](https://github.com/navinlabcode/CellTrek)
 package that performs coembedding of the single-cell and spatial data to
 generate the training model. The single cells are then charted on to their
