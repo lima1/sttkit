@@ -463,6 +463,27 @@ find_nearest_neighbors <- function(object, split.by = "library") {
     return(1)
 }
 
+.harmonize_assayobjects <- function(x, ignore_unassigned = TRUE) {
+    # first make sure all have the same set of features
+    features <- Reduce(union, lapply(x, rownames))
+    features <- features[features != "max"]
+    if (ignore_unassigned) {
+        features <- features[features != "unassigned"]
+    }
+    x <- lapply(x, function(y) {
+        missing <- features[!features %in% rownames(y)]
+        if (!length(missing)) return(y)
+        m <- GetAssayData(y)
+        m_missing <- matrix(0, nrow = length(missing), ncol = ncol(m))
+        rownames(m_missing) <- missing
+        if (is(m, "dgCMatrix")) {
+            m_missing <- as(m_missing, "dgCMatrix")
+        }
+        m <- rbind(m, m_missing)
+        CreateAssayObject(m)
+   })
+   return(x)  
+}
 
 #' find_assayobject_consensus
 #'
@@ -482,41 +503,54 @@ find_assayobject_consensus <- function(x, min_fraction = 0.05, drop_zero = TRUE,
     ignore_unassigned = TRUE, labels = names(x), plot_correlations = FALSE,
     plot_cor_method = "pearson") {
     names(x) <- labels
-    # first make sure all have the same set of features
-    features <- Reduce(union, lapply(x, rownames))
-    features <- features[features != "max"]
-    if (ignore_unassigned) {
-        features <- features[features != "unassigned"]
+    x <- .harmonize_assayobjects(x, ignore_unassigned = ignore_unassigned)
+    features <- head(rownames(x[[1]]), -1)
+    if (plot_correlations) {
+        print(.plot_assayobject_consensus(x, features, cor_method = plot_cor_method))
+    }     
+    m <- Reduce("+", lapply(x, function(y) GetAssayData(y)[features,] / length(x)))
+    m <- sweep(m, 2, Matrix::colSums(m), "/")
+    m[m < min_fraction] <- 0
+    m <- sweep(m, 2, Matrix::colSums(m), "/")
+    idx_na_cols <- is.na(Matrix::colSums(m))
+    if (any(idx_na_cols)) {
+         m[, idx_na_cols] <- 0
     }
-    x <- lapply(x, function(y) {
-        missing <- features[!features %in% rownames(y)]
-        if (!length(missing)) return(y)
-        m <- GetAssayData(y)
-        m_missing <- matrix(0, nrow = length(missing), ncol = ncol(m))
-        rownames(m_missing) <- missing
-        if (is(m, "dgCMatrix")) {
-            m_missing <- as(m_missing, "dgCMatrix")
-        }
-        m <- rbind(m, m_missing)
-        CreateAssayObject(m)
-   })
-   if (plot_correlations) {
-       print(.plot_assayobject_consensus(x, features, cor_method = plot_cor_method))
-   }     
-   m <- Reduce("+", lapply(x, function(y) GetAssayData(y)[features,] / length(x)))
-   m <- sweep(m, 2, Matrix::colSums(m), "/")
-   m[m < min_fraction] <- 0
-   m <- sweep(m, 2, Matrix::colSums(m), "/")
-   idx_na_cols <- is.na(Matrix::colSums(m))
-   if (any(idx_na_cols)) {
-        m[, idx_na_cols] <- 0
-   }           
-   if (drop_zero) {
-        m <- m[Matrix::rowSums(m) > 0, ]
-   }    
-   m <- rbind(m, max = apply(m, 2, max))
-   m <- as(m, "sparseMatrix")
-   CreateAssayObject(data = m)
+    if (drop_zero) {
+         m <- m[Matrix::rowSums(m) > 0, ]
+    }    
+    m <- rbind(m, max = apply(m, 2, max))
+    m <- as(m, "sparseMatrix")
+    CreateAssayObject(data = m)
+}
+
+#' combine_assayobjects
+#'
+#' Combines multiple cell type prediction into one AssayObject, keeps all predictions
+#' @param x list of \code{AssayObject}s
+#' @param ignore_unassigned Ignore the unassigned category (not all methods
+#' support them - currently only rctd_multi)
+#' @param labels Labels of \code{x}, usually the method identifier
+#' @export combine_assayobjects
+#' @examples
+#' combine_assayobjects()
+combine_assayobjects <- function(x, min_fraction = 0.05, drop_zero = TRUE,
+    ignore_unassigned = TRUE, labels = names(x)) {
+    if (is.null(labels)) {
+        stop("need labels")
+    }    
+    names(x) <- labels
+    x <- .harmonize_assayobjects(x, ignore_unassigned = ignore_unassigned)
+    features <- head(rownames(x[[1]]), -1)
+
+    xl <- lapply(x, function(y) GetAssayData(y)[features,])
+    xl <- lapply(seq_along(xl), function(i) {
+        rownames(xl[[i]]) <- paste(labels[i], make.names(rownames(xl[[i]])), sep = ".")
+        return(xl[[i]])
+    })
+    m <- do.call(rbind, xl)     
+    m <- as(m, "sparseMatrix")
+    CreateAssayObject(data = m)
 }
 
 .plot_assayobject_consensus <- function(x, features, cor_method = "pearson") {
