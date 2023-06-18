@@ -50,6 +50,13 @@ conda install jax jaxlib -c conda-forge
 conda install scvi-tools -c conda-forge
 ```
 
+For [cell2location](https://github.com/BayraktarLab/cell2location), install scvi-tools as above
+and then install it via pip in the activate conda environment:
+
+```
+pip install cell2location[tutorials]
+```
+
 ### sttkit
 
 Common functionality in this toolkit are provided in an R package called
@@ -227,7 +234,8 @@ Here, the reference scRNA-seq dataset is expected to be normalized by
 (the column can be changed with `--refdata` as in this example).  Again,
 `--singlecell` can be a list of reference datasets. Specify
 `--integration_method rctd` to use [RCDT](https://github.com/dmcable/spacexr),
-`--integration_method scvi_destvi` to use [DestVI](https://github.com/scverse/scvi-tools)
+`--integration_method scvi_destvi` to use [DestVI](https://github.com/scverse/scvi-tools),
+`--integration_method scvi_cell2location` to use [cell2location](https://github.com/BayraktarLab/cell2location),
 or `--integration_method giotto` for [SpatialDWLS from
 Giotto](https://github.com/drieslab/Giotto) instead. Output files and plots are
 equivalent.
@@ -243,6 +251,7 @@ ls $OUTDIR/$SAMPLE/integrate/serialize/*transfer*
 LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_giotto_transfer_predictions.rds
 LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_rctd_multi_transfer_predictions.rds
 LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_scvi_destvi_transfer_predictions.rds
+LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_scvi_cell2location_transfer_predictions.rds
 LIB-021633rd1_742abcb4d6052d8416d7d7a47d0f6749_seurat_transfer_predictions.rds
 ```
 
