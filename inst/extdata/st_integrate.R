@@ -19,7 +19,7 @@ option_list <- list(
     make_option(c("--refdata"), action = "store", type = "character", default = "type",
         help = "Meta data column with prediction labels in --singlecell"),
     make_option(c("--integration_method"), action = "store", type = "character", default = "seurat",
-        help = "Integration: Choose between 'seurat' (default), 'celltrek', 'rctd' (alias for 'rctd_multi'), 'rctd_full', 'giotto', 'scvi_destvi' as integration method"),
+        help = "Integration: Choose between 'seurat' (default), 'celltrek', 'rctd' (alias for 'rctd_multi'), 'rctd_full', 'giotto', 'scvi_destvi', 'scvi_cell2location' as integration method"),
     make_option(c("--downsample_cells"), action = "store", type = "integer", default = 3000,
         help = "Integration: Use that many random cells per refdata [default %default]"),
     make_option(c("--condition"), action = "store", type = "character", default = NULL,
@@ -37,6 +37,12 @@ option_list <- list(
     make_option(c("--markers"), action = "store_true",
         default = FALSE,
         help = "Find markers for --singlecell clusters."),
+    make_option(c("--keep_mito"), action = "store_true",
+        default = FALSE,
+        help = "By default, remove mitochondrial genes from --singlecell."),
+    make_option(c("--keep_ribo"), action = "store_true",
+        default = FALSE,
+        help = "By default, remove ribosomal genes from --singlecell."),
     make_option(c("--num_cells_per_spot"), action = "store", type = "integer", default = 20,
         help = "Deconvolution: Average number of cells per spot [default %default]"),
     make_option(c("--simulation"), action = "store_true",
@@ -101,7 +107,7 @@ if (is.null(opt$singlecell)) {
     stop("Need --singlecell")
 }
 
-if (!opt$integration_method %in% c("seurat", "celltrek", "rctd", "rctd_full", "rctd_multi", "giotto", "scvi", "scvi_destvi")) {
+if (!opt$integration_method %in% c("seurat", "celltrek", "rctd", "rctd_full", "rctd_multi", "giotto", "scvi", "scvi_destvi", "scvi_cell2location")) {
   stop("Integration: unknown integration method seleted.")
 }
 
@@ -222,6 +228,20 @@ if (!opt$force && file.exists(filename_singlecell)) {
                 sample(y, min(length(y), opt$downsample_cells), replace = FALSE)))]
         })
     }
+    if (!opt[["keep_mito"]]) {
+        flog.info("Removing mitochondrial genes from --singlecell.")
+        singlecell <- lapply(singlecell, function(x) {
+            mito_feats <- grep(pattern = regex_mito(), x = rownames(x = x), value = TRUE)
+            x[!rownames(x) %in% mito_feats,]
+        })
+    }    
+    if (!opt[["keep_ribo"]]) {
+        flog.info("Removing ribosomal genes from --singlecell.")
+        singlecell <- lapply(singlecell, function(x) {
+            ribo_feats <- grep(pattern = regex_ribo(), x = rownames(x = x), value = TRUE)
+            x[!rownames(x) %in% ribo_feats,]
+        })
+    }    
     if (!is.null(opt$condition)) {
         flog.info("Splitting --singlecell according --condition %s", opt$condition)
         singlecell <- lapply(singlecell, SplitObject, opt$condition)
@@ -372,25 +392,85 @@ if (find_pred == TRUE) {
         flog.info("Loading scanpy and scvi python packages...")
         sc <- import("scanpy", convert = FALSE)
         scvi <- import("scvi", convert = FALSE)
-        prediction.assay <- lapply(singlecell, function(sc) {
-            feats <- intersect(rownames(sc), rownames(infile))
-            feats <- feats[feats %in% union(VariableFeatures(sc), VariableFeatures(infile))]
-            flog.info("Converting --singlecell and --infile to anndata...")
-            sc_adata <- convertFormat(sc[feats,], from = "seurat",
-                to = "anndata", main_layer = "counts", drop_single_values = FALSE)
-            infile_adata <- convertFormat(infile[feats,], from = "seurat", to = "anndata",
-                assay = "Spatial", main_layer = "counts", drop_single_values = FALSE)
-            flog.info("Running DestVI scLVM. Will take a while...")
-            scvi$model$CondSCVI$setup_anndata(sc_adata, labels_key = opt$refdata)
-            sclvm <- scvi$model$CondSCVI(sc_adata, weight_obs = TRUE)
-            sclvm$train(max_epochs = as.integer(250))
-            scvi$model$DestVI$setup_anndata(infile_adata)
-            stlvm <- scvi$model$DestVI$from_rna_model(infile_adata, sclvm)
-            flog.info("Running DestVI stLVM. Will take a while...")
-            stlvm$train(max_epochs = as.integer(2500))
-            infile_adata$obsm["proportions"] <- stlvm$get_proportions()
-            as_AssayObject(infile_adata)
-        })
+        if (opt$sub_integration_method == "destvi") {
+            prediction.assay <- lapply(singlecell, function(sc_seurat) {
+                feats <- intersect(rownames(sc_seurat), rownames(infile))
+                feats <- feats[feats %in% union(VariableFeatures(sc_seurat), VariableFeatures(infile))]
+                flog.info("Converting --singlecell and --infile to anndata...")
+                sc_adata <- convertFormat(sc_seurat[feats,], from = "seurat",
+                    to = "anndata", main_layer = "counts", drop_single_values = FALSE)
+                infile_adata <- convertFormat(infile[feats,], from = "seurat", to = "anndata",
+                    assay = "Spatial", main_layer = "counts", drop_single_values = FALSE)
+                flog.info("Running DestVI scLVM. Will take a while...")
+                scvi$model$CondSCVI$setup_anndata(sc_adata, labels_key = opt$refdata)
+                sclvm <- scvi$model$CondSCVI(sc_adata, weight_obs = TRUE)
+                sclvm$train(max_epochs = as.integer(250))
+                scvi$model$DestVI$setup_anndata(infile_adata)
+                stlvm <- scvi$model$DestVI$from_rna_model(infile_adata, sclvm)
+                flog.info("Running DestVI stLVM. Will take a while...")
+                stlvm$train(max_epochs = as.integer(2500))
+                infile_adata$obsm["proportions"] <- stlvm$get_proportions()
+                as_AssayObject(infile_adata)
+            })
+        } else if (opt$sub_integration_method == "cell2location") {
+            flog.info("Loading cell2location, pandas and numpy python packages...")
+            cell2location <- import("cell2location", convert = FALSE)
+            pd <- import("pandas", convert = FALSE)
+            np <- import("numpy", convert = FALSE)
+            prediction.assay <- lapply(singlecell, function(sc_seurat) {
+                sc_seurat <- SetAssayData(sc_seurat, slot = "counts",
+                    new.data = round(GetAssayData(sc_seurat, slot = "counts")))
+                feats <- intersect(rownames(sc_seurat), rownames(infile))
+                feats <- feats[feats %in% union(VariableFeatures(sc_seurat), VariableFeatures(infile))]
+                flog.info("Converting --singlecell and --infile to anndata...")
+                sc_adata <- convertFormat(sc_seurat[feats,], from = "seurat",
+                    to = "anndata", main_layer = "counts", drop_single_values = FALSE)
+                infile_adata <- convertFormat(infile[feats,], from = "seurat", to = "anndata",
+                    assay = "Spatial", main_layer = "counts", drop_single_values = FALSE)
+                sc$pp$filter_genes(sc_adata,min_cells = 1)
+                sc$pp$filter_cells(sc_adata,min_genes = 1)
+                selected <- cell2location$utils$filter_genes(
+                    sc_adata, cell_count_cutoff = 5, cell_percentage_cutoff2 = 0.03, nonz_mean_cutoff = 1.12)
+
+                sc_adata <- r_to_py(py_to_r(sc_adata)[, selected])
+                cell2location$models$RegressionModel$setup_anndata(
+                    adata = sc_adata,
+                    labels_key = opt[["refdata"]]
+                )
+                mod <- cell2location$models$RegressionModel(sc_adata)
+                flog.info("Running cell2location on --singlecell. Will take a while...")
+                mod$train(max_epochs = as.integer(250), batch_size = as.integer(2500), train_size = 1, lr = 0.002)
+                sc_adata <- mod$export_posterior(
+                    sc_adata, sample_kwargs = list('num_samples' = as.integer(1000), 'batch_size'= as.integer(2500))
+                )
+                if (!is.null(py_to_r(sc_adata$varm)$means_per_cluster_mu_fg)) {
+                    cols <- paste0("means_per_cluster_mu_fg_", py_to_r(sc_adata$uns['mod']['factor_names']))
+                    inf_aver <- py_to_r(sc_adata$varm)[['means_per_cluster_mu_fg']][, cols]
+                    colnames(inf_aver) <- py_to_r(sc_adata$uns['mod']['factor_names'])
+                    inf_aver <- r_to_py(inf_aver)
+                }
+                intersect <- np$intersect1d(infile_adata$var_names, inf_aver$index)
+                sc_adata <- r_to_py(py_to_r(sc_adata)[, intersect])
+                infile_adata <- r_to_py(py_to_r(infile_adata)[, intersect])
+                inf_aver <- r_to_py(py_to_r(inf_aver)[py_to_r(intersect), ])
+                cell2location$models$Cell2location$setup_anndata(adata = infile_adata)
+                flog.info("Running cell2location on --infile. Will take a while...")
+                mod <- cell2location$models$Cell2location(
+                    infile_adata, cell_state_df = inf_aver,
+                    N_cells_per_location = opt[["num_cells_per_spot"]],
+                    detection_alpha = 200
+                )
+                mod$train(
+                    max_epochs = as.integer(30000),    
+                    batch_size = py_none(),
+                    train_size = as.integer(1)
+                )    
+                flog.info("Running cell2location posterior sampling...")
+                infile_adata <- mod$export_posterior(
+                    infile_adata, sample_kwargs = list('num_samples' = as.integer(1000), 'batch_size'= mod$adata$n_obs))
+                as_AssayObject(infile_adata)
+            })
+        }    
         flog.info("Writing R data structure to %s...", filename_predictions)
         saveRDS(prediction.assay, filename_predictions)
     } else if (opt$integration_method == "celltrek") {
@@ -678,7 +758,7 @@ if (find_pred == TRUE) {
 }
 
 for (i in seq_along(singlecell)) {
-    if (opt$integration_method %in% c('seurat', 'rctd', 'giotto') ) {
+    if (opt$integration_method %in% c('seurat', 'rctd', 'giotto', 'scvi') ) {
         sttkit::plot_predictions(infile, prediction.assay[[i]], 
             label = labels[i], label_integration_method = label_integration_method, 
             prefix = opt[["outprefix"]], png = opt$png, pt.size.factor = opt$dot_size,
