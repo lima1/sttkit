@@ -413,11 +413,11 @@ if (find_pred == TRUE) {
                 as_AssayObject(infile_adata)
             })
         } else if (opt$sub_integration_method == "cell2location") {
+            flog.info("Loading cell2location, pandas and numpy python packages...")
             cell2location <- import("cell2location", convert = FALSE)
             pd <- import("pandas", convert = FALSE)
             np <- import("numpy", convert = FALSE)
             prediction.assay <- lapply(singlecell, function(sc_seurat) {
-                sc_seurat <- singlecell[[1]]
                 sc_seurat <- SetAssayData(sc_seurat, slot = "counts",
                     new.data = round(GetAssayData(sc_seurat, slot = "counts")))
                 feats <- intersect(rownames(sc_seurat), rownames(infile))

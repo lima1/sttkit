@@ -1142,6 +1142,7 @@ plot_predictions <- function(object, predictions = NULL,
             plot_features(object = x_split[[j]], features = features,
                 prefix = prefix, subdir = subdir,
                 suffix = paste0("_he_labels", label, "_", libs[j], libs_label[j], "_", label_integration_method,".pdf"),
+                png = png,
                 ...)
             filename <- .get_sub_path(prefix, "he",
                     suffix = paste0("_he_labels_call", label, "_", libs[j], libs_label[j], "_", label_integration_method, ".pdf"))
@@ -1173,6 +1174,7 @@ plot_predictions <- function(object, predictions = NULL,
     } else {
         plot_features(object = object, features = features,
             prefix = prefix, subdir = subdir,
-            suffix = paste0("_he_labels", label, "_", label_integration_method, ".pdf"), ...)
+            suffix = paste0("_he_labels", label, "_", label_integration_method, ".pdf"),
+            png = png, ...)
     }
 }
