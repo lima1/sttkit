@@ -57,6 +57,18 @@ as_GiottoObject <- function(object, assay = "Spatial", slot = "counts", ...) {
         gobject <- set_expression_values(gobject = gobject, values = expr_obj, 
             set_defaults = FALSE)
     }
+    if ("predictions" %in% Assays(object)) {
+        flog.info("predictions found in object.")
+        spatenrichment <- Seurat::GetAssayData(object = object,
+                            slot = "data", assay = "predictions")
+        spatenrichment <- spatenrichment[!rownames(spatenrichment) %in% "max",]
+        spatenrichment <- as.data.frame(t(spatenrichment))
+        spatenrichment <- data.table(cell_ID = rownames(spatenrichment), spatenrichment)    
+        enrObj <- new("spatEnrObj", name = "DWLS", method = "DWLS", enrichDT = spatenrichment, 
+            spat_unit = "cell", feat_type = "rna", provenance = "rna")
+    
+        gobject <- set_spatial_enrichment(gobject, enrObj)
+    }    
     return(gobject) 
 }    
 
@@ -134,3 +146,34 @@ find_giotto_dwls_matrix <- function(singlecell_giotto, refdata, method = "scran"
     })
     return(sign_matrix)
 }
+
+#' calculate_giotto_spatial_correlation_cell_type
+#'
+#' Calculates spatial correlation of feature and cell type
+#'
+#' @param gobject giotto object
+#' @param cell_type Cell type of interest
+#' @param feature Feature of interest
+#' @export calculate_giotto_spatial_correlation_cell_type
+#' @examples
+#' #
+calculate_giotto_spatial_correlation_cell_type <- function(gobject, cell_type, feature) {
+    dt_net <- gobject@spatial_network$cell$Delaunay_network@networkDT
+    dt_enr <- gobject@spatial_enrichment$cell$rna$DWLS@enrichDT
+    expr <- Giotto::getExpression(gobject, "normalized", output = "matrix")[feature, ]
+    ct <- dt_enr[[cell_type]]
+    names(ct) <- dt_enr$cell_ID
+    .get_correlations <- function(expr, ct) {
+        dt_net$from_expr <- expr[dt_net$from]
+        dt_net$from_cell <- ct[dt_net$from]
+        dt_net$to_expr <- expr[dt_net$to]
+        dt_net$to_cell <- ct[dt_net$to]
+        list(
+            external.1 = cor(dt_net$from_cell, dt_net$to_expr),
+            external.2 = cor(dt_net$to_cell, dt_net$from_expr),
+            internal.1 = cor(dt_net$from_cell, dt_net$from_expr),
+            internal.2 = cor(dt_net$to_cell, dt_net$to_expr)
+        )
+    }
+    return(.get_correlations(expr, ct))
+}    
