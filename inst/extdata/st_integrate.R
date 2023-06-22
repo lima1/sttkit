@@ -241,7 +241,13 @@ if (!opt$force && file.exists(filename_singlecell)) {
             ribo_feats <- grep(pattern = regex_ribo(), x = rownames(x = x), value = TRUE)
             x[!rownames(x) %in% ribo_feats,]
         })
-    }    
+    }
+    # remove cells from too rare cell-types
+    singlecell <- lapply(singlecell, function(x) {
+        idx <- table(x[[opt$refdata]][,1])[x[[opt$refdata]][,1]] >= 5
+        if (any(!idx)) flog.warn("Removing cells from rare cell-types (< 5 cells).")
+        x[, idx]
+    })
     if (!is.null(opt$condition)) {
         flog.info("Splitting --singlecell according --condition %s", opt$condition)
         singlecell <- lapply(singlecell, SplitObject, opt$condition)
