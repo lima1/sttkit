@@ -132,9 +132,9 @@ find_giotto_dwls_matrix <- function(singlecell_giotto, refdata, method = "scran"
         sig_scran <- unique(scran_markers_subclusters[[i]]$feats[which(scran_markers_subclusters[[i]]$ranking <= num_markers)])
         gene_metadata <- fDataDT(singlecell_giotto[[i]])
         feats <- rownames(infile)
-        feats <- unique(c(sig_scran, feats[feats %in% fDataDT(singlecell_giotto[[1]])$feat_ID]))
+        feats <- unique(c(sig_scran, feats[feats %in% fDataDT(singlecell_giotto[[i]])$feat_ID]))
         id <- pDataDT(singlecell_giotto[[i]])[[opt$refdata]]
-        exp <- makeSignMatrixDWLS(singlecell_giotto[[1]], cell_type_vector = id, sign_gene = feats)
+        exp <- makeSignMatrixDWLS(singlecell_giotto[[i]], cell_type_vector = id, sign_gene = feats)
         list(matrix = exp, sig_feats = sig_scran)
     })
     return(sign_matrix)

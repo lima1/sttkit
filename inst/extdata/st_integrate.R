@@ -245,8 +245,11 @@ if (!opt$force && file.exists(filename_singlecell)) {
     # remove cells from too rare cell-types
     singlecell <- lapply(singlecell, function(x) {
         idx <- table(x[[opt$refdata]][,1])[x[[opt$refdata]][,1]] >= 5
-        if (any(!idx)) flog.warn("Removing cells from rare cell-types (< 5 cells).")
-        x[, idx]
+        if (any(!idx)) { 
+            flog.warn("Removing cells from rare cell-types (< 5 cells).")
+            x <- x[, idx]
+        }
+        return(x)
     })
     if (!is.null(opt$condition)) {
         flog.info("Splitting --singlecell according --condition %s", opt$condition)
