@@ -7,6 +7,7 @@
 plot_predictions(
   object,
   predictions = NULL,
+  ignore = c("max", "unassigned"),
   label = NULL,
   label_integration_method = "default",
   prefix,
@@ -19,6 +20,8 @@ plot_predictions(
 \item{object}{Seurat object}
 
 \item{predictions}{object with transfer predictions}
+
+\item{ignore}{Features to be ignored}
 
 \item{label}{Label of single cell dataset}
 
