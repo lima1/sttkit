@@ -140,8 +140,8 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
 #' @export read_visium
 #' @examples
 #' read_visium()
-read_visium <- function(filtered_feature_bc_matrix_dir, 
-    spatial_dir = file.path(filtered_feature_bc_matrix_dir, "spatial"), 
+read_visium <- function(filtered_feature_bc_matrix_dir,
+    spatial_dir = file.path(filtered_feature_bc_matrix_dir, "spatial"),
     assay = "Spatial", ...) {
     requireNamespace("hdf5r")
     
@@ -164,13 +164,15 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
         image <- lapply(dirname(lowres), function(d) {
             image <- Read10X_Image(d)
             DefaultAssay(object = image) <- assay
-        })    
-    }    
+        })
+    }
     barcodes <- colnames(raw_data)
     names(barcodes) <- colnames(raw_data)
 
-    read_spatial(Matrix::t(raw_data), barcodes = barcodes, image = image, ...)
-} 
+    ndata <- read_spatial(Matrix::t(raw_data), barcodes = barcodes, image = image, ...)
+    ndata <- read_spaceranger_deconvolution(ndata, filtered_feature_bc_matrix_dir)
+    return(ndata)
+}
 
 .read_spatial_transcriptomics_image <- function(obj, hejpeg) {
     if (!requireNamespace("jpeg", quietly = TRUE)) {
