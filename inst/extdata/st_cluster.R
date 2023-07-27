@@ -655,6 +655,18 @@ if (opt$cellphonedb) {
     }
 }            
 
+predictions <- try(t(FetchData(ndata, vars = grep("deconv_k", colnames(ndata@meta.data), value = TRUE))), silent = TRUE)
+if (is(predictions, "matrix") && single_input) {
+        flog.info("Found SpaceRanger deconvolution.")
+        predictions <- rbind(predictions, "max" = Matrix::colSums(predictions))
+        filename <- sttkit:::.get_sub_path(opt[["outprefix"]], "spaceranger_deconvolution", "tmp.pdf")
+        sttkit::plot_predictions(ndata, CreateAssayObject(predictions), 
+            label = labels, label_integration_method = "spaceranger_deconvolution", 
+            prefix = opt[["outprefix"]], subdir = "spaceranger_deconvolution/he",
+            png = opt$png, pt.size.factor = opt$dot_size,
+            crop = !opt$no_crop)
+}
+
 flog.info("Writing R data structure to %s...", filename_final)
 sttkit:::.serialize(ndata, opt$outprefix, ".rds")
 
@@ -662,3 +674,4 @@ if (opt$mpi) {
     closeCluster(cl)
     mpi.quit()
 }
+flog.info("Done.")

@@ -189,3 +189,4 @@ m <- .write_tsv(ndata, opt$outprefix)
 if (opt$normalization_method == "scran") {
     .plot_he_scran_cluster(ndata, opt$outprefix)
 }
+flog.info("Done.")

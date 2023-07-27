@@ -1105,6 +1105,7 @@ plot_scoloc <- function(celltrek_object, directed=FALSE) {
 #' plot when lots of features are requested.
 #' @param object Seurat object
 #' @param predictions object with transfer predictions
+#' @param ignore Features to be ignored
 #' @param label Label of single cell dataset
 #' @param label_integration_method Label of integration method
 #' @param prefix Output file prefix
@@ -1114,7 +1115,7 @@ plot_scoloc <- function(celltrek_object, directed=FALSE) {
 #' @export plot_predictions
 #' @examples
 #' plot_predictions()
-plot_predictions <- function(object, predictions = NULL, 
+plot_predictions <- function(object, predictions = NULL, ignore = c("max", "unassigned"),
                           label = NULL, label_integration_method = "default", prefix, 
                           subdir = "he", png = FALSE,
                           ...) {
@@ -1127,6 +1128,7 @@ plot_predictions <- function(object, predictions = NULL,
     }
     Idents(object) <- GetTransferPredictions(object)
     features <- names(Matrix::rowSums(GetAssayData(object)) > 0)
+    features <- features[!features %in% ignore]
     label <- if (is.null(label)) "" else paste0("_", label)
     flog.info("Generating output plots for %s ...", label)
     if (length(Images(object)) > 1 && "library" %in% colnames(object@meta.data)) {

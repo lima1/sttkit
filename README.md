@@ -84,17 +84,6 @@ Usage: /path/to/sttkit/inst/extdata/st_normalize.R [options] ...
 
 ## Tools
 
-### st_hejpeg.R
-
-Some standard edits to H&E jpegs (obsolete with Visium).
-
-Example:
-```
-Rscript $STTKIT/st_hejpeg.R  --infile LP_L10012_S085_TGFB_EX2_LIB-026528rd1.jpg \
-    --outfile LIB-026528rd1_HE_bw_scaled.jpg --dither
-```
-
-
 ### st_normalize.R
 
 A simple script that takes data from the ST pipeline and uses several Seurat
@@ -337,6 +326,18 @@ When the provided `--infile` contains SCTransform normalized data, it will
 use those log counts. Otherwise BayesSpace's own normalization is used.
 
 ![mouse_10x_bayesspace](https://user-images.githubusercontent.com/364466/122808326-c19cb000-d29a-11eb-95b4-da14b0f6d4f0.png)
+
+### st_hejpeg.R
+
+Some standard edits to H&E jpegs (obsolete with Visium).
+
+Example:
+```
+Rscript $STTKIT/st_hejpeg.R  --infile LP_L10012_S085_TGFB_EX2_LIB-026528rd1.jpg \
+    --outfile LIB-026528rd1_HE_bw_scaled.jpg --dither
+```
+
+
 
 ## Example workflow
 
