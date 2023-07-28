@@ -20,6 +20,7 @@ dependencies:
   - bioconductor-biostrings
   - bioconductor-bluster
   - bioconductor-bsgenome
+  - bioconductor-complexheatmap
   - bioconductor-delayedarray
   - bioconductor-delayedmatrixstats
   - bioconductor-dnacopy
@@ -147,6 +148,7 @@ dependencies:
   - python-louvain
   - python_abi
   - r-abind
+  - r-anndata
   - r-ape
   - r-argparse
   - r-ash
@@ -232,6 +234,7 @@ dependencies:
   - r-ggbeeswarm
   - r-ggforce
   - r-ggplot2
+  - r-ggraph
   - r-ggrastr
   - r-ggrepel
   - r-ggridges
@@ -280,6 +283,7 @@ dependencies:
   - r-locfdr
   - r-locfit
   - r-lsei
+  - r-lwgeom
   - r-magick
   - r-magrittr
   - r-maps
@@ -305,6 +309,7 @@ dependencies:
   - r-nmf
   - r-npsurv
   - r-openssl
+  - r-openxlsx
   - r-optparse
   - r-pals
   - r-parallelly
@@ -360,6 +365,7 @@ dependencies:
   - r-reticulate
   - r-rex
   - r-rfast
+  - r-rfast2
   - r-rgeos
   - r-rjags
   - r-rjson
@@ -384,6 +390,8 @@ dependencies:
   - r-sass
   - r-scales
   - r-scattermore
+  - r-scatterpie
+  - r-sceasy
   - r-sctransform
   - r-sessioninfo
   - r-seurat
@@ -394,6 +402,7 @@ dependencies:
   - r-sourcetools
   - r-sp
   - r-spam
+  - r-spatial
   - r-spatstat
   - r-spatstat.core
   - r-spatstat.data

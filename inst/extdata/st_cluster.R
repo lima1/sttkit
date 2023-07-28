@@ -655,7 +655,7 @@ if (opt$cellphonedb) {
     }
 }            
 
-predictions <- try(t(FetchData(ndata, vars = grep("deconv_k", colnames(ndata@meta.data), value = TRUE))), silent = TRUE)
+predictions <- try(t(FetchData(ndata, vars = grep("^deconv_k", colnames(ndata@meta.data), value = TRUE))), silent = TRUE)
 if (is(predictions, "matrix") && single_input) {
         flog.info("Found SpaceRanger deconvolution.")
         predictions <- rbind(predictions, "max" = Matrix::colSums(predictions))

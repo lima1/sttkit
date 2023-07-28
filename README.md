@@ -10,7 +10,8 @@ make it easier to use methods implemented in different workspaces.
 
 ## Installation
 
-These scripts require Seurat 3.2 or later with Visium support. 
+These scripts require Seurat 3.2 or later with Visium support. SpaceRanger 2.0
+or later output requires Seurat 4.2 or later.
 
 ### Dependencies
 
