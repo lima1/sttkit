@@ -219,6 +219,13 @@ if (!opt$force && file.exists(filename_singlecell)) {
         if (grepl(".rds$", tolower(x))) readRDS(x)
         else if (grepl("h5ad$", tolower(x))) ReadH5AD(x)
     }))
+    
+    # Make sure the annotation does not contain unused cell types causing issues 
+    singlecell <- unlist(lapply(singlecell, function(x) {
+        x[[opt$refdata]] <- droplevels(x[[opt$refdata]])
+        x
+    }))
+
     if (!is.null(opt$downsample_cells)) {
         flog.info("Downsampling --singlecell to %i cells per %s annotation",
             opt$downsample_cells, opt$refdata)
@@ -920,9 +927,9 @@ if (!opt$integration_method %in% c("celltrek")) {
             paste0("_", digest(labels), "_", label_integration_method, "_celltype_interactions.rds"))
         filename_interactions_feats <- sttkit:::.get_serialize_path(opt$outprefix,
             paste0("_", digest(labels), "_", label_integration_method, "_celltype_interactions_features.rds"))
-        if (!opt$force && file.exists(filename_interactions) && file.exists(filename_interactions_feats)) {
-            flog.warn("%s and %s exist. Skipping cell-type proximity analysis. Use --force to overwrite.",
-                filename_interactions, filename_interactions_feats)
+        if (!opt$force && file.exists(filename_interactions)) {
+            flog.warn("%s exist. Skipping cell-type proximity analysis. Use --force to overwrite.",
+                filename_interactions)
         } else {    
             flog.info("Running Giotto spatial cell-type proximity enrichment analysis. Might take a while...")
             giotto_object <- as_GiottoObject(infile)

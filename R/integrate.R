@@ -548,7 +548,8 @@ combine_assayobjects <- function(x, min_fraction = 0.05, drop_zero = TRUE,
         rownames(xl[[i]]) <- paste(labels[i], make.names(rownames(xl[[i]])), sep = ".")
         return(xl[[i]])
     })
-    m <- do.call(rbind, xl)     
+    m <- do.call(rbind, xl)
+    rownames(m) <- gsub("_", "-", rownames(m))
     m <- as(m, "sparseMatrix")
     CreateAssayObject(data = m)
 }
