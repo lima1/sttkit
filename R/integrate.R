@@ -465,7 +465,7 @@ find_nearest_neighbors <- function(object, split.by = "library") {
 
 .harmonize_assayobjects <- function(x, ignore_unassigned = TRUE) {
     # first make sure all have the same set of features
-    features <- Reduce(union, lapply(x, rownames))
+    features <- Reduce(union, lapply(x, function(y) names(which(rowSums(y) > 0))))
     features <- features[features != "max"]
     if (ignore_unassigned) {
         features <- features[features != "unassigned"]
@@ -504,7 +504,8 @@ find_assayobject_consensus <- function(x, min_fraction = 0.05, drop_zero = TRUE,
     plot_cor_method = "pearson") {
     names(x) <- labels
     x <- .harmonize_assayobjects(x, ignore_unassigned = ignore_unassigned)
-    features <- head(rownames(x[[1]]), -1)
+    features <- Reduce(intersect, lapply(x, rownames))
+    features <- features[features != "max"]
     if (plot_correlations) {
         print(.plot_assayobject_consensus(x, features, cor_method = plot_cor_method))
     }     
@@ -572,4 +573,91 @@ combine_assayobjects <- function(x, min_fraction = 0.05, drop_zero = TRUE,
         xlab("") + ylab("") + labs(fill = cor_method_label) +
         scale_fill_gradientn(colours = rev(RColorBrewer::brewer.pal(7,"RdBu")), limits = c(-1, 1))
     return(gp)    
+}
+
+#'classify_cell_type_regions
+#'
+#' Used to classify cell-types as core, periphery, diffused, other
+#' after integration
+#' @param object Seurat object containing integrated
+#' @param cell_type Cell-type of interest
+#' @param cutoff Deconvolution cutoff for core membership
+#' @export classify_cell_type_regions
+#' @examples
+#' classify_cell_type_regions()
+classify_cell_type_regions <- function(object, cell_type = "Tumor", cutoff = NULL) {
+    ct_score <- object[["predictions"]][cell_type, ]
+    if (is.null(cutoff)) {
+        if (!requireNamespace("mclust", quietly = TRUE)) {
+            flog.info("Mclust not found and cutoff not specified, will use 0.5 as cutoff.")
+            cutoff <- 0.5
+        } else {
+            p <- mclust::Mclust(ct_score, G = 3, verbose = FALSE)
+            cutoff <- sapply(split(ct_score, p$classification), min)[[2]]
+        }
+    }
+    giotto_object <- suppressMessages(as_GiottoObject(object))
+    giotto_object <- suppressMessages(createSpatialNetwork(giotto_object))
+    net <- giotto_object@spatial_network$cell$Delaunay_network@networkDT
+    net$from_ct <- ct_score[1, as.character(net$from)]
+    net$to_ct <- ct_score[1, as.character(net$to)]
+    fraction_nn_above_cutoff <- sapply(colnames(ct_score), function(ct) {
+        idx <- net$from == ct | net$to == ct
+        sum(net[idx, "from_ct"] > cutoff & net[idx, "to_ct"] > cutoff) / sum(idx)
+    })
+    core_candidates <- names(which(fraction_nn_above_cutoff > 0.75))
+    core_members <-  sapply(colnames(ct_score), function(ct) {
+        idx <- net$from == ct | net$to == ct
+        if (!any(idx)) return(FALSE)
+        other_ct <- apply(net[idx,,drop = FALSE], 1, function(x) {
+            col_ct_id <- "from"
+            col_other_id <- "to"
+            if (x["to"] == ct) {
+                col_ct_id <- "to"
+                col_other_id <- "from"
+            }
+            r1 <- as.numeric(x[paste0(col_other_id, "_ct")])
+            r2 <- x[col_other_id] %in% core_candidates
+            return(c(r1, r2))
+        })
+        # remove cases where region contains only one spot
+        if (ct %in% core_candidates && sum(other_ct[2, ]) > 1) return(TRUE)
+        if (ct %in% core_candidates && sum(other_ct[2, ]) <= 1) return(FALSE)
+        return(all(other_ct[1, ] > cutoff))
+    })
+    core_members <- names(which(core_members))
+
+    periphery_members <- sapply(colnames(ct_score), function(ct) {
+        if (ct %in% core_members) return(FALSE)
+
+        idx <- net$from == ct | net$to == ct
+        if (!any(idx)) return(FALSE)
+        other_ct <- apply(net[idx,,drop = FALSE], 1, function(x) {
+            col_ct_id <- "from"
+            col_other_id <- "to"
+            if (x["to"] == ct) {
+                col_ct_id <- "to"
+                col_other_id <- "from"
+            }
+            r1 <- as.numeric(x[paste0(col_other_id, "_ct")])
+            r2 <- x[col_other_id] %in% core_members
+            return(c(r1, r2))
+        })
+        if (ct_score[1, ct] > 0.05 && sum(other_ct[2,]) > 0) return(TRUE)
+        return(FALSE)
+    })
+    periphery_members <- names(which(periphery_members))
+    
+    diffuse_members <- sapply(colnames(ct_score), function(ct) {
+        return(ct_score[1, ct] > cutoff && !ct %in% core_members && !ct %in% periphery_members)
+    })
+    diffuse_members <- names(which(diffuse_members))
+
+    label <- sapply(colnames(ct_score), function(ct) {
+        if (ct %in% core_members) return("core")
+        if (ct %in% periphery_members) return("periphery")
+        if (ct %in% diffuse_members) return("diffuse")
+        return("other")
+    })
+    return(factor(label, levels = c("core", "periphery", "diffuse", "other")))
 }

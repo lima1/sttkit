@@ -49,7 +49,6 @@ as_GiottoObject <- function(object, assay = "Spatial", slot = "counts", ...) {
         ...)
 
     if ("SCT" %in% Assays(object)) {
-        flog.info("SCT found in object. Will use it for normalized data.")
         norm_exp <- Seurat::GetAssayData(object = object, 
                         slot = "data", assay = "SCT")
         expr_obj <- new("exprObj", name = "normalized", exprMat = norm_exp,
@@ -58,7 +57,6 @@ as_GiottoObject <- function(object, assay = "Spatial", slot = "counts", ...) {
             set_defaults = FALSE)
     }
     if ("predictions" %in% Assays(object)) {
-        flog.info("predictions found in object.")
         enrObj <- as_spatEnrObj(object$predictions)
         gobject <- set_spatial_enrichment(gobject, enrObj)
     }    
