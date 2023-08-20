@@ -31,18 +31,30 @@ enhance_bayesspace <- function(x, test_num_clusters = seq(2, 12),
 #' @param num_subspots Split spot into n subspots
 #' @param max_cell_types Too avoid plotting too many cell types, we can limit them here.
 #' Set to -1 to turn off.
+#' @param image Image to plot
 #' @param num_iter Number optimization iterations
 #' @param stroke \code{\link{Seurat::SingleSpatialPlot}} argument
 #' @param crop \code{\link{Seurat::SingleSpatialPlot}} argument
 #' @param pt.size.factor \code{\link{Seurat::SingleSpatialPlot}} argument
+#' @param pt.alpha \code{\link{Seurat::SingleSpatialPlot}} argument
 #' @param image.alpha \code{\link{Seurat::SingleSpatialPlot}} argument
 #' @param ... Additional parameters passed to \code{\link{Seurat::SingleSpatialPlot}}.
 #' @export enhance_deconvolve
 #' @examples
 #' #enhance_deconvolve()
 
-enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7,
-    num_iter = 10, stroke = NA, crop = FALSE, pt.size.factor = 0.4, image.alpha = 1, ...) { 
+enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7, image = NULL,
+    num_iter = 10, stroke = NA, crop = FALSE, pt.size.factor = 0.4, pt.alpha = NULL,
+    image.alpha = 1, ...) { 
+    image <- image %||% Images(object = object)
+    if (length(x = image) == 0) {
+        image <- Images(object = object)
+    }
+    if (length(x = image) < 1) {
+        stop("Could not find any spatial image information")
+    }
+    image.use <- object[[image]]
+
     Y <- as.matrix(GetAssayData(object, assay = "predictions"))
     Y <- t(Y[which(rownames(Y) != "max"), ])
     if (max_cell_types > 0 && nrow(Y) > max_cell_types) {
@@ -107,7 +119,6 @@ enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7,
         positions2 <- .optimize_subspot_celltypes(positions2, df_j, num_iter = num_iter)
     }
     vertices <- .make_triangle_subspots(positions2, fill="cell.type")
-    
     vertices$imagecol <- positions2[vertices$spot, "imagecol"]
     vertices$imagerow <- positions2[vertices$spot, "imagerow"]
     fit <- lm(imagerow~x.vertex, data = vertices)
@@ -115,10 +126,27 @@ enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7,
     fit <- lm(imagecol~y.vertex, data = vertices)
     vertices$x.image.vertex <- predict(fit, vertices)
     vertices$fill <- factor(vertices$fill, levels = features)
-    datax <- vertices[, c("y.image.vertex", "x.image.vertex", "fill")]
-    colnames(datax) <- c("imagerow", "imagecol", "Cell Type")
-    splot <- SingleSpatialPlot(data = datax, image = object@images[[Images(object)]],
-        pt.size.factor = pt.size.factor, col.by = "Cell Type", stroke = stroke, crop = crop, ...)
+    vertices$spot <- as.factor(vertices$spot)
+    data <- vertices[, c("y.image.vertex", "x.image.vertex", "fill", "spot")]
+    splot <- ggplot(data = data, aes_string(x = colnames(x = data)[2], 
+          y = colnames(x = data)[1],
+          fill = colnames(x = data)[3],
+          group = colnames(x = data)[4]
+          ))
+
+    if (is.null(x = pt.alpha)) {
+        splot <- splot + geom_spatial_polygon(point.size.factor = pt.size.factor, 
+            data = data, image = image.use, image.alpha = image.alpha, 
+            crop = crop, stroke = stroke, )
+    } else {
+        splot <- splot + geom_spatial_polygon(point.size.factor = pt.size.factor, 
+            data = data, image = image.use, image.alpha = image.alpha, 
+            crop = crop, stroke = stroke, alpha = pt.alpha)
+    }
+    splot <- splot + coord_fixed() + theme(aspect.ratio = 1) + labs(fill = "Cell Type")
+
+  #  splot <- SingleSpatialPlot(data = datax, image = object@images[[Images(object)]],
+  #      pt.size.factor = pt.size.factor, col.by = "Cell Type", stroke = stroke, crop = crop, ...)
     if (requireNamespace("ggthemes", quietly = TRUE) &&
             length(levels(vertices$fill)) <= 8) {
         splot <- splot +  ggthemes::scale_fill_colorblind()
@@ -173,7 +201,7 @@ enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7,
     spot_positions <- BayesSpace:::.select_subspot_positions(cdata, x = "spot.col", 
         y = "spot.row", fill = fill)
     spot_positions <- BayesSpace:::.adjust_hex_centers(spot_positions)
-    r <- 1/3
+    r <- 0.5
     R <- (2/sqrt(3)) * r
     vertex_offsets <- do.call(rbind, list(data.frame(x.offset = c(0, 
         0, r), y.offset = c(0, -R, -R/2), subspot.idx = 3), data.frame(x.offset = c(0, 
@@ -189,3 +217,119 @@ enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7,
     spot_vertices
 }
 
+# For plotting the tissue image
+#' @importFrom ggplot2 ggproto Geom aes ggproto_parent alpha draw_key_point
+#' @importFrom grid unit gpar editGrob polygonGrob viewport gTree addGrob grobName
+#'
+GeomSpatialPolygon <- ggproto(
+  "GeomSpatialPolygon",
+  Geom,
+  required_aes = c("x", "y", "group"),
+  extra_params = c("na.rm", "image", "image.alpha", "crop"),
+  default_aes = aes(
+    shape = 21,
+    colour = NA,
+    point.size.factor = 1.0,
+    fill = NA,
+    alpha = NA,
+    stroke = NA
+  ),
+  setup_data = function(self, data, params) {
+    data <- ggproto_parent(Geom, self)$setup_data(data, params)
+    # We need to flip the image as the Y coordinates are reversed
+    data$y = max(data$y) - data$y + min(data$y)
+    data
+  },
+  draw_key = draw_key_point,
+  draw_panel = function(data, panel_scales, coord, image, image.alpha, crop) {
+    # This should be in native units, where
+    # Locations and sizes are relative to the x- and yscales for the current viewport.
+    if (!crop) {
+      y.transform <- c(0, nrow(x = image)) - panel_scales$y.range
+      data$y <- data$y + sum(y.transform)
+      panel_scales$x$continuous_range <- c(0, ncol(x = image))
+      panel_scales$y$continuous_range <- c(0, nrow(x = image))
+      panel_scales$y.range <- c(0, nrow(x = image))
+      panel_scales$x.range <- c(0, ncol(x = image))
+    }
+    z <- coord$transform(
+      data.frame(x = c(0, ncol(x = image)), y = c(0, nrow(x = image))),
+      panel_scales
+    )
+    # Flip Y axis for image
+    z$y <- -rev(z$y) + 1
+    wdth <- z$x[2] - z$x[1]
+    hgth <- z$y[2] - z$y[1]
+    vp <- viewport(
+      x = unit(x = z$x[1], units = "npc"),
+      y = unit(x = z$y[1], units = "npc"),
+      width = unit(x = wdth, units = "npc"),
+      height = unit(x = hgth, units = "npc"),
+      just = c("left", "bottom")
+    )
+    img.grob <- GetImage(object = image)
+
+    img <- editGrob(grob = img.grob, vp = vp)
+    coords <- coord$transform(data, panel_scales)
+    firsts <- seq(1, nrow(coords), by = 3)
+    firsts <- coords[firsts,]
+    pts <- polygonGrob(
+      x = coords$x,
+      y = coords$y,
+      id = rep(seq_len(nrow(firsts)), each = 3),
+      default.units = "native",
+      gp = gpar(
+        col = firsts$colour,
+        fill = scales::alpha(firsts$fill, firsts$alpha),
+        lwd = coords$stroke)
+    )
+    vp <- viewport()
+    gt <- gTree(vp = vp)
+    if (image.alpha > 0) {
+      if (image.alpha != 1) {
+        img$raster = as.raster(
+          x = matrix(
+            data = alpha(colour = img$raster, alpha = image.alpha),
+            nrow = nrow(x = img$raster),
+            ncol = ncol(x = img$raster),
+            byrow = TRUE)
+        )
+      }
+      gt <- addGrob(gTree = gt, child = img)
+    }
+    gt <- addGrob(gTree = gt, child = pts)
+    # Replacement for ggname
+    gt$name <- grobName(grob = gt, prefix = 'geom_spatial_polygon')
+    return(gt)
+  }
+)
+
+# influenced by: https://stackoverflow.com/questions/49475201/adding-tables-to-ggplot2-with-facet-wrap-in-r
+# https://ggplot2.tidyverse.org/articles/extending-ggplot2.html
+#' @importFrom ggplot2 layer
+#'
+#'
+geom_spatial_polygon <-  function(
+  mapping = NULL,
+  data = NULL,
+  image = image,
+  image.alpha = image.alpha,
+  crop = crop,
+  stat = "identity",
+  position = "identity",
+  na.rm = FALSE,
+  show.legend = NA,
+  inherit.aes = TRUE,
+  ...
+) {
+  layer(
+    geom = GeomSpatialPolygon,
+    mapping = mapping,
+    data = data,
+    stat = stat,
+    position = position,
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    params = list(na.rm = na.rm, image = image, image.alpha = image.alpha, crop = crop, ...)
+  )
+}

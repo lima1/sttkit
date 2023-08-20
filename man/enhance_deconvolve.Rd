@@ -8,10 +8,12 @@ enhance_deconvolve(
   object,
   num_subspots = 6,
   max_cell_types = 7,
+  image = NULL,
   num_iter = 10,
   stroke = NA,
   crop = FALSE,
   pt.size.factor = 0.4,
+  pt.alpha = NULL,
   image.alpha = 1,
   ...
 )
@@ -24,6 +26,8 @@ enhance_deconvolve(
 \item{max_cell_types}{Too avoid plotting too many cell types, we can limit them here.
 Set to -1 to turn off.}
 
+\item{image}{Image to plot}
+
 \item{num_iter}{Number optimization iterations}
 
 \item{stroke}{\code{\link{Seurat::SingleSpatialPlot}} argument}
@@ -31,6 +35,8 @@ Set to -1 to turn off.}
 \item{crop}{\code{\link{Seurat::SingleSpatialPlot}} argument}
 
 \item{pt.size.factor}{\code{\link{Seurat::SingleSpatialPlot}} argument}
+
+\item{pt.alpha}{\code{\link{Seurat::SingleSpatialPlot}} argument}
 
 \item{image.alpha}{\code{\link{Seurat::SingleSpatialPlot}} argument}
 
