@@ -30,7 +30,8 @@ enhance_bayesspace <- function(x, test_num_clusters = seq(2, 12),
 #' @param object Seurat object
 #' @param num_subspots Split spot into n subspots
 #' @param max_cell_types Too avoid plotting too many cell types, we can limit them here.
-#' Set to -1 to turn off.
+#' Set to -1 to turn off. Ordered by prevalence if \code{cell_types} is \code{NULL}.
+#' @param cell_types Only plot the specified cell types. 
 #' @param image Image to plot
 #' @param num_iter Number optimization iterations
 #' @param stroke \code{\link{Seurat::SingleSpatialPlot}} argument
@@ -38,14 +39,14 @@ enhance_bayesspace <- function(x, test_num_clusters = seq(2, 12),
 #' @param pt.size.factor \code{\link{Seurat::SingleSpatialPlot}} argument
 #' @param pt.alpha \code{\link{Seurat::SingleSpatialPlot}} argument
 #' @param image.alpha \code{\link{Seurat::SingleSpatialPlot}} argument
-#' @param ... Additional parameters passed to \code{\link{Seurat::SingleSpatialPlot}}.
+#' @param verbose Verbose output
 #' @export enhance_deconvolve
 #' @examples
 #' #enhance_deconvolve()
 
-enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7, image = NULL,
-    num_iter = 10, stroke = NA, crop = FALSE, pt.size.factor = 0.4, pt.alpha = NULL,
-    image.alpha = 1, ...) { 
+enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7, cell_types = NULL,
+    image = NULL, num_iter = 10, stroke = NA, crop = FALSE, pt.size.factor = 0.4, pt.alpha = NULL,
+    image.alpha = 1, verbose = FALSE) { 
     image <- image %||% Images(object = object)
     if (length(x = image) == 0) {
         image <- Images(object = object)
@@ -57,15 +58,25 @@ enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7, ima
 
     Y <- as.matrix(GetAssayData(object, assay = "predictions"))
     Y <- t(Y[which(rownames(Y) != "max"), ])
-    if (max_cell_types > 0 && nrow(Y) > max_cell_types) {
-        features <- names(head(sort(apply(Y, 2, function(x) sum(x > 1 / num_subspots)),
-            decreasing = TRUE), max_cell_types))
+    if (!is.null(cell_types)) {
+        cell_types <- cell_types[cell_types %in% colnames(Y)]
+        Y <- Y[, cell_types, drop = FALSE]
+    }
+    if (max_cell_types > 0 && ncol(Y) > max_cell_types) {
+        if (!is.null(cell_types)) {
+            features <- head(cell_types, max_cell_types)
+        } else {
+            features <- names(head(sort(apply(Y, 2, function(x) sum(x > 1 / num_subspots)),
+                decreasing = TRUE), max_cell_types))
+        }
         other <- 1 - apply(Y[,features], 1, sum) 
         Y <- cbind(Y[, features], "other" = other[rownames(Y)])
         features <- c(features, "other")
     } else {
-        features <- names(sort(apply(Y, 2, function(x) sum(x > 1 / num_subspots)),
-            decreasing = TRUE))
+        if (is.null(cell_types)) {
+            features <- names(sort(apply(Y, 2, function(x) sum(x > 1 / num_subspots)),
+                decreasing = TRUE))
+        }
     }     
     d <- ncol(Y)
     n0 <- nrow(Y)
@@ -116,7 +127,7 @@ enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7, ima
     }
     positions2$cell.type <- colnames(Y)[positions2$cell.type]
     if (num_iter > 0) {
-        positions2 <- .optimize_subspot_celltypes(positions2, df_j, num_iter = num_iter)
+        positions2 <- .optimize_subspot_celltypes(positions2, df_j, num_iter = num_iter, verbose = verbose)
     }
     vertices <- .make_triangle_subspots(positions2, fill="cell.type")
     vertices$imagecol <- positions2[vertices$spot, "imagecol"]
@@ -143,10 +154,8 @@ enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7, ima
             data = data, image = image.use, image.alpha = image.alpha, 
             crop = crop, stroke = stroke, alpha = pt.alpha)
     }
-    splot <- splot + coord_fixed() + theme(aspect.ratio = 1) + labs(fill = "Cell Type")
+    splot <- splot + coord_fixed() + theme(aspect.ratio = 1) + labs(fill = "Cell Type", x = "", y = "")
 
-  #  splot <- SingleSpatialPlot(data = datax, image = object@images[[Images(object)]],
-  #      pt.size.factor = pt.size.factor, col.by = "Cell Type", stroke = stroke, crop = crop, ...)
     if (requireNamespace("ggthemes", quietly = TRUE) &&
             length(levels(vertices$fill)) <= 8) {
         splot <- splot +  ggthemes::scale_fill_colorblind()
@@ -154,14 +163,13 @@ enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7, ima
     return(splot)
 }
 
-.optimize_subspot_celltypes <- function(positions2, df_j, num_iter) {
+.optimize_subspot_celltypes <- function(positions2, df_j, num_iter, verbose = FALSE) {
     positions2_orig <- positions2
     n_total <- 0
     n_total_best <- .Machine$integer.max
 
     for (iter in seq(0, num_iter)) {
-        table(positions2$cell.type)
-        n_total_before <- n_total
+        if (verbose) print(table(positions2$cell.type))
         n_total <- 0
         for (i in seq_along(df_j)) {
             pss1 <- positions2[df_j[[i]], ]
@@ -169,26 +177,25 @@ enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7, ima
             n_total <- n_total + n_cts_before
             if (!iter) next
             pss2 <- positions2[positions2$spot.idx %in% pss1$spot.idx, ]
-            pss2 <- pss2[!rownames(pss2) %in% rownames(pss1),]
-            for (j in unique(pss1$spot.idx)) {
-                pss2x <- pss2[pss2$spot.idx == j, ]
-                pss2x <- pss2x[pss2x$cell.type %in% pss1$cell.type, ]
-                if (nrow(pss2x)) {
-                    pss1x <- pss1[pss1$spot.idx == j, ]
-                    r1 <- sample(rownames(pss1x), 1)
-                    r2 <- sample(rownames(pss2x), 1)
-                    c1 <- positions2[r1, "cell.type"]
-                    c2 <- positions2[r2, "cell.type"]
-                    positions2[r1, "cell.type"] <- c2
-                    positions2[r2, "cell.type"] <- c1
-                    if (length(table(positions2[df_j[[i]], "cell.type"])) >= n_cts_before) {
-                        positions2[r1, "cell.type"] <- c1
-                        positions2[r2, "cell.type"] <- c2
-                    }
-                }
+            pss2$nn <- rownames(pss2) %in% rownames(pss1)
+            pss2x <- split(pss2, pss2$spot.idx)
+            if (length(pss2x) != 2) {
+            #    flog.info("hhh %i %i iter %i", i, length(pss2x), iter)
+                next
+            }
+            r <- lapply(1:2, function(j) replicate(30, {
+                     sample(pss2x[[j]]$cell.type, nrow(pss2x[[j]]), replace = FALSE)
+            }))
+            n_cts_after <- sapply(seq(30), function(i) length(table(c(r[[1]][pss2x[[1]]$nn, i], r[[2]][pss2x[[2]]$nn, i]))))
+            idx <- which.min(n_cts_after)
+            if (n_cts_after[idx] < n_cts_before) {
+                pss2x[[1]]$cell.type <- r[[1]][, idx]
+                pss2x[[2]]$cell.type <- r[[2]][, idx]
+                pss2 <- rbind(pss2x[[1]], pss2x[[2]])
+                positions2[rownames(pss2),"cell.type"] <- pss2$cell.type
             }
         }
-        flog.debug("Iteration %i: %i (best %i)", iter, n_total, n_total_best)
+        if (verbose) flog.info("Iteration %i: %i (best %i)", iter, n_total, n_total_best)
         if (n_total < n_total_best) {
             positions2_best <- positions2
             n_total_best <- n_total

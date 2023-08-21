@@ -8,6 +8,7 @@ enhance_deconvolve(
   object,
   num_subspots = 6,
   max_cell_types = 7,
+  cell_types = NULL,
   image = NULL,
   num_iter = 10,
   stroke = NA,
@@ -15,7 +16,7 @@ enhance_deconvolve(
   pt.size.factor = 0.4,
   pt.alpha = NULL,
   image.alpha = 1,
-  ...
+  verbose = FALSE
 )
 }
 \arguments{
@@ -24,7 +25,9 @@ enhance_deconvolve(
 \item{num_subspots}{Split spot into n subspots}
 
 \item{max_cell_types}{Too avoid plotting too many cell types, we can limit them here.
-Set to -1 to turn off.}
+Set to -1 to turn off. Ordered by prevalence if \code{cell_types} is \code{NULL}.}
+
+\item{cell_types}{Only plot the specified cell types.}
 
 \item{image}{Image to plot}
 
@@ -40,7 +43,7 @@ Set to -1 to turn off.}
 
 \item{image.alpha}{\code{\link{Seurat::SingleSpatialPlot}} argument}
 
-\item{...}{Additional parameters passed to \code{\link{Seurat::SingleSpatialPlot}}.}
+\item{verbose}{Verbose output}
 }
 \description{
 Enhances deconvoluted Spatial data
