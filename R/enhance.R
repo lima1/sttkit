@@ -60,7 +60,6 @@ enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7, cel
     Y <- t(Y[which(rownames(Y) != "max"), ])
     if (!is.null(cell_types)) {
         cell_types <- cell_types[cell_types %in% colnames(Y)]
-        Y <- Y[, cell_types, drop = FALSE]
     }
     if (max_cell_types > 0 && ncol(Y) > max_cell_types) {
         if (!is.null(cell_types)) {
@@ -73,10 +72,13 @@ enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7, cel
         Y <- cbind(Y[, features], "other" = other[rownames(Y)])
         features <- c(features, "other")
     } else {
-        if (is.null(cell_types)) {
+        if (!is.null(cell_types)) {
+            features <- cell_types
+        } else {
             features <- names(sort(apply(Y, 2, function(x) sum(x > 1 / num_subspots)),
                 decreasing = TRUE))
         }
+        y <- Y[, features]    
     }     
     d <- ncol(Y)
     n0 <- nrow(Y)
@@ -158,8 +160,13 @@ enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7, cel
 
     if (requireNamespace("ggthemes", quietly = TRUE) &&
             length(levels(vertices$fill)) <= 8) {
-        splot <- splot +  ggthemes::scale_fill_colorblind()
+        # black color last, not first
+        palette <- ggthemes::colorblind_pal()(length(levels(vertices$fill)))
+        palette <- palette[c(seq(2, length(palette)), 1)]
+        splot <- splot + scale_fill_manual(values = palette)
+        #splot <- splot +  ggthemes::scale_fill_colorblind()
     }
+    splot <- splot + NoAxes() + theme(panel.background = element_blank())
     return(splot)
 }
 
