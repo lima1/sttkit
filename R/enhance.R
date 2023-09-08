@@ -156,12 +156,14 @@ enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7, cel
             data = data, image = image.use, image.alpha = image.alpha, 
             crop = crop, stroke = stroke, alpha = pt.alpha)
     }
-    splot <- splot + coord_fixed() + theme(aspect.ratio = 1) + labs(fill = "Cell Type", x = "", y = "")
+    splot <- splot + coord_fixed() + theme(aspect.ratio = 1) + labs(fill = "Cell Type", x = "", y = "") +
+        guides(fill = guide_legend(override.aes = list(size = 3)))
 
     if (requireNamespace("ggthemes", quietly = TRUE) &&
             length(levels(vertices$fill)) <= 8) {
-        # black color last, not first
+        # black color last, not first and use gray instead
         palette <- ggthemes::colorblind_pal()(length(levels(vertices$fill)))
+        palette[1] <- "#999999"
         palette <- palette[c(seq(2, length(palette)), 1)]
         splot <- splot + scale_fill_manual(values = palette)
         #splot <- splot +  ggthemes::scale_fill_colorblind()

@@ -24,6 +24,8 @@ option_list <- list(
         help = "Integration: Use that many random cells per refdata [default %default]"),
     make_option(c("--condition"), action = "store", type = "character", default = NULL,
         help = "Optional meta data column with conditions in --singlecell. If provided, will split by condition."),
+    make_option(c("--keep_condition"), action = "store", type = "character", default = NULL,
+        help = "Used with --condition. If provided, will remove any condition except the specified."),
     make_option(c("--outprefix"), action = "store", type = "character", default = NULL,
         help = "Outfile."),
     make_option(c("--num_integration_features"), action = "store", type = "integer", default = 3000,
@@ -43,6 +45,9 @@ option_list <- list(
     make_option(c("--keep_ribo"), action = "store_true",
         default = FALSE,
         help = "By default, remove ribosomal genes from --singlecell."),
+    make_option(c("--keep_umi_outliers"), action = "store_true",
+        default = FALSE,
+        help = "By default, remove cells with low and high UMI counts (<5- and >95-percentile) from --singlecell."),
     make_option(c("--num_cells_per_spot"), action = "store", type = "integer", default = 20,
         help = "Deconvolution: Average number of cells per spot [default %default]"),
     make_option(c("--simulation"), action = "store_true",
@@ -180,7 +185,7 @@ if (opt$integration_method == "seurat") {
         if (dir.exists(Sys.getenv("CONDA_PREFIX"))) {
             reticulate::use_condaenv(Sys.getenv("CONDA_PREFIX"))
         }
-    }         
+    }
 } else if (opt$integration_method == "celltrek") {
     filename_traint <- sttkit:::.get_serialize_path(opt$outprefix, "_traint.rds")
     filename_celltrek <- sttkit:::.get_serialize_path(opt$outprefix, "_celltrek.rds")
@@ -219,13 +224,42 @@ if (!opt$force && file.exists(filename_singlecell)) {
         if (grepl(".rds$", tolower(x))) readRDS(x)
         else if (grepl("h5ad$", tolower(x))) ReadH5AD(x)
     }))
-    
-    # Make sure the annotation does not contain unused cell types causing issues 
+
+    # Make sure the annotation does not contain unused cell types causing issues
     singlecell <- unlist(lapply(singlecell, function(x) {
         x[[opt$refdata]] <- droplevels(x[[opt$refdata]])
         x
     }))
-
+    if (!is.null(opt[["condition"]])) {
+        flog.info("Splitting --singlecell according --condition %s", opt[["condition"]])
+        if (!is.null(opt[["keep_condition"]])) {
+            n_cells_before <- sum(sapply(singlecell, ncol))
+            flog.info("Only keeping --singlecell when condition is %s", opt[["keep_condition"]])
+            singlecell <- lapply(singlecell, function(x) {
+                x[, x[[opt[["condition"]]]] == as.character(opt[["keep_condition"]])]
+            })
+            n_cells_after <- sum(sapply(singlecell, ncol))
+            flog.info("Removed %i cells, now working with %i cells.",
+                n_cells_before - n_cells_after + 1, n_cells_after)
+        } else {
+            singlecell <- lapply(singlecell, SplitObject, opt$condition)
+            labels_new <- lapply(seq_along(labels), function(i)
+                paste0(labels[[i]], "_", names(singlecell[[i]])))
+            singlecell <- unlist(singlecell)
+            labels <- unlist(labels_new)
+        }
+    }
+    # remove outliers
+    if (!opt[["keep_umi_outliers"]]) {
+        flog.info("Removing UMI count outliers in --singlecell.")
+        singlecell <- lapply(singlecell, function(x) {
+            idx <- Reduce("|", lapply(split(Cells(x), x[[opt$refdata]]), function(xx) {
+                outliers <- quantile(x[, xx]$nCount_RNA, p = c(0.05, 0.95))
+                Cells(x) %in% xx & x$nCount_RNA >= outliers[1] & x$nCount_RNA <= outliers[2]
+            }))
+            x[, idx]
+        })
+    }
     if (!is.null(opt$downsample_cells)) {
         flog.info("Downsampling --singlecell to %i cells per %s annotation",
             opt$downsample_cells, opt$refdata)
@@ -239,33 +273,25 @@ if (!opt$force && file.exists(filename_singlecell)) {
         flog.info("Removing mitochondrial genes from --singlecell.")
         singlecell <- lapply(singlecell, function(x) {
             mito_feats <- grep(pattern = regex_mito(), x = rownames(x = x), value = TRUE)
-            x[!rownames(x) %in% mito_feats,]
+            x[!rownames(x) %in% mito_feats, ]
         })
-    }    
+    }  
     if (!opt[["keep_ribo"]]) {
         flog.info("Removing ribosomal genes from --singlecell.")
         singlecell <- lapply(singlecell, function(x) {
             ribo_feats <- grep(pattern = regex_ribo(), x = rownames(x = x), value = TRUE)
-            x[!rownames(x) %in% ribo_feats,]
+            x[!rownames(x) %in% ribo_feats, ]
         })
     }
     # remove cells from too rare cell-types
     singlecell <- lapply(singlecell, function(x) {
-        idx <- table(x[[opt$refdata]][,1])[x[[opt$refdata]][,1]] >= 5
-        if (any(!idx)) { 
+        idx <- table(x[[opt$refdata]][, 1])[x[[opt$refdata]][, 1]] >= 5
+        if (any(!idx)) {
             flog.warn("Removing cells from rare cell-types (< 5 cells).")
             x <- x[, idx]
         }
         return(x)
     })
-    if (!is.null(opt$condition)) {
-        flog.info("Splitting --singlecell according --condition %s", opt$condition)
-        singlecell <- lapply(singlecell, SplitObject, opt$condition)
-        labels_new <- lapply(seq_along(labels), function(i)
-            paste0(labels[[i]], "_", names(singlecell[[i]])))
-        singlecell <- unlist(singlecell)
-        labels <- unlist(labels_new)
-    }
     if (!is.null(names(singlecell))) {
         flog.warn("--singlecell already contains labels.")
         labels <- names(singlecell)
@@ -418,13 +444,14 @@ if (find_pred == TRUE) {
                 infile_adata <- convertFormat(infile[feats,], from = "seurat", to = "anndata",
                     assay = "Spatial", main_layer = "counts", drop_single_values = FALSE)
                 flog.info("Running DestVI scLVM. Will take a while...")
+
                 scvi$model$CondSCVI$setup_anndata(sc_adata, labels_key = opt$refdata)
-                sclvm <- scvi$model$CondSCVI(sc_adata, weight_obs = TRUE)
-                sclvm$train(max_epochs = as.integer(250))
+                sclvm <- scvi$model$CondSCVI(sc_adata, weight_obs = FALSE)
+                sclvm$train(max_epochs = as.integer(300))
                 scvi$model$DestVI$setup_anndata(infile_adata)
                 stlvm <- scvi$model$DestVI$from_rna_model(infile_adata, sclvm)
                 flog.info("Running DestVI stLVM. Will take a while...")
-                stlvm$train(max_epochs = as.integer(2500))
+                stlvm$train(max_epochs = as.integer(3000))
                 infile_adata$obsm["proportions"] <- stlvm$get_proportions()
                 as_AssayObject(infile_adata)
             })
@@ -443,8 +470,8 @@ if (find_pred == TRUE) {
                     to = "anndata", main_layer = "counts", drop_single_values = FALSE)
                 infile_adata <- convertFormat(infile[feats,], from = "seurat", to = "anndata",
                     assay = "Spatial", main_layer = "counts", drop_single_values = FALSE)
-                sc$pp$filter_genes(sc_adata,min_cells = 1)
-                sc$pp$filter_cells(sc_adata,min_genes = 1)
+                sc$pp$filter_genes(sc_adata, min_cells = 1)
+                sc$pp$filter_cells(sc_adata, min_genes = 1)
                 selected <- cell2location$utils$filter_genes(
                     sc_adata, cell_count_cutoff = 5, cell_percentage_cutoff2 = 0.03, nonz_mean_cutoff = 1.12)
 
