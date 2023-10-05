@@ -659,5 +659,36 @@ classify_cell_type_regions <- function(object, cell_type = "Tumor", cutoff = NUL
         if (ct %in% diffuse_members) return("diffuse")
         return("other")
     })
-    return(factor(label, levels = c("core", "periphery", "diffuse", "other")))
+    component <- NULL
+    if (requireNamespace("igraph", quietly = TRUE)) {
+        idx <- which(label == "core")
+        core_barcodes <- names(label[idx])
+        net_core <- net[which(net$from %in% core_barcodes &
+                              net$to %in% core_barcodes), ]
+        if (nrow(net_core)) {                      
+            am <- matrix(0, nrow = length(core_barcodes), ncol = length(core_barcodes))
+            colnames(am) <- core_barcodes
+            rownames(am) <- core_barcodes
+            for (i in seq(nrow(net_core))) {
+                am[as.character(net_core$from[i]), as.character(net_core$to[i])] <- 1
+                am[as.character(net_core$to[i]), as.character(net_core$from[i])] <- 1
+            }
+            g <- graph.adjacency(am)
+            component <- components(g)$membership
+            idx <- table(component)[component] == 1
+            if (any(idx)) {
+                component[idx] <- "Single"
+            }
+            component <- as.factor(component)
+        } else {
+            component <- label[label == "core"]
+            component[component == "core"] <- "Single"
+            component <- as.factor(component)
+        }    
+    }
+    return(list(
+        label = factor(label, levels = c("core", "periphery", "diffuse", "other")),
+        component = component
+    ))
 }
+

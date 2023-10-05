@@ -18,6 +18,8 @@ option_list <- list(
         help = "Optional list of labels --singlecell"),
     make_option(c("--refdata"), action = "store", type = "character", default = "type",
         help = "Meta data column with prediction labels in --singlecell"),
+    make_option(c("--batch"), action = "store", type = "character", default = NULL,
+        help = "Meta data column with batch in --singlecell. Only used in scvi yet."),
     make_option(c("--integration_method"), action = "store", type = "character", default = "seurat",
         help = "Integration: Choose between 'seurat' (default), 'celltrek', 'rctd' (alias for 'rctd_multi'), 'rctd_full', 'giotto', 'scvi_destvi', 'scvi_cell2location' as integration method"),
     make_option(c("--downsample_cells"), action = "store", type = "integer", default = 3000,
@@ -230,6 +232,12 @@ if (!opt$force && file.exists(filename_singlecell)) {
         x[[opt$refdata]] <- droplevels(x[[opt$refdata]])
         x
     }))
+
+    print_celltypes <- paste(sort(unique(unlist(lapply(singlecell, function(x)
+        unique(x[[opt$refdata]]))))), collapse =",")
+    flog.info("Cell-types to deconvolute in --singlecell %s: %s", opt[["refdata"]],
+        print_celltypes)
+
     if (!is.null(opt[["condition"]])) {
         flog.info("Splitting --singlecell according --condition %s", opt[["condition"]])
         if (!is.null(opt[["keep_condition"]])) {
@@ -461,6 +469,9 @@ if (find_pred == TRUE) {
             pd <- import("pandas", convert = FALSE)
             np <- import("numpy", convert = FALSE)
             prediction.assay <- lapply(singlecell, function(sc_seurat) {
+                if ("RNA" %in% Assays(sc_seurat)) {
+                    DefaultAssay(sc_seurat) <- "RNA"
+                } 
                 sc_seurat <- SetAssayData(sc_seurat, slot = "counts",
                     new.data = round(GetAssayData(sc_seurat, slot = "counts")))
                 feats <- intersect(rownames(sc_seurat), rownames(infile))
@@ -476,10 +487,18 @@ if (find_pred == TRUE) {
                     sc_adata, cell_count_cutoff = 5, cell_percentage_cutoff2 = 0.03, nonz_mean_cutoff = 1.12)
 
                 sc_adata <- r_to_py(py_to_r(sc_adata)[, selected])
-                cell2location$models$RegressionModel$setup_anndata(
-                    adata = sc_adata,
-                    labels_key = opt[["refdata"]]
-                )
+                if (!is.null(opt[["batch"]])) {
+                    cell2location$models$RegressionModel$setup_anndata(
+                        adata = sc_adata,
+                        labels_key = opt[["refdata"]],
+                        batch_key = opt[["batch"]]
+                    )
+                } else {    
+                    cell2location$models$RegressionModel$setup_anndata(
+                        adata = sc_adata,
+                        labels_key = opt[["refdata"]]
+                    )
+                }
                 mod <- cell2location$models$RegressionModel(sc_adata)
                 flog.info("Running cell2location on --singlecell. Will take a while...")
                 mod$train(max_epochs = as.integer(250), batch_size = as.integer(2500), train_size = 1, lr = 0.002)

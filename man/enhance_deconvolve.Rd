@@ -7,7 +7,7 @@
 enhance_deconvolve(
   object,
   num_subspots = 6,
-  max_cell_types = 7,
+  max_cell_types = 8,
   cell_types = NULL,
   image = NULL,
   num_iter = 10,

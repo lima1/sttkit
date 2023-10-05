@@ -44,7 +44,7 @@ enhance_bayesspace <- function(x, test_num_clusters = seq(2, 12),
 #' @examples
 #' #enhance_deconvolve()
 
-enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7, cell_types = NULL,
+enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 8, cell_types = NULL,
     image = NULL, num_iter = 10, stroke = NA, crop = FALSE, pt.size.factor = 0.4, pt.alpha = NULL,
     image.alpha = 1, verbose = FALSE) { 
     image <- image %||% Images(object = object)
@@ -131,7 +131,7 @@ enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7, cel
     if (num_iter > 0) {
         positions2 <- .optimize_subspot_celltypes(positions2, df_j, num_iter = num_iter, verbose = verbose)
     }
-    vertices <- .make_triangle_subspots(positions2, fill="cell.type")
+    vertices <- .make_triangle_subspots(positions2, fill = "cell.type")
     vertices$imagecol <- positions2[vertices$spot, "imagecol"]
     vertices$imagerow <- positions2[vertices$spot, "imagerow"]
     fit <- lm(imagerow~x.vertex, data = vertices)
@@ -159,19 +159,25 @@ enhance_deconvolve <- function(object, num_subspots = 6, max_cell_types = 7, cel
     splot <- splot + coord_fixed() + theme(aspect.ratio = 1) + labs(fill = "Cell Type", x = "", y = "") +
         guides(fill = guide_legend(override.aes = list(size = 3)))
 
-    if (requireNamespace("ggthemes", quietly = TRUE) &&
-            length(levels(vertices$fill)) <= 8) {
-        # black color last, not first and use gray instead
-        palette <- ggthemes::colorblind_pal()(length(levels(vertices$fill)))
-        palette[1] <- "#999999"
-        palette <- palette[c(seq(2, length(palette)), 1)]
+    palette <- .get_colorblind_pal(length(levels(vertices$fill)))
+    if (!is.null(palette)) {
         splot <- splot + scale_fill_manual(values = palette)
-        #splot <- splot +  ggthemes::scale_fill_colorblind()
     }
     splot <- splot + NoAxes() + theme(panel.background = element_blank())
     return(splot)
 }
 
+.get_colorblind_pal <- function(n) {
+    palette <- NULL
+    if (requireNamespace("ggthemes", quietly = TRUE) && n <= 9) {
+        # black color last, not first and use gray instead
+        palette <- ggthemes::colorblind_pal()(min(8, n))
+        palette[1] <- "#999999"
+        palette <- c(palette, "#014f3a")
+        palette <- head(palette[c(seq(2, length(palette)), 1)], n)
+    }
+    return(palette)    
+}    
 .optimize_subspot_celltypes <- function(positions2, df_j, num_iter, verbose = FALSE) {
     positions2_orig <- positions2
     n_total <- 0
