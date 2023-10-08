@@ -444,6 +444,9 @@ if (find_pred == TRUE) {
         scvi <- import("scvi", convert = FALSE)
         if (opt$sub_integration_method == "destvi") {
             prediction.assay <- lapply(singlecell, function(sc_seurat) {
+                if ("RNA" %in% Assays(sc_seurat)) {
+                    DefaultAssay(sc_seurat) <- "RNA"
+                } 
                 feats <- intersect(rownames(sc_seurat), rownames(infile))
                 feats <- feats[feats %in% union(VariableFeatures(sc_seurat), VariableFeatures(infile))]
                 flog.info("Converting --singlecell and --infile to anndata...")
