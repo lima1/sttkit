@@ -171,6 +171,7 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
 
     ndata <- read_spatial(Matrix::t(raw_data), barcodes = barcodes, image = image, ...)
     ndata <- read_spaceranger_deconvolution(ndata, filtered_feature_bc_matrix_dir)
+    metrics <- read_spaceranger_metrics(filtered_feature_bc_matrix_dir)
     return(ndata)
 }
 
@@ -248,3 +249,25 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
     }
     return(NULL)
 }        
+
+#' read_spaceranger_metrics
+#'
+#' Parse 10X SpaceRanger metrics
+#' @param filtered_feature_bc_matrix_dir Path to SpaceRanger filtered matrix
+#' @param metrics_file Path to SpaceRanger \code{metrics_summary.csv} file
+#' @export read_spaceranger_metrics
+#' @examples
+#' #read_spaceranger_metrics
+read_spaceranger_metrics <- function(filtered_feature_bc_matrix_dir,
+        metrics_file = file.path(filtered_feature_bc_matrix_dir, "metrics_summary.csv")) {
+
+    if (!file.exists(metrics_file)) {
+        flog.warn("Not finding %s. Skipping check of those numbers.", metrics_file)
+        return()
+    }
+    metrics <- read.csv(metrics_file)
+    if (metrics[["Fraction.Reads.in.Spots.Under.Tissue"]] < 0.5) {
+        flog.warn("Low 'Fraction Reads in Spots Under Tissue' %.2f. Ideal > 0.5. Application performance may be affected. Many of the reads were not assigned to tissue covered spots. This could be caused by high levels of ambient RNA resulting from inefficient permeabilization, because the incorrect image was used, or because of poor tissue detection. The latter case can be addressed by using the manual tissue selection option through Loupe.", metrics[["Fraction.Reads.in.Spots.Under.Tissue"]])
+    } 
+    return(metrics)
+}
