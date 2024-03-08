@@ -136,13 +136,15 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
 #' @param filtered_feature_bc_matrix_dir Path to SpaceRanger filtered matrix
 #' @param spatial_dir Path to SpaceRanger \code{spatial} directory
 #' @param assay Name of the assay corresponding to the initial input data.
+#' @param probe_set Path to SpaceRanger probe set file. Only useful
+#' if SpaceRanger was run without probe set filtering.
 #' @param ... Arguments passed to \code{\link{read_spatial}}
 #' @export read_visium
 #' @examples
 #' read_visium()
 read_visium <- function(filtered_feature_bc_matrix_dir,
     spatial_dir = file.path(filtered_feature_bc_matrix_dir, "spatial"),
-    assay = "Spatial", ...) {
+    assay = "Spatial", probe_set = NULL, ...) {
     requireNamespace("hdf5r")
     
     if (!dir.exists(spatial_dir)) {
@@ -172,6 +174,10 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
     ndata <- read_spatial(Matrix::t(raw_data), barcodes = barcodes, image = image, ...)
     ndata <- read_spaceranger_deconvolution(ndata, filtered_feature_bc_matrix_dir)
     metrics <- read_spaceranger_metrics(filtered_feature_bc_matrix_dir)
+    if (!is.null(probe_set)) {
+        probes <- read_spaceranger_probe_set(probe_set)        
+        ndata[[assay]] <- AddMetaData(ndata[[assay]], probes)
+    }    
     return(ndata)
 }
 
@@ -270,4 +276,42 @@ read_spaceranger_metrics <- function(filtered_feature_bc_matrix_dir,
         flog.warn("Low 'Fraction Reads in Spots Under Tissue' %.2f. Ideal > 0.5. Application performance may be affected. Many of the reads were not assigned to tissue covered spots. This could be caused by high levels of ambient RNA resulting from inefficient permeabilization, because the incorrect image was used, or because of poor tissue detection. The latter case can be addressed by using the manual tissue selection option through Loupe.", metrics[["Fraction.Reads.in.Spots.Under.Tissue"]])
     } 
     return(metrics)
+}
+
+#' read_spaceranger_probe_set
+#'
+#' Parse 10X SpaceRanger probe sets
+#' @param file Path to SpaceRanger probe sets file
+#' @export read_spaceranger_probe_set
+#' @examples
+#' #read_spaceranger_probe_set
+read_spaceranger_probe_set <- function(file) {
+
+    if (!file.exists(file)) {
+        flog.warn("Not finding %s. Skipping flagging of features.", file)
+        return(NULL)
+    }
+    probes <- read.csv(file, comment.char = "#")
+    expected_cols <- c("gene_id", "probe_id",  "included")
+    if (!all(expected_cols %in% colnames(probes))) {
+        flog.warn("Unrecognized probe set file %s.", file)
+        return(NULL)
+    }
+
+    probes$symbol <- sapply(strsplit(probes$probe_id, "\\|"), function(x) x[2])
+
+    px <- split(probes, probes$symbol)
+    
+    probes_by_symbol <- do.call(rbind, lapply(px, function(x) {
+        data.frame(
+            gene_id = x$gene_id[1],
+            symbol = x$symbol[1],
+            probe_seqs = paste(x$probe_seq, collapse = "|"),
+            included = paste(x$included, collapse = "|"),
+            all.included = all(x$included),
+            all.excluded = all(!x$included),
+            regions = paste(x$region, collapse = "|"),
+            row.names = x$symbol[1])}))
+
+    return(probes_by_symbol)
 }

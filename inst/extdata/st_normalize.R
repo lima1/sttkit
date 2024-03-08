@@ -9,6 +9,8 @@ option_list <- list(
         help = "Infile SpatialTranscriptomics data tsv file. Rows spots, columns genes. "),
     make_option(c("--spaceranger_dir"), action = "store", type = "character", default = NULL,
         help = "Path to SpaceRanger output for Visum data."),
+    make_option(c("--spaceranger_probe_set"), action = "store", type = "character", default = NULL,
+        help = "Path to SpaceRanger probe set file for feature flagging. Only useful when probe set filtering was turned off."),
     make_option(c("--sampleid"), action = "store", type = "character", default = NULL,
         help = "Sample id."),
     make_option(c("--transpose"), action = "store_true", default = FALSE,
@@ -148,6 +150,7 @@ if (!opt$force && file.exists(filename)) {
     } else {
         ndata <- read_visium(
                              opt$spaceranger_dir,
+                             probe_set = opt$spaceranger_probe_set,
                              min_spots = opt$min_spots,
                              min_features = opt$min_features,
                              required_features = required_features,

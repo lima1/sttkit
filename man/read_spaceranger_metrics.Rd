@@ -6,7 +6,7 @@
 \usage{
 read_spaceranger_metrics(
   filtered_feature_bc_matrix_dir,
-  metrics_file = file.path(filtered_feature_bc_matrix_dir, "metrics_summary.csv ")
+  metrics_file = file.path(filtered_feature_bc_matrix_dir, "metrics_summary.csv")
 )
 }
 \arguments{

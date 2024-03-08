@@ -8,6 +8,7 @@ read_visium(
   filtered_feature_bc_matrix_dir,
   spatial_dir = file.path(filtered_feature_bc_matrix_dir, "spatial"),
   assay = "Spatial",
+  probe_set = NULL,
   ...
 )
 }
@@ -17,6 +18,9 @@ read_visium(
 \item{spatial_dir}{Path to SpaceRanger \code{spatial} directory}
 
 \item{assay}{Name of the assay corresponding to the initial input data.}
+
+\item{probe_set}{Path to SpaceRanger probe set file. Only useful
+if SpaceRanger was run without probe set filtering.}
 
 \item{...}{Arguments passed to \code{\link{read_spatial}}}
 }
