@@ -18,6 +18,7 @@
 #' @param hybrid_reference_prefixes For dataset aligned to hybrid references, the
 #' the feature name prefixes. First one reserved for human (for non-human,
 #' hybrid references, this just means that some downstream tools might not work).
+#' @param gtf Optional GTF for including feature meta data like alternative gene ids.
 #' @param assay Name of the assay corresponding to the initial input data.
 #' @param serialize Automatically serialize object
 #' @param prefix Prefix of output files
@@ -37,7 +38,7 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
                         transpose = FALSE, barcodes = NULL, image = NULL, slice = sampleid,
                         downsample_prob = NULL,
                         hybrid_reference_prefixes = c("hg19", "mm10"),
-                        assay = "Spatial", 
+                        gtf = NULL, assay = "Spatial", 
                         serialize = TRUE, prefix) {
     if (is(file, "character")) {
         flog.info("Loading %s...", basename(file))
@@ -96,6 +97,29 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
         DefaultAssay(object = image) <- assay
         ndata[[slice]] <- image
     }
+    if (!is.null(gtf)) {
+        if (requireNamespace("rtracklayer")) {
+            flog.info("Loading gtf %s...", basename(gtf))    
+            gtf_ref <- rtracklayer::mcols(rtracklayer::import(gtf))
+            col_feature <- names(which.max(apply(gtf_ref,2,function(x) length(intersect(rownames(ndata), x)))))
+            if (col_feature == "gene_id") {
+                flog.info("Skipping gene_id annotation because features appear to be gene ids, not gene names.")
+            } else {
+                if ("gene_id" %in% colnames(gtf_ref)) {
+                    idx <- !duplicated(gtf_ref[[col_feature]])
+                    probes <- data.frame(
+                        gene_id = gtf_ref[["gene_id"]][idx],
+                        row.names = gtf_ref[[col_feature]][idx]
+                    )
+                    ndata[[assay]] <- AddMetaData(ndata[[assay]], probes)
+                } else {
+                    flog.info("Skipping gene_id annotation because %s does not contain required 'gene_name' and 'gene_id' fields.", gtf)
+                }
+            }
+        } else {
+            flog.warn("Install rtracklayer for parsing GTF file.")
+        }    
+    }    
     cnts <- GetAssayData(object = ndata, slot = 'counts')
     for (hrp in hybrid_reference_prefixes) {
         pattern <- paste0("^", hrp)
@@ -136,13 +160,15 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
 #' @param filtered_feature_bc_matrix_dir Path to SpaceRanger filtered matrix
 #' @param spatial_dir Path to SpaceRanger \code{spatial} directory
 #' @param assay Name of the assay corresponding to the initial input data.
+#' @param probe_set Path to SpaceRanger probe set file. Only useful
+#' if SpaceRanger was run without probe set filtering.
 #' @param ... Arguments passed to \code{\link{read_spatial}}
 #' @export read_visium
 #' @examples
 #' read_visium()
 read_visium <- function(filtered_feature_bc_matrix_dir,
     spatial_dir = file.path(filtered_feature_bc_matrix_dir, "spatial"),
-    assay = "Spatial", ...) {
+    assay = "Spatial", probe_set = NULL, ...) {
     requireNamespace("hdf5r")
     
     if (!dir.exists(spatial_dir)) {
@@ -172,6 +198,19 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
     ndata <- read_spatial(Matrix::t(raw_data), barcodes = barcodes, image = image, ...)
     ndata <- read_spaceranger_deconvolution(ndata, filtered_feature_bc_matrix_dir)
     metrics <- read_spaceranger_metrics(filtered_feature_bc_matrix_dir)
+    if (!is.null(probe_set)) {
+        probes <- read_spaceranger_probe_set(probe_set)        
+        # if ndata contains more stable gene_id, use that one for mapping probes to features 
+        if ("gene_id" %in% colnames(ndata[[assay]][[]])) {
+            idx <- !rownames(ndata[[assay]]) %in% rownames(probes)
+            map_missing <- ndata[[assay]][[]][idx, , drop = FALSE]
+            map_missing <- map_missing[!is.na(map_missing$gene_id), , drop = FALSE]
+            probes_missing <- probes[match(map_missing$gene_id, probes$gene_id), ]
+            rownames(probes_missing) <- rownames(map_missing)
+            probes <- rbind(probes, probes_missing)
+        }
+        ndata[[assay]] <- AddMetaData(ndata[[assay]], probes)
+    }
     return(ndata)
 }
 
@@ -270,4 +309,41 @@ read_spaceranger_metrics <- function(filtered_feature_bc_matrix_dir,
         flog.warn("Low 'Fraction Reads in Spots Under Tissue' %.2f. Ideal > 0.5. Application performance may be affected. Many of the reads were not assigned to tissue covered spots. This could be caused by high levels of ambient RNA resulting from inefficient permeabilization, because the incorrect image was used, or because of poor tissue detection. The latter case can be addressed by using the manual tissue selection option through Loupe.", metrics[["Fraction.Reads.in.Spots.Under.Tissue"]])
     } 
     return(metrics)
+}
+
+#' read_spaceranger_probe_set
+#'
+#' Parse 10X SpaceRanger probe sets
+#' @param file Path to SpaceRanger probe sets file
+#' @export read_spaceranger_probe_set
+#' @examples
+#' #read_spaceranger_probe_set
+read_spaceranger_probe_set <- function(file) {
+
+    if (!file.exists(file)) {
+        flog.warn("Not finding %s. Skipping flagging of features.", file)
+        return(NULL)
+    }
+    probes <- read.csv(file, comment.char = "#")
+    expected_cols <- c("gene_id", "probe_id",  "included")
+    if (!all(expected_cols %in% colnames(probes))) {
+        flog.warn("Unrecognized probe set file %s.", file)
+        return(NULL)
+    }
+
+    probes$symbol <- sapply(strsplit(probes$probe_id, "\\|"), function(x) x[2])
+
+    px <- split(probes, probes$symbol)
+    
+    probes_by_symbol <- do.call(rbind, lapply(px, function(x) {
+        data.frame(
+            gene_id = x$gene_id[1],
+            symbol = x$symbol[1],
+            probe_seqs = paste(x$probe_seq, collapse = "|"),
+            all.included = paste(x$included, collapse = "|"),
+            included = any(x$included),
+            regions = paste(x$region, collapse = "|"),
+            row.names = x$symbol[1])}))
+
+    return(probes_by_symbol)
 }

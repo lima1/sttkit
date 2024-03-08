@@ -10,7 +10,9 @@
 #' @param method Use \code{sctransform} to normalize and scale data,
 #' or use \code{scran} or Seurat 2 style normalization and scaling.
 #' @param backend_method Method used by the backend. Currently only used by 
-#' \code{sctransform} and \code{sctransform2}.
+#' \code{sctransform} and \code{sctransform2} since the default assay is kept unchanged.
+#' @param feature_filter If feature meta data contains 'included' column, only use 
+#  these in the normalized assay. Currently only supported for sctransform.
 #' @param regressout Regressout these features.
 #' @param cell_cycle_score Use \code{CellCycleScoring} to add S/G1/G2M scores
 #' @param assay Name of the assay corresponding to the initial input data.
@@ -27,10 +29,12 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
                               correct_umi = TRUE,
                               method = c("sctransform", "sctransform2", "seurat2", "scran"),
                               backend_method = "poisson",
+                              feature_filter = TRUE,
                               cell_cycle_score = TRUE,
                               regressout = NULL, assay = "Spatial",
                               serialize = TRUE, prefix, ...) {
     regressout <- .check_regressout(obj, regressout)
+
 
     flog.info("Using standard log-normalization...")
     obj <- NormalizeData(object = obj, ...)
@@ -44,6 +48,14 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
     }
     if (method == "sctransform" && requireNamespace("sctransform")) {
         scale_alt_assay <- DefaultAssay(obj)
+
+        feature_filter <- feature_filter && is(obj[[assay]][[]]$included, "logical")
+        if (feature_filter) {
+            orig_assay <- assay
+            assay <- paste0(assay, "_copy")
+            obj[[assay]] <- subset(obj[[orig_assay]],
+                features = rownames(obj[[orig_assay]])[which(obj[[orig_assay]][[]]$included)])
+        }    
         flog.info("Using sctransform with %i features...", nfeatures)
         if (!is.null(regressout)) {
             flog.info("Regressing out %s.", paste(regressout, collapse = ", "))
@@ -59,6 +71,9 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
                 vars.to.regress = regressout, do.correct.umi = correct_umi,
                 return.only.var.genes = FALSE, min_cells = min_cells,
                 method = backend_method, ...)
+        }    
+        if (orig_assay != assay) {
+            obj[[assay]] <- NULL
         }    
 
         if (cell_cycle_score) obj <- .add_cc_score(obj)

@@ -12,6 +12,7 @@ normalize_spatial(
   correct_umi = TRUE,
   method = c("sctransform", "sctransform2", "seurat2", "scran"),
   backend_method = "poisson",
+  feature_filter = TRUE,
   cell_cycle_score = TRUE,
   regressout = NULL,
   assay = "Spatial",
@@ -35,7 +36,9 @@ normalize_spatial(
 or use \code{scran} or Seurat 2 style normalization and scaling.}
 
 \item{backend_method}{Method used by the backend. Currently only used by 
-\code{sctransform} and \code{sctransform2}.}
+\code{sctransform} and \code{sctransform2} since the default assay is kept unchanged.}
+
+\item{feature_filter}{If feature meta data contains 'included' column, only use}
 
 \item{cell_cycle_score}{Use \code{CellCycleScoring} to add S/G1/G2M scores}
 

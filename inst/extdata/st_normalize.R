@@ -9,6 +9,8 @@ option_list <- list(
         help = "Infile SpatialTranscriptomics data tsv file. Rows spots, columns genes. "),
     make_option(c("--spaceranger_dir"), action = "store", type = "character", default = NULL,
         help = "Path to SpaceRanger output for Visum data."),
+    make_option(c("--spaceranger_probe_set"), action = "store", type = "character", default = NULL,
+        help = "Path to SpaceRanger probe set file for feature flagging. Only useful when probe set filtering was turned off."),
     make_option(c("--sampleid"), action = "store", type = "character", default = NULL,
         help = "Sample id."),
     make_option(c("--transpose"), action = "store_true", default = FALSE,
@@ -37,6 +39,9 @@ option_list <- list(
     make_option(c("--gmt"), action = "store", type = "character",
         default = NULL,
         help = "GMT file including genes of interest"),
+    make_option(c("--gtf"), action = "store", type = "character", 
+        default = NULL, 
+        help = "Optional GTF for including feature meta data like alternative gene ids."),
     make_option(c("--output_counts"), action = "store_true", default = FALSE,
         help = "Output count matrix as TSV file."),
     make_option(c("--no_crop"), action = "store_true", default = FALSE,
@@ -144,16 +149,19 @@ if (!opt$force && file.exists(filename)) {
                              transpose = opt$transpose,
                              sampleid = opt$sampleid,
                              downsample_prob = opt$downsample_prob,
+                             gtf = opt$gtf,
                              prefix = opt$outprefix)
     } else {
         ndata <- read_visium(
                              opt$spaceranger_dir,
+                             probe_set = opt$spaceranger_probe_set,
                              min_spots = opt$min_spots,
                              min_features = opt$min_features,
                              required_features = required_features,
                              transpose = opt$transpose,
                              sampleid = opt$sampleid,
                              downsample_prob = opt$downsample_prob,
+                             gtf = opt$gtf,
                              prefix = opt$outprefix)
     }
     if (opt$output_counts) {
