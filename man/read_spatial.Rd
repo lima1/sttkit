@@ -18,6 +18,7 @@ read_spatial(
   slice = sampleid,
   downsample_prob = NULL,
   hybrid_reference_prefixes = c("hg19", "mm10"),
+  gtf = NULL,
   assay = "Spatial",
   serialize = TRUE,
   prefix
@@ -53,6 +54,8 @@ Can also be a JPEG for Spatial Transcriptomics data.}
 \item{hybrid_reference_prefixes}{For dataset aligned to hybrid references, the
 the feature name prefixes. First one reserved for human (for non-human,
 hybrid references, this just means that some downstream tools might not work).}
+
+\item{gtf}{Optional GTF for including feature meta data like alternative gene ids.}
 
 \item{assay}{Name of the assay corresponding to the initial input data.}
 

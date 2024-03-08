@@ -39,6 +39,9 @@ option_list <- list(
     make_option(c("--gmt"), action = "store", type = "character",
         default = NULL,
         help = "GMT file including genes of interest"),
+    make_option(c("--gtf"), action = "store", type = "character", 
+        default = NULL, 
+        help = "Optional GTF for including feature meta data like alternative gene ids."),
     make_option(c("--output_counts"), action = "store_true", default = FALSE,
         help = "Output count matrix as TSV file."),
     make_option(c("--no_crop"), action = "store_true", default = FALSE,
@@ -146,6 +149,7 @@ if (!opt$force && file.exists(filename)) {
                              transpose = opt$transpose,
                              sampleid = opt$sampleid,
                              downsample_prob = opt$downsample_prob,
+                             gtf = opt$gtf,
                              prefix = opt$outprefix)
     } else {
         ndata <- read_visium(
@@ -157,6 +161,7 @@ if (!opt$force && file.exists(filename)) {
                              transpose = opt$transpose,
                              sampleid = opt$sampleid,
                              downsample_prob = opt$downsample_prob,
+                             gtf = opt$gtf,
                              prefix = opt$outprefix)
     }
     if (opt$output_counts) {

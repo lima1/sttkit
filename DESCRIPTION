@@ -43,6 +43,7 @@ Suggests: BayesSpace,
           scran,
           scater,
           sctransform,
+          rtracklayer,
           spacexr
 License: Artistic-2.0 + file LICENSE
 URL: https://github.com/lima1/sttkit

@@ -18,6 +18,7 @@
 #' @param hybrid_reference_prefixes For dataset aligned to hybrid references, the
 #' the feature name prefixes. First one reserved for human (for non-human,
 #' hybrid references, this just means that some downstream tools might not work).
+#' @param gtf Optional GTF for including feature meta data like alternative gene ids.
 #' @param assay Name of the assay corresponding to the initial input data.
 #' @param serialize Automatically serialize object
 #' @param prefix Prefix of output files
@@ -37,7 +38,7 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
                         transpose = FALSE, barcodes = NULL, image = NULL, slice = sampleid,
                         downsample_prob = NULL,
                         hybrid_reference_prefixes = c("hg19", "mm10"),
-                        assay = "Spatial", 
+                        gtf = NULL, assay = "Spatial", 
                         serialize = TRUE, prefix) {
     if (is(file, "character")) {
         flog.info("Loading %s...", basename(file))
@@ -96,6 +97,29 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
         DefaultAssay(object = image) <- assay
         ndata[[slice]] <- image
     }
+    if (!is.null(gtf)) {
+        if (requireNamespace("rtracklayer")) {
+            flog.info("Loading gtf %s...", basename(gtf))    
+            gtf_ref <- rtracklayer::mcols(rtracklayer::import(gtf))
+            col_feature <- names(which.max(apply(gtf_ref,2,function(x) length(intersect(rownames(ndata), x)))))
+            if (col_feature == "gene_id") {
+                flog.info("Skipping gene_id annotation because features appear to be gene ids, not gene names.")
+            } else {
+                if ("gene_id" %in% colnames(gtf_ref)) {
+                    idx <- !duplicated(gtf_ref[[col_feature]])
+                    probes <- data.frame(
+                        gene_id = gtf_ref[["gene_id"]][idx],
+                        row.names = gtf_ref[[col_feature]][idx]
+                    )
+                    ndata[[assay]] <- AddMetaData(ndata[[assay]], probes)
+                } else {
+                    flog.info("Skipping gene_id annotation because %s does not contain required 'gene_name' and 'gene_id' fields.", gtf)
+                }
+            }
+        } else {
+            flog.warn("Install rtracklayer for parsing GTF file.")
+        }    
+    }    
     cnts <- GetAssayData(object = ndata, slot = 'counts')
     for (hrp in hybrid_reference_prefixes) {
         pattern <- paste0("^", hrp)
@@ -176,8 +200,17 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
     metrics <- read_spaceranger_metrics(filtered_feature_bc_matrix_dir)
     if (!is.null(probe_set)) {
         probes <- read_spaceranger_probe_set(probe_set)        
+        # if ndata contains more stable gene_id, use that one for mapping probes to features 
+        if ("gene_id" %in% colnames(ndata[[assay]][[]])) {
+            idx <- !rownames(ndata[[assay]]) %in% rownames(probes)
+            map_missing <- ndata[[assay]][[]][idx, , drop = FALSE]
+            map_missing <- map_missing[!is.na(map_missing$gene_id), , drop = FALSE]
+            probes_missing <- probes[match(map_missing$gene_id, probes$gene_id), ]
+            rownames(probes_missing) <- rownames(map_missing)
+            probes <- rbind(probes, probes_missing)
+        }
         ndata[[assay]] <- AddMetaData(ndata[[assay]], probes)
-    }    
+    }
     return(ndata)
 }
 
@@ -307,9 +340,8 @@ read_spaceranger_probe_set <- function(file) {
             gene_id = x$gene_id[1],
             symbol = x$symbol[1],
             probe_seqs = paste(x$probe_seq, collapse = "|"),
-            included = paste(x$included, collapse = "|"),
-            all.included = all(x$included),
-            all.excluded = all(!x$included),
+            all.included = paste(x$included, collapse = "|"),
+            included = any(x$included),
             regions = paste(x$region, collapse = "|"),
             row.names = x$symbol[1])}))
 
