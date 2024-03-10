@@ -98,6 +98,36 @@ Rscript $STTKIT/st_normalize.R --spaceranger_dir $SAMPLE/outs \
      --outprefix OUTDIR/${PIPELINE}/$SAMPLE/normalize/$SAMPLE 
 ```
 
+We can also additional gene annotation if needed:
+
+```
+#  spaceranger_dir is the path to filtered_feature_bc_matrix.h5
+Rscript $STTKIT/st_normalize.R --spaceranger_dir $SAMPLE/outs \
+     --sampleid $SAMPLE \ 
+     --outprefix OUTDIR/${PIPELINE}/$SAMPLE/normalize/$SAMPLE \
+     --gtf $REFERENCES/cellranger/refdata-cellranger-GRCh38-3.0.0/genes/genes.gtf \
+     --spaceranger_probe_set $REFERENCES/spaceranger-2.1.0/probe_sets/Visium_Human_Transcriptome_Probe_Set_v2.0_GRCh38-2020-A.csv \
+```
+
+The GTF extracts a stable gene id such as ENSEMBL that can be used instead of
+the gene name. For FFPE Visium, we can provide probe information. Both can be
+accessed in R via the `[[]]` operator on the `Spatial` assay. In case
+SpaceRanger was run without probe filtering, features without `included` flag
+are ignored in the `SCT` assay.
+
+```
+head(ndata$Spatial[[]],2)
+               gene_id symbol
+OR4F5  ENSG00000186092  OR4F5
+SAMD11 ENSG00000187634 SAMD11
+                                                                                                                                                     probe_seqs
+OR4F5  AATGGAGAAAGCCAATTCCCCATGTGACAGCCATAATGCCGACACATGCG
+SAMD11 TGTCACCATCGCTGGCAGAGAAGCTGGGAGTTCGCTCCTTCTTCAGGTTC|[...]
+         all.included included                       regions
+OR4F5           FALSE    FALSE                     unspliced
+SAMD11 TRUE|TRUE|TRUE     TRUE unspliced|unspliced|unspliced
+```
+
 SpatialTranscriptomics example:
 ```
 PIPELINE="standard"
