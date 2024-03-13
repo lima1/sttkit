@@ -42,6 +42,9 @@ option_list <- list(
     make_option(c("--gtf"), action = "store", type = "character", 
         default = NULL, 
         help = "Optional GTF for including feature meta data like alternative gene ids."),
+    make_option(c("--mane"), action = "store", type = "character", 
+        default = NULL, 
+        help = "Optional NCBI MANE file for resolving ambiguous mapping of gene name and id in --GTF."),
     make_option(c("--output_counts"), action = "store_true", default = FALSE,
         help = "Output count matrix as TSV file."),
     make_option(c("--no_crop"), action = "store_true", default = FALSE,
@@ -150,6 +153,7 @@ if (!opt$force && file.exists(filename)) {
                              sampleid = opt$sampleid,
                              downsample_prob = opt$downsample_prob,
                              gtf = opt$gtf,
+                             mane = opt$mane,
                              prefix = opt$outprefix)
     } else {
         ndata <- read_visium(
@@ -162,6 +166,7 @@ if (!opt$force && file.exists(filename)) {
                              sampleid = opt$sampleid,
                              downsample_prob = opt$downsample_prob,
                              gtf = opt$gtf,
+                             mane = opt$mane,
                              prefix = opt$outprefix)
     }
     if (opt$output_counts) {

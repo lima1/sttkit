@@ -19,6 +19,7 @@ read_spatial(
   downsample_prob = NULL,
   hybrid_reference_prefixes = c("hg19", "mm10"),
   gtf = NULL,
+  mane = NULL,
   assay = "Spatial",
   serialize = TRUE,
   prefix
@@ -56,6 +57,8 @@ the feature name prefixes. First one reserved for human (for non-human,
 hybrid references, this just means that some downstream tools might not work).}
 
 \item{gtf}{Optional GTF for including feature meta data like alternative gene ids.}
+
+\item{mane}{Optional NCBI MANE file for resolving ambiguous mapping in \code{gtf}}
 
 \item{assay}{Name of the assay corresponding to the initial input data.}
 

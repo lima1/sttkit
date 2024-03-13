@@ -19,6 +19,7 @@
 #' the feature name prefixes. First one reserved for human (for non-human,
 #' hybrid references, this just means that some downstream tools might not work).
 #' @param gtf Optional GTF for including feature meta data like alternative gene ids.
+#' @param mane Optional NCBI MANE file for resolving ambiguous mapping in \code{gtf} 
 #' @param assay Name of the assay corresponding to the initial input data.
 #' @param serialize Automatically serialize object
 #' @param prefix Prefix of output files
@@ -29,6 +30,7 @@
 #' @importFrom methods is new
 #' @importFrom utils read.delim write.csv write.table data
 #' @importFrom Matrix t rowSums
+#' @importFrom data.table fread
 #' @export read_spatial
 #' @examples
 #' read_spatial()
@@ -38,7 +40,7 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
                         transpose = FALSE, barcodes = NULL, image = NULL, slice = sampleid,
                         downsample_prob = NULL,
                         hybrid_reference_prefixes = c("hg19", "mm10"),
-                        gtf = NULL, assay = "Spatial", 
+                        gtf = NULL, mane = NULL, assay = "Spatial", 
                         serialize = TRUE, prefix) {
     if (is(file, "character")) {
         flog.info("Loading %s...", basename(file))
@@ -97,29 +99,8 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
         DefaultAssay(object = image) <- assay
         ndata[[slice]] <- image
     }
-    if (!is.null(gtf)) {
-        if (requireNamespace("rtracklayer")) {
-            flog.info("Loading gtf %s...", basename(gtf))    
-            gtf_ref <- rtracklayer::mcols(rtracklayer::import(gtf))
-            col_feature <- names(which.max(apply(gtf_ref,2,function(x) length(intersect(rownames(ndata), x)))))
-            if (col_feature == "gene_id") {
-                flog.info("Skipping gene_id annotation because features appear to be gene ids, not gene names.")
-            } else {
-                if ("gene_id" %in% colnames(gtf_ref)) {
-                    idx <- !duplicated(gtf_ref[[col_feature]])
-                    probes <- data.frame(
-                        gene_id = gtf_ref[["gene_id"]][idx],
-                        row.names = gtf_ref[[col_feature]][idx]
-                    )
-                    ndata[[assay]] <- AddMetaData(ndata[[assay]], probes)
-                } else {
-                    flog.info("Skipping gene_id annotation because %s does not contain required 'gene_name' and 'gene_id' fields.", gtf)
-                }
-            }
-        } else {
-            flog.warn("Install rtracklayer for parsing GTF file.")
-        }    
-    }    
+    ndata <- .annotate_features_gtf(ndata, assay, gtf, mane)
+
     cnts <- GetAssayData(object = ndata, slot = 'counts')
     for (hrp in hybrid_reference_prefixes) {
         pattern <- paste0("^", hrp)
@@ -347,3 +328,45 @@ read_spaceranger_probe_set <- function(file) {
 
     return(probes_by_symbol)
 }
+
+.annotate_features_gtf <- function(ndata, assay, gtf, mane) {
+    if (!is.null(gtf)) {
+        if (requireNamespace("rtracklayer")) {
+            flog.info("Loading gtf %s...", basename(gtf))    
+            gtf_ref <- rtracklayer::mcols(rtracklayer::import(gtf))
+            col_feature <- names(which.max(apply(gtf_ref,2,function(x) length(intersect(rownames(ndata), x)))))
+            if (col_feature == "gene_id") {
+                flog.info("Skipping gene_id annotation because features appear to be gene ids, not gene names.")
+            } else {
+                if ("gene_id" %in% colnames(gtf_ref)) {
+                    idx <- !duplicated(paste(gtf_ref[[col_feature]], gtf_ref$gene_id))
+                    idx2 <- duplicated(gtf_ref[[col_feature]][idx])
+                    if (any(idx2) && !is.null(mane)) {
+                        if (is(mane, "character")) {
+                            mane <- fread(mane)
+                        }    
+                        dup_symbols <- gtf_ref$gene_name[idx][idx2]
+                        dup_ids <- unique(gtf_ref$gene_id[gtf_ref$gene_name %in% dup_symbols])
+                        ignore_ids <- dup_ids[!sapply(dup_ids, function(x) any(grepl(x, mane$Ensembl_Gene)))]
+                        idx <- idx & !gtf_ref[["gene_id"]] %in% ignore_ids
+                        idx2 <- duplicated(gtf_ref[[col_feature]][idx])
+                    }
+                    if (any(idx2)) {
+                        flog.warn("Ambiguous 'gene_name' and 'gene_id' mapping for following features: %s",
+                            paste(gtf_ref[[col_feature]][idx][idx2], collapse = ","))
+                    }    
+                    probes <- data.frame(
+                        gene_id = gtf_ref[["gene_id"]][idx][!idx2],
+                        row.names = gtf_ref[[col_feature]][idx][!idx2]
+                    )
+                    ndata[[assay]] <- AddMetaData(ndata[[assay]], probes)
+                } else {
+                    flog.info("Skipping gene_id annotation because %s does not contain required 'gene_name' and 'gene_id' fields.", gtf)
+                }
+            }
+        } else {
+            flog.warn("Install rtracklayer for parsing GTF file.")
+        }    
+    }    
+    return(ndata)
+}    
