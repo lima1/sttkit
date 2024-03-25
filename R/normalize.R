@@ -49,9 +49,9 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
     if (method == "sctransform" && requireNamespace("sctransform")) {
         scale_alt_assay <- DefaultAssay(obj)
 
+        orig_assay <- assay
         feature_filter <- feature_filter && is(obj[[assay]][[]]$included, "logical")
         if (feature_filter) {
-            orig_assay <- assay
             assay <- paste0(assay, "_copy")
             obj[[assay]] <- subset(obj[[orig_assay]],
                 features = rownames(obj[[orig_assay]])[which(obj[[orig_assay]][[]]$included)])
