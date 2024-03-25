@@ -195,7 +195,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     invisible(dev.off())
 }
 .order_features <- function(obj, features) {
-    m <- GetAssayData(obj, "scale.data")
+    m <- GetAssayData(obj, slot = "scale.data")
     m <- m[rownames(m) %in% features,]
     if (nrow(m) < 4) return(features)
     hc <- hclust(dist(m))
@@ -205,7 +205,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     filename <- sttkit:::.get_sub_path(prefix, "snn", "")
     filename <- sttkit:::.get_sub_path(prefix, "snn/heatmap", "_cluster_heatmap.pdf")
     markers <- sttkit:::.find_all_markers(obj, prefix, "_snn_markers.rds")
-    m <- GetAssayData(obj, slot="scale.data")
+    m <- GetAssayData(obj, slot = "scale.data")
     key <- if ("avg_log2FC" %in% colnames(markers)) "avg_log2FC" else "avg_logFC"
     
     genes <- unique(unlist(lapply(split(markers, markers$cluster), function(x) 
@@ -278,7 +278,7 @@ if (grepl("list$",opt$infile)) {
     flog.info("Adding additional features provided in --gmt.")
     all_features <- Reduce(intersect, lapply(reference_list, rownames))
     all_non0_features <- Reduce(union, lapply(reference_list, function(x) { 
-        m <- GetAssayData(x, "counts", assay = "Spatial")
+        m <- GetAssayData(x, slot = "counts", assay = "Spatial")
         rownames(m)[apply(m, 1, max) > 0]
     }))
     wanted_features <- union(variable_features, unlist(gmt))
