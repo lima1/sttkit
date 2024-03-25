@@ -102,7 +102,7 @@ find_markers <- function(obj, references = NULL, resolution, max_markers = NULL,
 .filter_markers_maxref <- function(references, all_markers, min_max = 20) {
      max_counts <- apply(do.call(cbind, 
         lapply(references, function(x) 
-            apply(GetAssayData(x[all_markers$gene,], "counts"),1,max))), 
+            apply(GetAssayData(x[all_markers$gene,], slot = "counts"),1,max))), 
      1, max)
      all_markers$max_counts <- max_counts[all_markers$gene]
      all_markers[which(all_markers$max_counts >= min_max),]
@@ -113,7 +113,7 @@ find_markers <- function(obj, references = NULL, resolution, max_markers = NULL,
         flog.info("Extracting markers...")
         ems <- lapply(c(0.01, 0.001, 0.0001), function(threshold) 
             CellMix::extractMarkers(as.matrix(GetAssayData(obj_sc)[unique(all_markers$gene),]), 
-            Idents(obj_sc), threshold=threshold, lbase=exp(1)))
+            Idents(obj_sc), threshold = threshold, lbase = exp(1)))
         
         filtered <- lapply(ems, function(em) lapply(names(CellMix::geneIds(em)), 
             function(i) paste(i, CellMix::geneIds(em)[[i]])))

@@ -152,7 +152,7 @@ integrate_spatial <- function(obj_spatial = NULL, references, features = 2000,
     }
     if (min_max_counts > 0) {
         nbefore <- nrow(x) 
-        max_counts <- apply(GetAssayData(x, "counts"),1, max) 
+        max_counts <- apply(GetAssayData(x, slot = "counts"),1, max) 
         x <- x[names(which(max_counts >= min_max_counts)),]
         if (nrow(x) < nbefore) {
             flog.info("Max Counts: Removing %i features from reference library %s.", 
@@ -357,7 +357,7 @@ find_nearest_neighbors <- function(object, split.by = "library") {
     # find number of undetected references for all features undetected
     # in at least one reference
     tbl <- table(unlist(lapply(references, function(x) { 
-        y <- Matrix::rowSums(GetAssayData(x, "counts"))
+        y <- Matrix::rowSums(GetAssayData(x, slot = "counts"))
         names(y[which(y <= 0)])
         })))
     tbl_detected <- length(references) - tbl

@@ -60,7 +60,7 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
         if (!is.null(regressout)) {
             flog.info("Regressing out %s.", paste(regressout, collapse = ", "))
         }
-        min_cells <- min(Matrix::rowSums(GetAssayData(obj, "counts"))) + 1
+        min_cells <- min(Matrix::rowSums(GetAssayData(obj, slot = "counts"))) + 1
         if ("vst.flavor" %in% names(formals(sctransform::vst))) {
             obj <- SCTransform(obj, variable.features.n = nfeatures, assay = assay,
                 vars.to.regress = regressout, do.correct.umi = correct_umi,
@@ -87,7 +87,7 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
         scale_alt_assay <- DefaultAssay(obj)
         flog.info("Using scran normalization...")
         sce <- SingleCellExperiment::SingleCellExperiment(assays =
-            list(counts = as.matrix(GetAssayData(obj, "counts")))) # read data from Seurat
+            list(counts = as.matrix(GetAssayData(obj, slot = "counts")))) # read data from Seurat
         clusters <- NULL
         sizes <- seq(21, 101, 5)
         if (ncol(obj) < 200) {
