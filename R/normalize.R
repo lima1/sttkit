@@ -12,7 +12,7 @@
 #' @param backend_method Method used by the backend. Currently only used by 
 #' \code{sctransform} and \code{sctransform2} since the default assay is kept unchanged.
 #' @param feature_filter If feature meta data contains 'included' column, only use 
-#  these in the normalized assay. Currently only supported for sctransform.
+#  these.
 #' @param regressout Regressout these features.
 #' @param cell_cycle_score Use \code{CellCycleScoring} to add S/G1/G2M scores
 #' @param assay Name of the assay corresponding to the initial input data.
@@ -46,16 +46,18 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
         method <- "sctransform"
         vst.flavor <- "v2"
     }
+    feature_filter <- feature_filter && is(obj[[assay]][[]]$included, "logical")
+
+    if (feature_filter && any(!obj[[assay]][[]]$included)) {
+        flog.info("Removing %i flagged genes from assay %s",
+            length(which(!obj[[assay]][[]]$included)), assay)
+
+        obj <- subset(obj,
+            features = rownames(obj[[assay]][[]][which(obj[[assay]][[]]$included), , drop = FALSE]))
+    }
     if (method == "sctransform" && requireNamespace("sctransform")) {
         scale_alt_assay <- DefaultAssay(obj)
 
-        orig_assay <- assay
-        feature_filter <- feature_filter && is(obj[[assay]][[]]$included, "logical")
-        if (feature_filter) {
-            assay <- paste0(assay, "_copy")
-            obj[[assay]] <- subset(obj[[orig_assay]],
-                features = rownames(obj[[orig_assay]])[which(obj[[orig_assay]][[]]$included)])
-        }    
         flog.info("Using sctransform with %i features...", nfeatures)
         if (!is.null(regressout)) {
             flog.info("Regressing out %s.", paste(regressout, collapse = ", "))
@@ -71,9 +73,6 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
                 vars.to.regress = regressout, do.correct.umi = correct_umi,
                 return.only.var.genes = FALSE, min_cells = min_cells,
                 method = backend_method, ...)
-        }    
-        if (orig_assay != assay) {
-            obj[[assay]] <- NULL
         }    
 
         if (cell_cycle_score) obj <- .add_cc_score(obj)
