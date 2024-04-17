@@ -592,11 +592,17 @@ if (length(Images(ndata))) {
         } else {
             flog.info("Finding top spatially variable features. This will probably take a while...")
             ndata_split <- SplitObject(ndata, split.by = "library")
-            ndata_split <- lapply(seq_along(ndata_split), function(i) { 
+            ndata_split <- lapply(seq_along(ndata_split), function(i) {
+                xy.cuts <- sttkit:::.get_binsize(
+                    ndata_split[[i]],  
+                    image = sttkit:::.get_image_slice(ndata_split[[i]]))
+
                 flog.info("Working on %s...", ndata_split[[i]]$library[1])
                 FindSpatiallyVariableFeatures(ndata_split[[i]], 
                 selection.method = method, 
                 image = sttkit:::.get_image_slice(ndata_split[[i]]),
+                x.cuts = xy.cuts[["x.cuts"]],
+                y.cuts = xy.cuts[["y.cuts"]],
                 features = head(VariableFeatures(ndata), 1000))})
             spatial_features <- lapply(ndata_split, SpatiallyVariableFeatures, selection.method = method)
             libs <- as.character(sapply(ndata_split, function(x) x$library[1]))
