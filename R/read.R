@@ -36,7 +36,8 @@
 #' read_spatial()
 read_spatial <- function(file, sampleid, mt_pattern = regex_mito(), 
                         rp_pattern = regex_ribo(), 
-                        min_features = 300, min_spots = 2, required_features = NULL, 
+                        min_features = 300, min_spots = 2,
+                        required_features = NULL, 
                         transpose = FALSE, barcodes = NULL, image = NULL, slice = sampleid,
                         downsample_prob = NULL,
                         hybrid_reference_prefixes = c("hg19", "mm10"),
@@ -140,6 +141,7 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
 #' Read 10X SpaceRanger data into Seurat object
 #' @param filtered_feature_bc_matrix_dir Path to SpaceRanger filtered matrix
 #' @param spatial_dir Path to SpaceRanger \code{spatial} directory
+#' @param bin_size Bin size for VisiumHD
 #' @param assay Name of the assay corresponding to the initial input data.
 #' @param probe_set Path to SpaceRanger probe set file. Only useful
 #' if SpaceRanger was run without probe set filtering.
@@ -149,14 +151,27 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
 #' read_visium()
 read_visium <- function(filtered_feature_bc_matrix_dir,
     spatial_dir = file.path(filtered_feature_bc_matrix_dir, "spatial"),
+    bin_size = NULL,
     assay = "Spatial", probe_set = NULL, ...) {
     requireNamespace("hdf5r")
     
     if (!dir.exists(spatial_dir)) {
         flog.warn("%s does not exist.", spatial_dir)
-        if (file.exists(file.path(filtered_feature_bc_matrix_dir, 
-            "scalefactors_json.json"))) spatial_dir <- filtered_feature_bc_matrix_dir
-    }    
+        if (dir.exists(file.path(filtered_feature_bc_matrix_dir, "binned_outputs"))) {
+            if (is.null(bin_size)) {
+                bin_size <- 8
+                flog.warn("bin_size not specify, defaulting to %i um.", bin_size)
+            } 
+            bin_size_pretty <- paste0(sprintf("%03d", bin_size), "um")
+            filtered_feature_bc_matrix_dir <- file.path(filtered_feature_bc_matrix_dir, "binned_outputs", paste0("square_", 
+                                 bin_size_pretty))
+            spatial_dir <- file.path(filtered_feature_bc_matrix_dir, "spatial")
+
+        } else if (file.exists(file.path(filtered_feature_bc_matrix_dir, 
+            "scalefactors_json.json"))) {
+            spatial_dir <- filtered_feature_bc_matrix_dir
+        }
+    } 
     filename <- file.path(filtered_feature_bc_matrix_dir, 
         "filtered_feature_bc_matrix.h5")
     raw_data <- Read10X_h5(filename = filename)

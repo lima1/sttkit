@@ -7,6 +7,7 @@
 read_visium(
   filtered_feature_bc_matrix_dir,
   spatial_dir = file.path(filtered_feature_bc_matrix_dir, "spatial"),
+  bin_size = NULL,
   assay = "Spatial",
   probe_set = NULL,
   ...
@@ -16,6 +17,8 @@ read_visium(
 \item{filtered_feature_bc_matrix_dir}{Path to SpaceRanger filtered matrix}
 
 \item{spatial_dir}{Path to SpaceRanger \code{spatial} directory}
+
+\item{bin_size}{Bin size for VisiumHD}
 
 \item{assay}{Name of the assay corresponding to the initial input data.}
 

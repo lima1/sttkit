@@ -11,7 +11,9 @@ make it easier to use methods implemented in different workspaces.
 ## Installation
 
 These scripts require Seurat 3.2 or later with Visium support. SpaceRanger 2.0
-or later output requires Seurat 4.2 or later.
+or later output requires Seurat 4.2 or later. SpaceRanger 3.0 currently
+requires the `visium-hd` branch from seurat and seurat-object GitHub
+repositories.
 
 ### Dependencies
 

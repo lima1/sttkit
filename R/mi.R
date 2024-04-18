@@ -126,3 +126,12 @@ calculate_spatial_correlation <- function(obj, image = NULL, slot = "data",
     crosscorr <- sort(crosscorr, decreasing = TRUE)
     return(crosscorr)
 }
+
+.get_binsize <- function(obj, image = NULL, max_bins = 5000) {
+    if (ncol(obj) <= max_bins) return(list(x.cuts = NULL, y.cuts = NULL))
+    tc <- GetTissueCoordinates(obj, image = image)
+    r <- (max(tc[,1], na.rm = TRUE) - min(tc[,1], na.rm = TRUE)) / (max(tc[,2], na.rm = TRUE) - min(tc[,2], na.rm = TRUE))
+    xy.cuts <- ceiling(sqrt(max_bins))
+    if (r > 1) return(list(x.cuts = xy.cuts, y.cuts = round(xy.cuts / r)))
+    return(list(x.cuts = round(xy.cuts) / r, y.cuts = xy.cuts))
+}    
