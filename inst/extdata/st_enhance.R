@@ -30,8 +30,11 @@ option_list <- list(
     make_option(c("--gmt"), action = "store", type = "character", 
         default = NULL, 
         help="GMT file including genes of interest. Can be a list of files, separated by ':' (e.g. --gmt a.gmt:b.gmt)."),
-    make_option(c("--png"), action = "store_true", default = FALSE, 
-        help="Generate PNG version of output plots."),
+    make_option(c("--image_formats"), action = "store", type = "character", 
+        default = "png", 
+        help = "Image format(s) of output plots. 'png' and 'pdf' supported. Multiple formats are seperated by colon ('png:pdf')."),
+    make_option(c("--png"), action = "store_true", default = FALSE,
+        help = "Generate PNG version of output plots. DEPRECATED."),
     make_option(c("--width"), action = "store", type = "double", default = 4, 
         help="Output width in inches."),
     make_option(c("--height"), action = "store", type = "double", default = 3.9, 
@@ -51,6 +54,18 @@ if (is.null(opt$infile)) {
 }
 if (is.null(opt$outprefix)) {
     stop("Need --outprefix")
+}
+if (opt$png) {
+    flog.warn("--png is deprecated.")
+    if (is.null(opt$image_formats)) {
+        # old default
+        opt$image_formats <- "pdf:png"
+    }
+}    
+if (is.null(opt$image_formats)) {
+    opt$image_formats <- c()
+} else {
+    opt$image_formats <- sapply(strsplit(opt$image_formats, ":")[[1]], tolower)
 }
 if (!dir.exists(dirname(opt$outprefix))) {
     dir.create(dirname(dirname(opt$outprefix)))
@@ -155,20 +170,24 @@ if (!is.null(opt$gmt)) {
     }    
 }     
 
-filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "_original.pdf")
-pdf(filename, width = opt$width, height = opt$height)
-BayesSpace::clusterPlot(ndata)
-dev.off()
-filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "_enhanced.pdf")
-pdf(filename, width = opt$width, height = opt$height)
-BayesSpace::clusterPlot(ndata_enhanced)
-dev.off()
-filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "_original.png")
-png(filename, width = opt$width, height = opt$height, units = "in", res = 150)
-BayesSpace::clusterPlot(ndata)
-dev.off()
-filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "_enhanced.png")
-png(filename, width = opt$width, height = opt$height, units = "in", res = 150)
-BayesSpace::clusterPlot(ndata_enhanced)
-dev.off()
+if ("pdf" %in% opt$image_formats) {
+    filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "_original.pdf")
+    pdf(filename, width = opt$width, height = opt$height)
+    BayesSpace::clusterPlot(ndata)
+    dev.off()
+    filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "_enhanced.pdf")
+    pdf(filename, width = opt$width, height = opt$height)
+    BayesSpace::clusterPlot(ndata_enhanced)
+    dev.off()
+}
+if ("png" %in% opt$image_formats) {
+    filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "_original.png")
+    png(filename, width = opt$width, height = opt$height, units = "in", res = 150)
+    BayesSpace::clusterPlot(ndata)
+    dev.off()
+    filename <- sttkit:::.get_sub_path(opt$outprefix, "he", "_enhanced.png")
+    png(filename, width = opt$width, height = opt$height, units = "in", res = 150)
+    BayesSpace::clusterPlot(ndata_enhanced)
+    dev.off()
+}
 

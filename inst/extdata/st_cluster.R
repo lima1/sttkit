@@ -239,7 +239,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
         invisible(dev.off())
     }
     if ("png" %in% opt$image_formats) {
-        png(gsub(".pdf$", "png", filename), height = length(genes) / 60 * 6, width = 8, units = "in", res = 150)
+        png(gsub(".pdf$", ".png", filename), height = length(genes) / 60 * 6, width = 8, units = "in", res = 150)
         if (!single_input) {
             print(DoHeatmap(ndata, features = genes, group.by = "library"))
         } else {
