@@ -107,16 +107,37 @@ plot_clusters <- function(obj, prefix, subdir = "snn", pdf = FALSE, png = FALSE)
         print(gp)
         dev.off()
     }
+    if (png) {
+        png(gsub(".pdf$", ".png", filename), width = 10, height = 5,
+            units = "in", res = 150)
+        print(gp)
+        dev.off()
+    }    
     flog.info("UMAP splitted...")
     if ("call" %in% colnames(obj@meta.data)) {
         filename <- .get_sub_path(prefix, file.path(subdir, "umap"), paste0("_", reference_technology, "_cluster_call.pdf"))
-        pdf(filename, width = 10, height = 5)
-        print(DimPlot(obj, reduction = "umap", group.by = "call", label = label))
-        dev.off()
+        if (pdf) {
+            pdf(filename, width = 10, height = 5)
+            print(DimPlot(obj, reduction = "umap", group.by = "call", label = label))
+            dev.off()
+        }
+        if (png) {
+            png(gsub(".pdf$", ".png", filename), width = 10, height = 5,
+                units = "in", res = 150)
+            print(DimPlot(obj, reduction = "umap", group.by = "call", label = label))
+            dev.off()
+        }    
         filename <- .get_sub_path(prefix, file.path(subdir, "umap"), paste0("_", reference_technology, "_cluster_splitted.pdf"))
-        pdf(filename, width = 10, height = 10)
-        print(DimPlot(obj, split.by = "new.idents", group.by = "call"))
-        dev.off()
+        if (pdf) {
+            pdf(filename, width = 10, height = 10)
+            print(DimPlot(obj, split.by = "new.idents", group.by = "call"))
+            dev.off()
+        }
+        if (png) {
+            png(gsub(".pdf$", ".png", filename), width = 10, height = 10, res = 150, units = "in")
+            print(DimPlot(obj, split.by = "new.idents", group.by = "call"))
+            dev.off()
+        }
     }
     if ("label" %in% colnames(obj@meta.data)) {
         .plot_cluster_library(obj, field = "label", prefix = prefix,
@@ -161,7 +182,8 @@ plot_clusters <- function(obj, prefix, subdir = "snn", pdf = FALSE, png = FALSE)
     }
     filename <- .get_sub_path(prefix, subdir, paste0("_", reference_technology, "_cluster_", field, ".pdf"))
     if (png) {
-        png(paste0(gsub(".pdf", "", filename), ".png"), width = 10, height = 5, res = 150, units = "in")
+        png(paste0(gsub(".pdf", "", filename), ".png"), width = 10, height = 5,
+            res = 150, units = "in")
         print(gp)
         dev.off()
     }

@@ -239,7 +239,8 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
         invisible(dev.off())
     }
     if ("png" %in% opt$image_formats) {
-        png(gsub(".pdf$", ".png", filename), height = length(genes) / 60 * 6, width = 8, units = "in", res = 150)
+        png(gsub(".pdf$", ".png", filename), height = length(genes) / 60 * 6,
+            width = 8, units = "in", res = 150)
         if (!single_input) {
             print(DoHeatmap(ndata, features = genes, group.by = "library"))
         } else {
@@ -250,9 +251,18 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 
     flog.info("Plotting PCA heatmap...")
     filename <- sttkit:::.get_sub_path(prefix, "pca", "_pca_heatmap.pdf") 
-    pdf(filename, height = 6, width = 8)
-    print(DimHeatmap(ndata, dims=1:6, reduction="pca"))
-    invisible(dev.off())
+
+    if ("pdf" %in% opt$image_formats) {
+        pdf(filename, height = 6, width = 8)
+        print(DimHeatmap(ndata, dims = 1:6, reduction = "pca"))
+        invisible(dev.off())
+    }
+    if ("png" %in% opt$image_formats) {
+        png(gsub(".pdf$", ".png", filename), height = 6, width = 8,
+            units = "in", res = 150)
+        print(DimHeatmap(ndata, dims = 1:6, reduction = "pca"))
+        invisible(dev.off())
+    }
     filename <- sttkit:::.get_sub_path(prefix, "snn/advanced", "_cluster_markers.csv") 
     write.csv(markers, file = filename, row.names = FALSE)
 }
@@ -424,7 +434,9 @@ if (!is.null(opt$extra_gmt)) {
 if (single_input) {
     libs <- ndata$library[1]
     .plot_he_cluster(ndata, opt$outprefix)
-    plot_clusters(ndata, opt$outprefix)
+    plot_clusters(ndata, opt$outprefix,
+        pdf = "pdf" %in% opt$image_formats,
+        png = "png" %in% opt$image_formats)
 } else {
     libs <- sapply(reference_list, function(x) x$library[1])
     for (i in seq_along(libs)) {
@@ -435,7 +447,9 @@ if (single_input) {
         sttkit:::.serialize(ndata[,ndata$library == libs[i]], prefix = opt$outprefix, 
             paste0(num, ".rds"))
     }
-    plot_clusters(ndata, opt$outprefix)
+    plot_clusters(ndata, opt$outprefix,
+        pdf = "pdf" %in% opt$image_formats,
+        png = "png" %in% opt$image_formats)
     if (!is.null(labels)) {
         sttkit:::.plot_correlation_labels(ndata, cluster_labels = Idents(ndata), 
                 prefix = opt$outprefix, file.path("snn", "advanced"), 
