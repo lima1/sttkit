@@ -49,8 +49,11 @@ option_list <- list(
         help = "Output count matrix as TSV file."),
     make_option(c("--no_crop"), action = "store_true", default = FALSE,
         help = "Do not crop H&E image."),
+    make_option(c("--image_formats"), action = "store", type = "character", 
+        default = "png", 
+        help = "Image format(s) of output plots. 'png' and 'pdf' supported. Multiple formats are seperated by colon ('png:pdf')."),
     make_option(c("--png"), action = "store_true", default = FALSE,
-        help = "Generate PNG version of output plots."),
+        help = "Generate PNG version of output plots. DEPRECATED."),
     make_option(c("-f", "--force"), action = "store_true", default = FALSE,
         help = "Overwrite existing files")
 )
@@ -62,6 +65,18 @@ if (is.null(opt$infile) && is.null(opt$spaceranger_dir)) {
 }
 if (is.null(opt$outprefix)) {
     stop("Need --outprefix")
+}
+if (opt$png) {
+    flog.warn("--png is deprecated.")
+    if (is.null(opt$image_formats)) {
+        # old default
+        opt$image_formats <- "pdf:png"
+    }
+}    
+if (is.null(opt$image_formats)) {
+    opt$image_formats <- c()
+} else {
+    opt$image_formats <- sapply(strsplit(opt$image_formats, ":")[[1]], tolower)
 }
 if (!dir.exists(dirname(opt$outprefix))) {
     dir.create(dirname(dirname(opt$outprefix)))
@@ -88,7 +103,8 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
             pt.size.factor = opt$dot_size,
             prefix = prefix, suffix = "_he_ptx.pdf",
             ggcode = theme(legend.position = "right"),
-            png = opt$png,
+            pdf = "pdf" %in% opt$image_formats,
+            png = "png" %in% opt$image_formats,
             labels = scales::percent, width = 8, height = 4,
             crop = !opt$no_crop)
     }
@@ -101,7 +117,8 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
         pt.size.factor = opt$dot_size,
         prefix = prefix, suffix = "_he_counts.pdf",
         ggcode = theme(legend.position = "right"),
-        png = opt$png,
+        pdf = "pdf" %in% opt$image_formats,
+        png = "png" %in% opt$image_formats,
         crop = !opt$no_crop,
         labels = scales::percent, width = 8, height = 4)
     if (sum(grep("S.Score|G2M.Score", colnames(ndata@meta.data)))) {
@@ -109,7 +126,8 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
             pt.size.factor = opt$dot_size,
             prefix = prefix, suffix = "_he_cell_cycle.pdf",
             ggcode = theme(legend.position = "right"),
-            png = opt$png,
+            pdf = "pdf" %in% opt$image_formats,
+            png = "png" %in% opt$image_formats,
             crop = !opt$no_crop,
             width = 8, height = 4)
     }
@@ -193,7 +211,8 @@ m <- .write_tsv(ndata, opt$outprefix)
         labels = waiver(), labels_title = "",
         prefix = prefix,
         suffix = "_he_scran_cluster.pdf",
-        png = opt$png,
+        pdf = "pdf" %in% opt$image_formats,
+        png = "png" %in% opt$image_formats,
         width = 4,
         crop = !opt$no_crop,
         pt.size.factor = opt$dot_size)

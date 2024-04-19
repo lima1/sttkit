@@ -87,8 +87,11 @@ option_list <- list(
         help = "Cell type(s) for co-expression analysis (use with '--run_coexp')"),
     make_option(c("--no_crop"), action = "store_true", default = FALSE,
         help = "Do not crop H&E image."),
+    make_option(c("--image_formats"), action = "store", type = "character", 
+        default = "png", 
+        help = "Image format(s) of output plots. 'png' and 'pdf' supported. Multiple formats are seperated by colon ('png:pdf')."),
     make_option(c("--png"), action = "store_true", default = FALSE,
-        help = "Generate PNG version of output plots."),
+        help = "Generate PNG version of output plots. DEPRECATED."),
     make_option(c("--serialize"), action = "store_true", default = FALSE,
         help = "Serialize processed --singlecell object. Can be large."),
     make_option(c("--verbose"), action = "store_true", default = FALSE,
@@ -109,6 +112,18 @@ if (is.null(opt$outprefix)) {
 if (!dir.exists(dirname(opt$outprefix))) {
     dir.create(dirname(dirname(opt$outprefix)))
     dir.create(dirname(opt$outprefix))
+}
+if (opt$png) {
+    flog.warn("--png is deprecated.")
+    if (is.null(opt$image_formats)) {
+        # old default
+        opt$image_formats <- "pdf:png"
+    }
+}    
+if (is.null(opt$image_formats)) {
+    opt$image_formats <- c()
+} else {
+    opt$image_formats <- sapply(strsplit(opt$image_formats, ":")[[1]], tolower)
 }
 if (is.null(opt$singlecell)) {
     stop("Need --singlecell")

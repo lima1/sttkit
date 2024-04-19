@@ -19,6 +19,7 @@ plot_features(
   subdir = "",
   width = 10,
   height = NULL,
+  pdf = FALSE,
   png = FALSE,
   ncol = 4,
   nrow = 4,
@@ -60,7 +61,9 @@ parameter is set to a different value than \code{NULL}.}
 
 \item{height}{Output PDF height}
 
-\item{png}{Create, in addition to PDF, PNG files}
+\item{pdf}{Create PDF image files}
+
+\item{png}{Create PNG image files}
 
 \item{ncol}{Number of columns to plot genes for multi-page plots}
 

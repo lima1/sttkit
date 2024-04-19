@@ -101,8 +101,11 @@ option_list <- list(
         help = "Use doMPI package for parallel NMF."),
     make_option(c("--no_crop"), action = "store_true", default = FALSE, 
         help="Do not crop H&E image."),
+    make_option(c("--image_formats"), action = "store", type = "character", 
+        default = "png", 
+        help = "Image format(s) of output plots. 'png' and 'pdf' supported. Multiple formats are seperated by colon ('png:pdf')."),
     make_option(c("--png"), action = "store_true", default = FALSE,
-        help = "Generate PNG version of output plots."),
+        help = "Generate PNG version of output plots. DEPRECATED."),
     make_option(c("--verbose"), action = "store_true", default = FALSE,
         help = "Verbose output"),
     make_option(c("-f", "--force"), action = "store_true", default = FALSE,
@@ -118,6 +121,18 @@ if (is.null(opt$infile)) {
 }
 if (is.null(opt$outprefix)) {
     stop("Need --outprefix")
+}
+if (opt$png) {
+    flog.warn("--png is deprecated.")
+    if (is.null(opt$image_formats)) {
+        # old default
+        opt$image_formats <- "pdf:png"
+    }
+}    
+if (is.null(opt$image_formats)) {
+    opt$image_formats <- c()
+} else {
+    opt$image_formats <- sapply(strsplit(opt$image_formats, ":")[[1]], tolower)
 }
 if (!is.null(opt$nmf_cores)) {
     flog.warn("--nmf_cores deprecated; use --n_cores instead.")
@@ -140,17 +155,19 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 
     filename <- sttkit:::.get_sub_path(prefix, "snn/he", paste0("_he_cluster", num, ".pdf"))
     flog.info("Plotting clusters on H&E for %s...", ndata$library[1])
-    pdf(filename, width = 4, height = 3.9)
     gp <- SpatialDimPlot(ndata, label = TRUE, images = sttkit:::.get_image_slice(ndata),
         pt.size.factor = opt$dot_size, label.size = 3, crop = !opt$no_crop)
     if (requireNamespace("ggthemes", quietly = TRUE) &&
         length(levels(Idents(ndata))) <= 8) {
         gp <- gp + ggthemes::scale_fill_colorblind()
     }
-    print(gp)
-    if (length(levels(Idents(ndata))) > 1) .plot_clustering_overlap(ndata)
-    invisible(dev.off())
-    if (opt$png) {
+    if ("pdf" %in% opt$image_formats) {
+        pdf(filename, width = 4, height = 3.9)
+        print(gp)
+        if (length(levels(Idents(ndata))) > 1) .plot_clustering_overlap(ndata)
+        invisible(dev.off())
+    }
+    if ("png" %in% opt$image_formats) {
         filename <- sttkit:::.get_sub_path(prefix, "snn/he", paste0("_he_cluster", num, ".png"))
         png(filename, width = 4, height = 3.9, units = "in", res = 150)
         print(gp)
@@ -212,12 +229,25 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
         head(x[which(x[[key]] > 0), "gene"], markergenes))))
     genes <- .order_features(obj, genes)
     flog.info("Plotting cluster heatmap...")
-    pdf(filename, height = length(genes) / 60 * 6, width = 8)
-    print(DoHeatmap(ndata, features = genes, group.by = group.by))
-    if (!single_input) {
-        print(DoHeatmap(ndata, features = genes, group.by = "library"))
+    if ("pdf" %in% opt$image_formats) {
+        pdf(filename, height = length(genes) / 60 * 6, width = 8)
+        if (!single_input) {
+            print(DoHeatmap(ndata, features = genes, group.by = "library"))
+        } else {
+            print(DoHeatmap(ndata, features = genes, group.by = group.by))
+        }
+        invisible(dev.off())
     }
-    invisible(dev.off())
+    if ("png" %in% opt$image_formats) {
+        png(gsub(".pdf$", "png", filename), height = length(genes) / 60 * 6, width = 8, units = "in", res = 150)
+        if (!single_input) {
+            print(DoHeatmap(ndata, features = genes, group.by = "library"))
+        } else {
+            print(DoHeatmap(ndata, features = genes, group.by = group.by))
+        }
+        invisible(dev.off())
+    }
+
     flog.info("Plotting PCA heatmap...")
     filename <- sttkit:::.get_sub_path(prefix, "pca", "_pca_heatmap.pdf") 
     pdf(filename, height = 6, width = 8)
@@ -439,7 +469,7 @@ if (single_input) {
        pdf(filename, height = 10 * ratio, width = 10)
        print(patchwork::wrap_plots(gp))
        invisible(dev.off())
-       if (opt$png) {
+       if ("png" %in% opt$image_formats) {
            png(gsub(".pdf$", ".png", filename), width = 10, height = 10 * ratio, units = "in", res = 150)
            print(patchwork::wrap_plots(gp))
            invisible(dev.off())
@@ -532,8 +562,11 @@ if (opt$nmf) {
     ndata <- .run_nmf()
     if (opt$nmf_randomize) ndata <- .run_nmf(TRUE)
     flog.info("Done with NMF clustering!")
-    plot_nmf(ndata, libs, labels = labels, rank = ks, prefix = opt$outprefix, png = opt$png, 
+    plot_nmf(ndata, libs, labels = labels, rank = ks, prefix = opt$outprefix,
+        pdf = "pdf" %in% opt$image_formats,
+        png = "png" %in% opt$image_formats,
         pt.size.factor = opt$dot_size)
+
      loupe <- lapply(ks, function(i) 
         export_nmf_loupe(obj = ndata, rank = ks, k = i, libs = libs, 
             labels = labels, prefix = opt$outprefix))
@@ -551,7 +584,9 @@ if (opt$nmf) {
                      sig <- sig[sig %in% rownames(gse[[1]][[1]])]
                      plot_nmf_gse(gse, sig = sig, rank = ks,
                         prefix = opt$outprefix, method = gse_method,
-                        png = opt$png, subdir = "nmf/signatures/advanced")
+                        pdf = "pdf" %in% opt$image_formats,
+                        png = "png" %in% opt$image_formats,
+                        subdir = "nmf/signatures/advanced")
                  }
              }
          }
@@ -616,6 +651,8 @@ if (length(Images(ndata))) {
         plot_spatially_variable(ndata, labels = labels, method = method, 
             spatial_features = spatial_features, prefix = opt$outprefix,
             number_features = opt$spatially_variable_nfeatures,
+            pdf = "pdf" %in% opt$image_formats,
+            png = "png" %in% opt$image_formats,
             pt.size.factor = opt$dot_size, ncol = opt$ncol, nrow = opt$nrow)
     }
 }
@@ -629,7 +666,9 @@ if (opt$sc3) {
     ndata <- cluster_sc3(ndata, rank = ks, force = opt$force,
         prefix = opt$outprefix, n_cores = opt$n_cores)
 
-    plot_sc3(ndata, libs, labels = labels, rank = ks, prefix = opt$outprefix, png = opt$png, 
+    plot_sc3(ndata, libs, labels = labels, rank = ks, prefix = opt$outprefix,
+        pdf = "pdf" %in% opt$image_formats,
+        png = "png" %in% opt$image_formats,
         pt.size.factor = opt$dot_size)
 }    
 if (!is.null(opt$sc3_ident)) {
@@ -669,7 +708,9 @@ if (is(predictions, "matrix") && single_input) {
         sttkit::plot_predictions(ndata, CreateAssayObject(predictions), 
             label = labels, label_integration_method = "spaceranger_deconvolution", 
             prefix = opt[["outprefix"]], subdir = "spaceranger_deconvolution/he",
-            png = opt$png, pt.size.factor = opt$dot_size,
+            pt.size.factor = opt$dot_size,
+            pdf = "pdf" %in% opt$image_formats,
+            png = "png" %in% opt$image_formats,
             crop = !opt$no_crop)
 }
 

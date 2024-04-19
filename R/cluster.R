@@ -72,10 +72,12 @@ cluster_bayesspace <- function(x, test_num_clusters = seq(2, 12),
 #' @param obj Object, read by \code{\link{read_spatial}}.
 #' @param prefix Prefix of output files
 #' @param subdir Put files in a subdirectory
+#' @param pdf Create PDF image files
+#' @param png Create PNG image files
 #' @export plot_clusters
 #' @examples
 #' plot_clusters()
-plot_clusters <- function(obj, prefix, subdir = "snn") {
+plot_clusters <- function(obj, prefix, subdir = "snn", pdf = FALSE, png = FALSE) {
     reference_technology <- "spatial"
     if ("technology" %in% colnames(obj@meta.data)) {
         reference_technology <- obj$technology[obj$reference][1]
@@ -90,7 +92,6 @@ plot_clusters <- function(obj, prefix, subdir = "snn") {
     filename <- .get_sub_path(prefix, subdir, "")
     filename <- .get_sub_path(prefix, file.path(subdir, "umap"),
         paste0("_", reference_technology, "_cluster.pdf"))
-    pdf(filename, width = 10, height = 5)
     if (label) { 
         flog.info("UMAP label...")
     } else {
@@ -101,8 +102,11 @@ plot_clusters <- function(obj, prefix, subdir = "snn") {
         length(levels(Idents(obj))) <= 8) {
         gp <- gp + ggthemes::scale_colour_colorblind()
     }
-    print(gp)
-    dev.off()
+    if (pdf) {
+        pdf(filename, width = 10, height = 5)
+        print(gp)
+        dev.off()
+    }
     flog.info("UMAP splitted...")
     if ("call" %in% colnames(obj@meta.data)) {
         filename <- .get_sub_path(prefix, file.path(subdir, "umap"), paste0("_", reference_technology, "_cluster_call.pdf"))
@@ -145,18 +149,25 @@ plot_clusters <- function(obj, prefix, subdir = "snn") {
     lapply(names(tbl[tbl>1]), function(x) which(labels == x)) 
 }
     
-.plot_cluster_library <- function(obj, field = "library", prefix, subdir = "snn/umap", reference_technology) {
+.plot_cluster_library <- function(obj, field = "library", prefix, subdir = "snn/umap",
+    reference_technology, pdf = FALSE, png = FALSE) {
     if (nrow(unique(obj[[field]])) < 2) return()
         
     flog.info("UMAP %s...", field)
-    filename <- .get_sub_path(prefix, subdir, paste0("_", reference_technology, "_cluster_", field, ".pdf"))
-
-    pdf(filename, width = 10, height = 5)
     gp <- DimPlot(obj, reduction = "umap", split.by = field)
     if (requireNamespace("ggthemes", quietly = TRUE) &&
         length(levels(Idents(obj))) <= 8) {
         gp <- gp + ggthemes::scale_colour_colorblind()
     }
+    filename <- .get_sub_path(prefix, subdir, paste0("_", reference_technology, "_cluster_", field, ".pdf"))
+    if (png) {
+        png(paste0(gsub(".pdf", "", filename), ".png"), width = 10, height = 5, res = 150, units = "in")
+        print(gp)
+        dev.off()
+    }
+    if (!pdf) return()
+    
+    pdf(filename, width = 10, height = 5)
     print(gp)
     
     df <- melt(table(obj@meta.data[[field]], Idents(obj)))

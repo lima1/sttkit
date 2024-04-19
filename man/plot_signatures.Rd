@@ -12,6 +12,7 @@ plot_signatures(
   ctrl = 30,
   method = c("seurat", "mean"),
   width = 10,
+  pdf = FALSE,
   png = FALSE,
   cells = NULL,
   zero_cutoff = NULL,
@@ -35,7 +36,9 @@ plot_signatures(
 
 \item{width}{Plot width}
 
-\item{png}{Create, in addition to PDF, PNG files}
+\item{pdf}{Create PDF image files}
+
+\item{png}{Create PNG image files}
 
 \item{cells}{Plot only specified cells}
 
