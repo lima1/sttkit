@@ -160,7 +160,7 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
         if (dir.exists(file.path(filtered_feature_bc_matrix_dir, "binned_outputs"))) {
             if (is.null(bin_size)) {
                 bin_size <- 8
-                flog.warn("bin_size not specify, defaulting to %i um.", bin_size)
+                flog.warn("bin_size not specified, defaulting to %i um.", bin_size)
             } 
             bin_size_pretty <- paste0(sprintf("%03d", bin_size), "um")
             filtered_feature_bc_matrix_dir <- file.path(filtered_feature_bc_matrix_dir, "binned_outputs", paste0("square_", 
