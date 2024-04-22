@@ -63,15 +63,16 @@ normalize_spatial <- function(obj, nfeatures = 2500, scale = TRUE, center = TRUE
             flog.info("Regressing out %s.", paste(regressout, collapse = ", "))
         }
         min_cells <- min(Matrix::rowSums(GetAssayData(obj, slot = "counts"))) + 1
+        conserve.memory <- ncol(obj) > 5000
         if ("vst.flavor" %in% names(formals(sctransform::vst))) {
             obj <- SCTransform(obj, variable.features.n = nfeatures, assay = assay,
                 vars.to.regress = regressout, do.correct.umi = correct_umi,
-                min_cells = min_cells,
+                min_cells = min_cells, conserve.memory = conserve.memory,
                 vst.flavor = vst.flavor, method = backend_method, ...)
         } else {
             obj <- SCTransform(obj, variable.features.n = nfeatures, assay = assay,
                 vars.to.regress = regressout, do.correct.umi = correct_umi,
-                min_cells = min_cells,
+                min_cells = min_cells, conserve.memory = conserve.memory,
                 method = backend_method, ...)
         }    
 
