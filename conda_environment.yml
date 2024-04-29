@@ -234,6 +234,7 @@ dependencies:
   - r-ggbeeswarm
   - r-ggforce
   - r-ggplot2
+  - r-ggpmisc
   - r-ggraph
   - r-ggrastr
   - r-ggrepel

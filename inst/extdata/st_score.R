@@ -37,8 +37,11 @@ option_list <- list(
         help="Size of dots on H&E [default %default]"),
     make_option(c("--no_crop"), action = "store_true", default = FALSE, 
         help="Do not crop H&E image."),
-    make_option(c("--png"), action = "store_true", default = FALSE, 
-        help="Generate PNG version of output plots."),
+    make_option(c("--image_formats"), action = "store", type = "character", 
+        default = "png", 
+        help = "Image format(s) of output plots. 'png' and 'pdf' supported. Multiple formats are seperated by colon ('png:pdf')."),
+    make_option(c("--png"), action = "store_true", default = FALSE,
+        help = "Generate PNG version of output plots. DEPRECATED."),
     make_option(c("--verbose"), action = "store_true", default = FALSE, 
         help="Verbose output"),
     make_option(c("-f", "--force"), action = "store_true", default = FALSE, 
@@ -57,6 +60,18 @@ if (is.null(opt$gmt)) {
 }
 if (is.null(opt$outprefix)) {
     stop("Need --outprefix")
+}
+if (opt$png) {
+    flog.warn("--png is deprecated.")
+    if (is.null(opt$image_formats)) {
+        # old default
+        opt$image_formats <- "pdf:png"
+    }
+}    
+if (is.null(opt$image_formats)) {
+    opt$image_formats <- c()
+} else {
+    opt$image_formats <- sapply(strsplit(opt$image_formats, ":")[[1]], tolower)
 }
 if (!dir.exists(dirname(opt$outprefix))) {
     dir.create(dirname(dirname(opt$outprefix)))
@@ -94,7 +109,10 @@ if (!is.null(opt$labels)) {
     ndata <- plot_signatures(ndata, file = filename, gmt = gmt, 
         cells = cells, pt.size.factor = opt$dot_size,
         nbin = opt$seurat_nbin, ctrl = opt$seurat_ctrl,
-        method = opt$method, png = opt$png, crop = !opt$no_crop)
+        method = opt$method,
+        pdf = "pdf" %in% opt$image_formats,
+        png = "png" %in% opt$image_formats,
+        crop = !opt$no_crop)
     if (opt$single_features) {
         ndata_rna <- ndata
         DefaultAssay(ndata_rna) <- names(ndata@assays)[1]
@@ -109,7 +127,9 @@ if (!is.null(opt$labels)) {
               subdir = file.path("he", name_no_dash),
               cells = cells, pt.size.factor = opt$dot_size,
               image.alpha = 0, crop = !opt$no_crop,
-              png = opt$png, plot_correlations = TRUE)
+              pdf = "pdf" %in% opt$image_formats,
+              png = "png" %in% opt$image_formats,
+              plot_correlations = TRUE)
 
         flog.info("Plotting scaled single feature counts...", filename)
         plot_features(filename, object = ndata, 
@@ -119,7 +139,9 @@ if (!is.null(opt$labels)) {
               subdir = file.path("he", name_no_dash),
               cells = cells, pt.size.factor = opt$dot_size, 
               image.alpha = 0, crop = !opt$no_crop,
-              png = opt$png, plot_correlations = TRUE)
+              pdf = "pdf" %in% opt$image_formats,
+              png = "png" %in% opt$image_formats,
+              plot_correlations = TRUE)
     }    
     ndata
 }
@@ -193,14 +215,16 @@ if (single_input) {
     filename <- sttkit:::.get_sub_path(opt$outprefix, file.path("fake_bulk", name_no_dash),
                     paste0("_signature_normalized_counts", name, ".pdf"))
     flog.info("Plotting normalized signature counts...")
-    pdf(filename, width = 10, height = 10 * sttkit:::.get_image_ratio(length(sig_names)))
-    gg_data <- plot_signatures_fake_bulk(ndata, plot_pairs = FALSE, 
-        plot_bar = TRUE, plot_heatmaps = FALSE, log_trans = FALSE, gmt = gmt)
-    dev.off()
+    if ("pdf" %in% opt$image_formats) {
+        pdf(filename, width = 10, height = 10 * sttkit:::.get_image_ratio(length(sig_names)))
+        gg_data <- plot_signatures_fake_bulk(ndata, plot_pairs = FALSE, 
+            plot_bar = TRUE, plot_heatmaps = FALSE, log_trans = FALSE, gmt = gmt)
+        dev.off()
+    }
     filename <- sttkit:::.get_sub_path(opt$outprefix, file.path("fake_bulk", name_no_dash),
                     paste0("_signature_normalized_counts", name, ".csv"))
     write.csv(gg_data$gmt, file = filename, row.names = FALSE)
-    if (opt$png) {
+    if ("png" %in% opt$image_formats) {
         filename <- sttkit:::.get_sub_path(opt$outprefix, file.path("fake_bulk", name_no_dash),
                         paste0("_signature_normalized_counts", name, ".png"))
         png(filename, width = 10, height = 10 * sttkit:::.get_image_ratio(length(sig_names)), 
@@ -212,10 +236,12 @@ if (single_input) {
 
     filename <- sttkit:::.get_sub_path(opt$outprefix, file.path("fake_bulk", name_no_dash),
                     paste0("_signature_normalized_counts_heatmaps", name, ".pdf"))
-    pdf(filename, width = 10, height = 10)
-    gg_data <- plot_signatures_fake_bulk(ndata, plot_pairs = FALSE, 
-        plot_bar = FALSE, plot_heatmaps = TRUE, log_trans = TRUE, gmt = gmt)
-    dev.off()
+    if ("pdf" %in% opt$image_formats) {
+        pdf(filename, width = 10, height = 10)
+        gg_data <- plot_signatures_fake_bulk(ndata, plot_pairs = FALSE, 
+            plot_bar = FALSE, plot_heatmaps = TRUE, log_trans = TRUE, gmt = gmt)
+        dev.off()
+    }
 }
 
 flog.info("Plotting signature/cluster associations...")

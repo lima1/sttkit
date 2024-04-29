@@ -12,6 +12,7 @@ plot_predictions(
   label_integration_method = "default",
   prefix,
   subdir = "he",
+  pdf = FALSE,
   png = FALSE,
   ...
 )
@@ -31,7 +32,9 @@ plot_predictions(
 
 \item{subdir}{Put files in a subdirectory}
 
-\item{png}{Create, in addition to PDF, PNG files}
+\item{pdf}{Create PDF image files}
+
+\item{png}{Create PNG image files}
 
 \item{...}{Arguments passed to \code{plot_features}.}
 }

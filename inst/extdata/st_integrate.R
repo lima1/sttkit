@@ -87,8 +87,11 @@ option_list <- list(
         help = "Cell type(s) for co-expression analysis (use with '--run_coexp')"),
     make_option(c("--no_crop"), action = "store_true", default = FALSE,
         help = "Do not crop H&E image."),
+    make_option(c("--image_formats"), action = "store", type = "character", 
+        default = "png", 
+        help = "Image format(s) of output plots. 'png' and 'pdf' supported. Multiple formats are seperated by colon ('png:pdf')."),
     make_option(c("--png"), action = "store_true", default = FALSE,
-        help = "Generate PNG version of output plots."),
+        help = "Generate PNG version of output plots. DEPRECATED."),
     make_option(c("--serialize"), action = "store_true", default = FALSE,
         help = "Serialize processed --singlecell object. Can be large."),
     make_option(c("--verbose"), action = "store_true", default = FALSE,
@@ -109,6 +112,18 @@ if (is.null(opt$outprefix)) {
 if (!dir.exists(dirname(opt$outprefix))) {
     dir.create(dirname(dirname(opt$outprefix)))
     dir.create(dirname(opt$outprefix))
+}
+if (opt$png) {
+    flog.warn("--png is deprecated.")
+    if (is.null(opt$image_formats)) {
+        # old default
+        opt$image_formats <- "pdf:png"
+    }
+}    
+if (is.null(opt$image_formats)) {
+    opt$image_formats <- c()
+} else {
+    opt$image_formats <- sapply(strsplit(opt$image_formats, ":")[[1]], tolower)
 }
 if (is.null(opt$singlecell)) {
     stop("Need --singlecell")
@@ -716,7 +731,9 @@ if (find_pred == TRUE) {
 
     filename <- sttkit:::.get_sub_path(prefix, "he", paste0("_he_celltrek_signature_scores", label, ".pdf"))
     ndata <- plot_signatures(ndata, file = filename, gmt = gmt, 
-        cells = cells, pt.size.factor = opt$dot_size, png = opt$png)
+        cells = cells, pt.size.factor = opt$dot_size,
+        pdf = "pdf" %in% opt$image_formats,
+        png = "png" %in% opt$image_formats)
 
     ndata_rna <- ndata
     DefaultAssay(ndata_rna) <- names(ndata@assays)[1]
@@ -737,19 +754,11 @@ if (find_pred == TRUE) {
           suffix = paste0("_he_celltrek_features", label, ".pdf"),
           subdir = "he",
           cells = cells, pt.size.factor = opt$dot_size,
-          image.alpha = 0, png = opt$png,
+          image.alpha = 0,
+          pdf = "pdf" %in% opt$image_formats,
+          png = "png" %in% opt$image_formats,
           crop = !opt$no_crop,
           plot_correlations = TRUE)
-
-    #flog.info("Plotting scaled single feature counts...", filename)
-    #plot_features(filename, object = ndata,
-    #      features = features, 
-    #      prefix = prefix, 
-    #      suffix = paste0("_he_celltrek_features_scaled", label, ".pdf"),
-    #      subdir = "he",
-    #      cells = cells, pt.size.factor = opt$dot_size, 
-    #      image.alpha = 0, cols = my.pal, png = opt$png,
-    #      plot_correlations = TRUE)
 }
 
 .plot_he_ct <- function(x, y, i) {
@@ -775,14 +784,15 @@ if (find_pred == TRUE) {
     filename <- sttkit:::.get_sub_path(opt$outprefix, "he",
             suffix = paste0("_he_celltrek_labels", label, ".pdf"))
     #filename <- file.path(dirname(opt$outprefix), "he", paste0(basename(opt$outprefix), "_he_celltrek_labels", label, ".pdf"))
-    pdf(filename, width = 10, height = 10)
-    print(c2)
-    dev.off()
-    if (opt$png) {
+    if ("pdf" %in% opt$image_formats) {
+        pdf(filename, width = 10, height = 10)
+        print(c2)
+        dev.off()
+    }
+    if ("png" %in% opt$image_formats) {
         png(gsub(".pdf$", ".png", filename), width = 10, height = 10, units = "in", res = 150)
         print(patchwork::wrap_plots(c2))
         dev.off()
-    #    dev.off() # TODO: device flush not happening properly earlier
     }
 
     library(Polychrome)
@@ -801,10 +811,12 @@ if (find_pred == TRUE) {
                   na.value = "white", repel = TRUE)
     filename <- sttkit:::.get_sub_path(opt$outprefix, "umap",
             suffix = paste0("_umap_labels", label, ".pdf"))
-    pdf(filename, width = 10, height = 4.5)
-    print(t1 + t2 + patchwork::plot_layout(widths = c(1.2, 1.8)))
-    dev.off()
-    if (opt$png) {
+    if ("pdf" %in% opt$image_formats) {
+        pdf(filename, width = 10, height = 4.5)
+        print(t1 + t2 + patchwork::plot_layout(widths = c(1.2, 1.8)))
+        dev.off()
+    }
+    if ("png" %in% opt$image_formats) {
         png(gsub(".pdf$", ".png", filename), width = 10, height = 4.5, units = "in", res = 150)
         print(t1 + t2 + patchwork::plot_layout(widths = c(1.2, 1.8)))
         dev.off()
@@ -812,10 +824,12 @@ if (find_pred == TRUE) {
 
     filename <- sttkit:::.get_sub_path(opt$outprefix, "umap",
             suffix = paste0("_single_cell_barplot", label, ".pdf"))
-    pdf(filename, width = 5, height = 4.5)
-    barplot(sort(table(celltrek_predictions[[i]]$cell_type)), col=umap_pal, las=2)
-    dev.off()
-    if (opt$png) {
+    if ("pdf" %in% opt$image_formats) {
+        pdf(filename, width = 5, height = 4.5)
+        barplot(sort(table(celltrek_predictions[[i]]$cell_type)), col=umap_pal, las=2)
+        dev.off()
+    }
+    if ("png" %in% opt$image_formats) {
         png(gsub(".pdf$", ".png", filename), width = 5, height = 4.5, units = "in", res = 150)
         barplot(sort(table(celltrek_predictions[[i]]$cell_type)), col=umap_pal, las=2)
         dev.off()
@@ -826,7 +840,9 @@ for (i in seq_along(singlecell)) {
     if (opt$integration_method %in% c('seurat', 'rctd', 'giotto', 'scvi') ) {
         sttkit::plot_predictions(infile, prediction.assay[[i]], 
             label = labels[i], label_integration_method = label_integration_method, 
-            prefix = opt[["outprefix"]], png = opt$png, pt.size.factor = opt$dot_size,
+            prefix = opt[["outprefix"]], pt.size.factor = opt$dot_size,
+            pdf = "pdf" %in% opt$image_formats,
+            png = "png" %in% opt$image_formats,
             crop = !opt$no_crop)
     } else if (opt$integration_method == 'celltrek') {
         .plot_he_ct(train, celltrek_predictions, i)
@@ -860,10 +876,12 @@ if (opt$run_coloc) {
             fileprefix <- file.path(opath, paste0(basename(opt$outprefix)))
 
             p <- plot_scoloc(ct)
-            pdf(paste0(fileprefix, "_colocalization", label, ".pdf"))
-            print(p)
-            dev.off()
-            if (opt$png) {
+            if ("pdf" %in% opt$image_formats) {
+                pdf(paste0(fileprefix, "_colocalization", label, ".pdf"))
+                print(p)
+                dev.off()
+            }
+            if ("png" %in% opt$image_formats) {
                 png(paste0(fileprefix, "_colocalization", label, ".png"))
                 print(p)
                 dev.off()
@@ -935,16 +953,17 @@ if (opt$run_coexp) {
                 sp <- SpatialFeaturePlot(ct, grep('CC_', colnames(ct@meta.data), value = TRUE))
 
                 vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
-                pdf(paste0(fileprefix, "_coexpression_plots.pdf"), width = 10)
-                grid.newpage()
-                pushViewport(viewport(layout = grid.layout(3, 4)))
-                pushViewport(vplayout(1:2, 1:2)); print(dp, newpage = FALSE); popViewport()
-                pushViewport(vplayout(3, 1:2)); print(fp, newpage = FALSE); popViewport()
-                pushViewport(vplayout(3, 3:4)); print(sp, newpage = FALSE); popViewport()
-                pushViewport(vplayout(1:2, 3:4)); par(fig = gridFIG(), new = TRUE); print(ph); popViewport()
-                dev.off()
-
-                if (opt$png) {
+                if ("pdf" %in% opt$image_formats) {
+                    pdf(paste0(fileprefix, "_coexpression_plots.pdf"), width = 10)
+                    grid.newpage()
+                    pushViewport(viewport(layout = grid.layout(3, 4)))
+                    pushViewport(vplayout(1:2, 1:2)); print(dp, newpage = FALSE); popViewport()
+                    pushViewport(vplayout(3, 1:2)); print(fp, newpage = FALSE); popViewport()
+                    pushViewport(vplayout(3, 3:4)); print(sp, newpage = FALSE); popViewport()
+                    pushViewport(vplayout(1:2, 3:4)); par(fig = gridFIG(), new = TRUE); print(ph); popViewport()
+                    dev.off()
+                }
+                if ("png" %in% opt$image_formats) {
                     png(paste0(fileprefix, "_coexpression_plots.png"), height = 720, width=1080)
                     grid.newpage()
                     pushViewport(viewport(layout = grid.layout(3, 4)))
@@ -967,7 +986,10 @@ if (!opt$integration_method %in% c("celltrek")) {
             common_assay <- sttkit::find_assayobject_consensus(prediction.assay)
             sttkit::plot_predictions(infile, predictions = common_assay,
                 label = "consensus", label_integration_method = label_integration_method,
-                prefix = opt[["outprefix"]], png = opt$png, pt.size.factor = opt$dot_size, crop = !opt$no_crop)
+                prefix = opt[["outprefix"]],
+                pdf = "pdf" %in% opt$image_formats,
+                png = "png" %in% opt$image_formats,
+                pt.size.factor = opt$dot_size, crop = !opt$no_crop)
         }
     }
 
@@ -1018,13 +1040,15 @@ if (!opt$integration_method %in% c("celltrek")) {
                 filename_heatmap <- sttkit:::.get_sub_path(opt$outprefix, 
                     "advanced", suffix = paste0("_", labels[i], "_",
                         label_integration_method, "_cell_proximity_enrichment.pdf"))
-                pdf(filename_heatmap)
-                ret <- try(cellProximityHeatmap(giotto_object, cpes[[i]]))
-                dev.off()
+                if ("pdf" %in% opt$image_formats) {
+                    pdf(filename_heatmap)
+                    ret <- try(cellProximityHeatmap(giotto_object, cpes[[i]]))
+                    dev.off()
+                }
                 if (is(ret, "try_error")) {
                     flog.warn("Could not generate cell proximity heatmap.")
                     file.remove(filename_heatmap)
-                } else if (opt$png) {
+                } else if ("png" %in% opt$image_formats) {
                     png(gsub(".pdf$", ".png", filename_heatmap), width = 7, height = 7, units = "in", res = 150)
                     ret <- try(cellProximityHeatmap(giotto_object, cpes[[i]]))
                     dev.off()

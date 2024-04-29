@@ -21,7 +21,8 @@
 #' @param height Output PDF height
 #' @param ncol Number of columns to plot genes for multi-page plots
 #' @param nrow Number of rows to plot genes for multi-page plots
-#' @param png Create, in addition to PDF, PNG files
+#' @param pdf Create PDF image files
+#' @param png Create PNG image files
 #' @param plot_correlations Plot pairwise correlations of feature scores
 #' @param plot_violin Plot distribution of feature scores across idents
 #' @param slot Slot to pull feature data for
@@ -37,7 +38,8 @@ plot_features <- function(object, features, cells = NULL,
                           palette = NULL, palette_inverse = FALSE,
                           trans = NULL, ggcode = NULL,
                           prefix, suffix,
-                          subdir = "", width = 10, height = NULL, png = FALSE,
+                          subdir = "", width = 10, height = NULL, pdf = FALSE,
+                          png = FALSE,
                           ncol = 4, nrow = 4,
                           plot_correlations = FALSE, plot_violin = FALSE,
                           slot = "data", ...)  {
@@ -48,8 +50,8 @@ plot_features <- function(object, features, cells = NULL,
                   ncol = ncol, nrow = nrow, cells = cells,
                   labels = labels, labels_title = labels_title,
                   palette = palette, palette_inverse = palette_inverse, trans = trans,
-                  ggcode = ggcode,
-                  plot_correlations = TRUE, plot_violin = TRUE, png = png, ...)
+                  ggcode = ggcode, plot_correlations = TRUE, plot_violin = TRUE,
+                  pdf = pdf, png = png, ...)
 }
 
 
@@ -105,7 +107,8 @@ plot_violin <- function(object, features, cells = NULL, pt_size = 0.25, slot = "
 #' @param ctrl Argument of \code{Seurat::AddModuleScore}
 #' @param method Either use \code{Seurat::AddModuleScore} or simple mean
 #' @param width Plot width
-#' @param png Create, in addition to PDF, PNG files
+#' @param pdf Create PDF image files
+#' @param png Create PNG image files
 #' @param cells Plot only specified cells
 #' @param zero_cutoff Cutoff defining zero. Defaults to half the number of genes in the signature.
 #' @param assay Name of the assay corresponding to the initial input data.
@@ -115,7 +118,7 @@ plot_violin <- function(object, features, cells = NULL, pt_size = 0.25, slot = "
 #' plot_signatures()
 
 plot_signatures <- function(obj_spatial, file, gmt, nbin = 24,
-    ctrl = 30, method = c("seurat", "mean"), width = 10, png = FALSE,
+    ctrl = 30, method = c("seurat", "mean"), width = 10, pdf = FALSE, png = FALSE,
     cells = NULL, zero_cutoff = NULL, assay = "Spatial", ...) {
     if (is(gmt, "character") && file.exists(gmt)) {
         sigs <- read_signatures(gmt, obj_spatial)
@@ -134,7 +137,7 @@ plot_signatures <- function(obj_spatial, file, gmt, nbin = 24,
     sig_names <- .get_signature_names(obj_spatial, sigs)
     ratio <- .get_image_ratio(length(sig_names))
     obj_spatial <- .plot_spatial_with_image(file, obj_spatial, sig_names, width, ratio, cells = cells,
-                  png = png, ...)
+                  pdf = pdf, png = png, ...)
     obj_spatial
 }
 
@@ -168,7 +171,8 @@ plot_signatures <- function(obj_spatial, file, gmt, nbin = 24,
 #' @param prefix Output file prefix
 #' @param subdir Put files in a subdirectory
 #' @param width Output PDF width
-#' @param png Create, in addition to PDF, PNG files
+#' @param pdf Create PDF image files
+#' @param png Create PNG image files
 #' @param plot_he Plot for each library the HE jpeg
 #' @param plot_ranks Plot diagnostics about all tested ranks
 #' @param plot_qc Plot QC statistics about all tested ranks
@@ -182,7 +186,7 @@ plot_signatures <- function(obj_spatial, file, gmt, nbin = 24,
 #' @examples
 #' plot_nmf()
 plot_nmf <- function(object, libs, labels = NULL, rank, prefix, 
-                     subdir = "nmf", width = 10, png = FALSE,
+                     subdir = "nmf", width = 10, pdf = FALSE, png = FALSE,
                      plot_he = TRUE, plot_ranks = TRUE, plot_qc = TRUE, assay = "Spatial", ...) {
     nmf_obj <- .extract_nmf_obj(object, rank)
     nmf_obj_random <- .extract_nmf_obj(object, rank, randomize = TRUE)
@@ -202,22 +206,24 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
         tmp <- .get_sub_path(prefix, file.path(subdir, "heatmap"), "") # make sure that umap directory exists
         filename <- .get_sub_path(prefix, file.path(subdir, "umap", k),
             paste0("_spatial_cluster.pdf"))
-        pdf(filename, width = 10, height = 5)
-        gp <- DimPlot(object, reduction = "umap", label = TRUE)
-        if (requireNamespace("ggthemes", quietly = TRUE) &&
-            length(levels(Idents(object))) <= 8) {
-            gp <- gp + ggthemes::scale_colour_colorblind()
+        if (pdf) {
+            pdf(filename, width = 10, height = 5)
+            gp <- DimPlot(object, reduction = "umap", label = TRUE)
+            if (requireNamespace("ggthemes", quietly = TRUE) &&
+                length(levels(Idents(object))) <= 8) {
+                gp <- gp + ggthemes::scale_colour_colorblind()
+            }
+            print(gp)
+            dev.off()
         }
-        print(gp)
-        dev.off()
         if ("label" %in% colnames(object@meta.data)) {
             .plot_cluster_library(object, field = "label", prefix = prefix, 
                 subdir = file.path(subdir, "umap", k),
-                reference_technology = "spatial")
+                reference_technology = "spatial", pdf = pdf, png = png)
         } else if ("library" %in% colnames(object@meta.data)) {
             .plot_cluster_library(object, field = "library", prefix = prefix, 
                 subdir = file.path(subdir, "umap", k),
-                reference_technology = "spatial")
+                reference_technology = "spatial", pdf = pdf, png = png)
         }
 
         #object <- .rescale_features(object, features)
@@ -236,7 +242,7 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
 
                 filename <- .get_sub_path(prefix, file.path(subdir, "he", k), paste0("_he_nmf_cluster_", k, label, libs_label, ".pdf"))
                 .plot_spatial_with_image(filename, obj_split, features, width, ratio, 
-                              plot_correlations = TRUE, plot_violin = TRUE, png = png, ...)
+                              plot_correlations = TRUE, plot_violin = TRUE, pdf = pdf, png = png, ...)
 
                 sd.plot <- SpatialDimPlot(obj_split, label = TRUE, images = 
                                           .get_image_slice(obj_split), label.size = 3, ...)
@@ -247,9 +253,11 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
                 }    
                 filename <- .get_sub_path(prefix, file.path(subdir, "he", k),
                     paste0("_he_nmf_discrete_cluster_", k, label, libs_label, ".pdf"))
-                pdf(filename, width = 4, height = 3.9)
-                print(sd.plot)
-                invisible(dev.off())
+                if (pdf) {
+                    pdf(filename, width = 4, height = 3.9)
+                    print(sd.plot)
+                    invisible(dev.off())
+                }
                 if(png) {
                     png(sub(".pdf$", ".png", filename), width = 4, height = 3.9, units = "in", res = 150)
                     print(sd.plot)
@@ -257,10 +265,12 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
                 }
                 filename <- .get_sub_path(prefix, file.path(subdir, "heatmap", k),
                     paste0("_heatmap_nmf_discrete_cluster_", k, label, libs_label, ".pdf"))
-                pdf(filename)
-                gp <- DoHeatmap(obj_split, features = features_nmf)
-                print(gp)
-                invisible(dev.off())
+                if (pdf) {
+                    pdf(filename)
+                    gp <- DoHeatmap(obj_split, features = features_nmf)
+                    print(gp)
+                    invisible(dev.off())
+                }
                 if(png) {
                     png(sub(".pdf$", ".png", filename), width = 7, height = 7, units = "in", res = 150)
                     print(gp)
@@ -272,13 +282,14 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
             tmp <- .get_sub_path(prefix, file.path(subdir, "advanced"), "") # make sure that advanced directory exists
             filename <- .get_sub_path(prefix, file.path(subdir,"advanced", k), 
                 paste0("_nmf_cluster_", k, "_correlations.pdf"))
-            pdf(filename, width = width, height = width * ratio, onefile = FALSE)
-            plot_correlation_heatmap(lapply(libs, function(i) object[, object$library == i]), features)
-            dev.off()
-            
+            if (pdf) {
+                pdf(filename, width = width, height = width * ratio, onefile = FALSE)
+                plot_correlation_heatmap(lapply(libs, function(i) object[, object$library == i]), features)
+                dev.off()
+            }   
             .plot_correlation_labels(object, cluster_labels = Idents(object), 
                 prefix = prefix, file.path(subdir, "advanced", k), 
-                suffix = paste0("_nmf_cluster_", k, "_label_correlations.pdf")) 
+                suffix = paste0("_nmf_cluster_", k, "_label_correlations.pdf"), pdf = pdf, png = png) 
         }
         if (plot_qc) {
             x <- object@meta.data
@@ -286,7 +297,6 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
             xm <- xm[grep(paste0("nmf_k_", k, "_"), xm$variable),]
             tmp <- .get_sub_path(prefix, file.path(subdir, "qc"), "") # make sure that qc directory exists
             filename <- .get_sub_path(prefix, file.path(subdir, "qc", k), paste0("_nmf_cluster_", k, "_qc.pdf"))
-            pdf(filename, width = width, height = width * ratio)
             if (length(unique(xm$library)) < 6) {
                 gp <- ggplot(xm, aes_string(paste0("nFeature_", assay), "value", color = "library")) + 
                     geom_point(size=0.2) + 
@@ -301,9 +311,12 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
             }       
             if (requireNamespace("ggthemes", quietly = TRUE)) {
                 gp <- gp + ggthemes::scale_colour_colorblind()
-            }    
-            print(gp)
-            dev.off()
+            }
+            if (pdf) {
+                pdf(filename, width = width, height = width * ratio)
+                print(gp)
+                dev.off()
+            }
             if (png) {
                 filename <- .get_sub_path(prefix, file.path(subdir, "qc", k), paste0("_nmf_cluster_", k, "_qc.png"))
                 png(filename, width = width, height = width * ratio, units = "in", res = 150)
@@ -312,9 +325,11 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
             }    
         }
         filename <- .get_sub_path(prefix, file.path(subdir, "advanced", k), paste0("_nmf_cluster_", k, "_coefmap.pdf"))
-        pdf(filename, width = width, height = width)
-        NMF::coefmap(nmf_obj_f)
-        dev.off()
+        if (pdf) {
+            pdf(filename, width = width, height = width)
+            NMF::coefmap(nmf_obj_f)
+            dev.off()
+        }
         if (png) {
             filename <- .get_sub_path(prefix, file.path(subdir, "advanced", k), paste0("_nmf_cluster_", k, "_coefmap.png"))
             png(filename, width = width, height = width, units = "in", res = 150)
@@ -325,7 +340,7 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
     if (plot_qc) {
         .plot_nmf_r2(object, libs, rank, prefix, file.path(subdir, "qc"), width, png, ...)
     }
-    if (plot_ranks && length(rank) > 1) {
+    if (plot_ranks && length(rank) > 1 && pdf) {
         #.plot_nmf_r2(object, libs, rank, prefix, subdir, width, 
         #    png, feature_suffix = "rss", ...)
         filename <- .get_sub_path(prefix, file.path(subdir, "qc"), "_nmf_ranks.pdf")
@@ -362,12 +377,12 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
             paste0("_he_nmf_cluster_", feature_suffix, "_", libs[i], ".pdf"))
         obj_split <- object[,object$library == libs[i]]
         #obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
-        .plot_spatial_with_image (filename, obj_split, features, width, ratio, plot_violin = TRUE, png = png, ...)
+        .plot_spatial_with_image (filename, obj_split, features, width, ratio, plot_violin = TRUE, pdf = pdf, png = png, ...)
     #        labels = waiver(), labels_title = sprintf("%12s", labels_title), ...)
     }
 }    
 
-.plot_correlation_labels <- function(object, cluster_labels, prefix, subdir, suffix) {
+.plot_correlation_labels <- function(object, cluster_labels, prefix, subdir, suffix, pdf = FALSE, png = FALSE) {
     if (!requireNamespace("corrplot")) {
         flog.warn("Package corrplot not installed.")
     } else if ("library" %in% colnames(object@meta.data)) {
@@ -378,11 +393,20 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
         chisq <- chisq.test( table(cluster_labels, sample_labels))
         contrib <- 100 * chisq$residuals^2 / chisq$statistic
         filename <- .get_sub_path(prefix, subdir, suffix)
-        pdf(filename, height = 8, width = 7)
-        par(mfrow = c(1, 2))
-        corrplot::corrplot(contrib, is.cor = FALSE, col = "black", cl.pos="n")
-        corrplot::corrplot(chisq$residuals, is.cor = FALSE, col = Seurat:::FeaturePalettes$Spatial)
-        dev.off()
+        if (pdf) {
+            pdf(filename, height = 8, width = 7)
+            par(mfrow = c(1, 2))
+            corrplot::corrplot(contrib, is.cor = FALSE, col = "black", cl.pos="n")
+            corrplot::corrplot(chisq$residuals, is.cor = FALSE, col = Seurat:::FeaturePalettes$Spatial)
+            dev.off()
+        }
+        if (png) {
+            png(paste0(gsub(".pdf$", "", filename), ".png"), width = 7, height = 8, units = "in", res = 150)
+            par(mfrow = c(1, 2))
+            corrplot::corrplot(contrib, is.cor = FALSE, col = "black", cl.pos="n")
+            corrplot::corrplot(chisq$residuals, is.cor = FALSE, col = Seurat:::FeaturePalettes$Spatial)
+            dev.off()
+        }
     }
 }
 
@@ -760,7 +784,7 @@ plot_signatures_nmf <- function(object, gmt, gmt_name = NULL, rank, prefix,
                                  ncol = 4, nrow = 4, cells = NULL, 
                                  labels = NULL, labels_title = "",
                                  palette = NULL, palette_inverse = FALSE, trans = NULL, ggcode = NULL,
-                                 png = FALSE, plot_correlations = FALSE, plot_violin = FALSE, ...) {
+                                 pdf = FALSE, png = FALSE, plot_correlations = FALSE, plot_violin = FALSE, ...) {
     fun_scale_color <- .get_scale_color_cont(FALSE, palette, palette_inverse) 
     .format_gp <- function(gp) {
         if (!is.null(trans)) {
@@ -781,8 +805,10 @@ plot_signatures_nmf <- function(object, gmt, gmt_name = NULL, rank, prefix,
     if (length(features) > ncol * nrow) {
         glist <- lapply(glist, ggplotGrob)
         glist <- marrangeGrob(glist, ncol = ncol, nrow = nrow)
-        ggsave(filename, glist,
-               width = width, height = width * ratio)
+        if (pdf) {
+            ggsave(filename, glist,
+                   width = width, height = width * ratio)
+        }
         if (png) {
             invisible(mapply(ggsave, filename = paste0(gsub(".pdf$", "", filename), "_", seq_along(glist),".png"),
                    plot = glist, 
@@ -791,18 +817,15 @@ plot_signatures_nmf <- function(object, gmt, gmt_name = NULL, rank, prefix,
         flog.warn("Too many features for violin plot. Skipping...")
         flog.warn("Too many features for correlation plot. Skipping...")
     } else {
-        pdf(filename, width = width, height = width * ratio)
-        print(wrap_plots(glist))
-        if (length(features) > 1) {
-            if (plot_violin && length(levels(object_resized)) > 1)
-                print(plot_violin(object_resized, features, cells))
-            #if (plot_correlations && requireNamespace("GGally", quietly = TRUE))
-            #    print(GGally::ggcorr(data = NULL, cor_matrix = .cor_nn(object_resized, 
-            #          features, average_nn = FALSE, zero_offset = zero_offset), 
-            #          label = TRUE, label_size = 3, layout.exp = 3, hjust = 1))
+        if (pdf) {
+            pdf(filename, width = width, height = width * ratio)
+            print(wrap_plots(glist))
+            if (length(features) > 1) {
+                if (plot_violin && length(levels(object_resized)) > 1)
+                    print(plot_violin(object_resized, features, cells))
+            }
+            dev.off()
         }
-        dev.off()
-
         if(png) {
             png(gsub(".pdf$", ".png", filename), width = width, height = width * ratio, units = "in", res = 150)
             print(wrap_plots(glist))
@@ -954,7 +977,8 @@ plot_qc_read <- function(object, prefix, assay) {
 #' @param prefix Output file prefix
 #' @param subdir Put files in a subdirectory
 #' @param width Output PDF width
-#' @param png Create, in addition to PDF, PNG files
+#' @param pdf Create PDF image files
+#' @param png Create PNG image files
 #' @param plot_he Plot for each library the HE jpeg
 #' @param assay Name of the assay corresponding to the initial input data.
 #' @param ... Additional parameters passed to \code{\link{plot_features}}
@@ -962,7 +986,7 @@ plot_qc_read <- function(object, prefix, assay) {
 #' @examples
 #' plot_sc3()
 plot_sc3 <- function(object, libs, labels = NULL, rank, prefix, 
-                     subdir = "sc3", width = 10, png = FALSE,
+                     subdir = "sc3", width = 10, pdf = FALSE, png = FALSE,
                      plot_he = TRUE, assay = "Spatial", ...) {
 
     libs <- as.vector(libs)
@@ -986,11 +1010,11 @@ plot_sc3 <- function(object, libs, labels = NULL, rank, prefix,
         if ("label" %in% colnames(object@meta.data)) {
             .plot_cluster_library(object, field = "label", prefix = prefix, 
                 subdir = file.path(subdir, "umap", k),
-                reference_technology = "spatial")
+                reference_technology = "spatial", pdf = pdf, png = png)
         } else if ("library" %in% colnames(object@meta.data)) {
             .plot_cluster_library(object, field = "library", prefix = prefix, 
                 subdir = file.path(subdir, "umap", k),
-                reference_technology = "spatial")
+                reference_technology = "spatial", pdf = pdf, png = png)
         }
 
         ratio <- .get_image_ratio(k)
@@ -1012,9 +1036,11 @@ plot_sc3 <- function(object, libs, labels = NULL, rank, prefix,
                 }    
                 filename <- .get_sub_path(prefix, file.path(subdir, "he", k),
                     paste0("_he_sc3_discrete_cluster_", k, label, libs_label, ".pdf"))
-                pdf(filename, width = 4, height = 3.9)
-                print(sd.plot)
-                invisible(dev.off())
+                if (pdf) {
+                    pdf(filename, width = 4, height = 3.9)
+                    print(sd.plot)
+                    invisible(dev.off())
+                }
                 if(png) {
                     png(sub(".pdf$", ".png", filename), width = 4, height = 3.9, units = "in", res = 150)
                     print(sd.plot)
@@ -1110,14 +1136,15 @@ plot_scoloc <- function(celltrek_object, directed=FALSE) {
 #' @param label_integration_method Label of integration method
 #' @param prefix Output file prefix
 #' @param subdir Put files in a subdirectory
-#' @param png Create, in addition to PDF, PNG files
+#' @param pdf Create PDF image files
+#' @param png Create PNG image files
 #' @param ... Arguments passed to \code{plot_features}.
 #' @export plot_predictions
 #' @examples
 #' plot_predictions()
 plot_predictions <- function(object, predictions = NULL, ignore = c("max", "unassigned"),
                           label = NULL, label_integration_method = "default", prefix, 
-                          subdir = "he", png = FALSE,
+                          subdir = "he", pdf = FALSE, png = FALSE,
                           ...) {
     if (is.null(predictions) && is.null(object[["predictions"]])) {
         stop("object needs a predictions object if not provided.")
@@ -1144,16 +1171,18 @@ plot_predictions <- function(object, predictions = NULL, ignore = c("max", "unas
             plot_features(object = x_split[[j]], features = features,
                 prefix = prefix, subdir = subdir,
                 suffix = paste0("_he_labels", label, "_", libs[j], libs_label[j], "_", label_integration_method,".pdf"),
-                png = png,
+                pdf = pdf, png = png,
                 ...)
             filename <- .get_sub_path(prefix, "he",
                     suffix = paste0("_he_labels_call", label, "_", libs[j], libs_label[j], "_", label_integration_method, ".pdf"))
             gp <- SpatialDimPlot(x_split[[j]], label = TRUE,
                 images = .get_image_slice(x_split[[j]]),
                 label.size = 3)
-            pdf(filename, width = 4, height = 3.9)
-            print(gp)
-            invisible(dev.off())
+            if (pdf) {
+                pdf(filename, width = 4, height = 3.9)
+                print(gp)
+                invisible(dev.off())
+            }
             if (png) {
                 png(gsub("pdf$", "png", filename), width = 4,
                     height = 3.9, units = "in", res = 150)
@@ -1171,12 +1200,14 @@ plot_predictions <- function(object, predictions = NULL, ignore = c("max", "unas
         } else {
             glist <- patchwork::wrap_plots(glist)
         }
-        ggsave(filename, glist,
-               width = 10, height = 10 * ratio)
+        if (pdf) {
+            ggsave(filename, glist,
+                   width = 10, height = 10 * ratio)
+        }
     } else {
         plot_features(object = object, features = features,
             prefix = prefix, subdir = subdir,
             suffix = paste0("_he_labels", label, "_", label_integration_method, ".pdf"),
-            png = png, ...)
+            pdf = pdf, png = png, ...)
     }
 }

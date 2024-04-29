@@ -4,7 +4,7 @@
 \alias{plot_clusters}
 \title{plot_clusters}
 \usage{
-plot_clusters(obj, prefix, subdir = "snn")
+plot_clusters(obj, prefix, subdir = "snn", pdf = FALSE, png = FALSE)
 }
 \arguments{
 \item{obj}{Object, read by \code{\link{read_spatial}}.}
@@ -12,6 +12,10 @@ plot_clusters(obj, prefix, subdir = "snn")
 \item{prefix}{Prefix of output files}
 
 \item{subdir}{Put files in a subdirectory}
+
+\item{pdf}{Create PDF image files}
+
+\item{png}{Create PNG image files}
 }
 \description{
 Plot clusters

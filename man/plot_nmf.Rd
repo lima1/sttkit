@@ -12,6 +12,7 @@ plot_nmf(
   prefix,
   subdir = "nmf",
   width = 10,
+  pdf = FALSE,
   png = FALSE,
   plot_he = TRUE,
   plot_ranks = TRUE,
@@ -36,7 +37,9 @@ running \code{\link{cluster_nmf}}}
 
 \item{width}{Output PDF width}
 
-\item{png}{Create, in addition to PDF, PNG files}
+\item{pdf}{Create PDF image files}
+
+\item{png}{Create PNG image files}
 
 \item{plot_he}{Plot for each library the HE jpeg}
 

@@ -12,6 +12,7 @@ plot_sc3(
   prefix,
   subdir = "sc3",
   width = 10,
+  pdf = FALSE,
   png = FALSE,
   plot_he = TRUE,
   assay = "Spatial",
@@ -34,7 +35,9 @@ running \code{\link{cluster_sc3}}}
 
 \item{width}{Output PDF width}
 
-\item{png}{Create, in addition to PDF, PNG files}
+\item{pdf}{Create PDF image files}
+
+\item{png}{Create PNG image files}
 
 \item{plot_he}{Plot for each library the HE jpeg}
 
