@@ -13,13 +13,7 @@ enhance_bayesspace(x, test_num_clusters = seq(2, 12), num_clusters = NULL, ...)
 
 \item{num_clusters}{Optional picked number}
 
-\item{...}{Additional paramters passed to \code{BayesSpace::spatialCluster}}
-
-\item{force}{Recalculate, even when serialized objects are available}
-
-\item{serialize}{Serialize output objects}
-
-\item{prefix}{Prefix of output files}
+\item{...}{Additional paramters passed to \code{BayesSpace::spatialEnhance}}
 }
 \description{
 Enhance BayesSpace data

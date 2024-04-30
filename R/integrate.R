@@ -535,8 +535,7 @@ find_assayobject_consensus <- function(x, min_fraction = 0.05, drop_zero = TRUE,
 #' @export combine_assayobjects
 #' @examples
 #' combine_assayobjects()
-combine_assayobjects <- function(x, min_fraction = 0.05, drop_zero = TRUE,
-    ignore_unassigned = TRUE, labels = names(x)) {
+combine_assayobjects <- function(x, ignore_unassigned = TRUE, labels = names(x)) {
     if (is.null(labels)) {
         stop("need labels")
     }    

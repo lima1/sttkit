@@ -4,10 +4,7 @@
 #' @param x Object, converted by \code{\link{as_SingleCellExperiment}}
 #' @param test_num_clusters Range of number of clusters to be tested (\code{qs}). 
 #' @param num_clusters Optional picked number
-#' @param force Recalculate, even when serialized objects are available
-#' @param serialize Serialize output objects
-#' @param prefix Prefix of output files
-#' @param ... Additional paramters passed to \code{BayesSpace::spatialCluster}
+#' @param ... Additional paramters passed to \code{BayesSpace::spatialEnhance}
 #' @export enhance_bayesspace
 #' @examples
 #' #enhance_bayesspace()
@@ -18,7 +15,7 @@ enhance_bayesspace <- function(x, test_num_clusters = seq(2, 12),
     ndata_enhanced <- spatialEnhance(ndata,
         q = opt$num_clusters,
         nrep = opt$num_iter,
-        verbose = TRUE)
+        verbose = TRUE, ...)
     flog.info("Writing R data structure to %s...", filename)
     saveRDS(ndata_enhanced, file = filename)
 }    
@@ -40,6 +37,7 @@ enhance_bayesspace <- function(x, test_num_clusters = seq(2, 12),
 #' @param pt.alpha \code{\link{Seurat::SingleSpatialPlot}} argument
 #' @param image.alpha \code{\link{Seurat::SingleSpatialPlot}} argument
 #' @param verbose Verbose output
+#' @importFrom stats coef
 #' @export enhance_deconvolve
 #' @examples
 #' #enhance_deconvolve()

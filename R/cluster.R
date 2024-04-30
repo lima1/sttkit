@@ -691,6 +691,7 @@ set_idents_nmf <- function(object, k, rank = NULL, stop_if_unavail = FALSE) {
 #' \code{max_features} features
 #' @param force Recalculate, even when serialized objects are available
 #' @param serialize Serialize output objects
+#' @param prefix Prefix of output files
 #' @param ... Additional parameters passed to the \code{sc3} function.
 #' @export cluster_sc3
 #' @examples

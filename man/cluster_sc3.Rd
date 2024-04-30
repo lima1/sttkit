@@ -29,6 +29,8 @@ cluster_sc3(
 
 \item{serialize}{Serialize output objects}
 
+\item{prefix}{Prefix of output files}
+
 \item{...}{Additional parameters passed to the \code{sc3} function.}
 }
 \description{

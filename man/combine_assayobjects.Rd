@@ -4,13 +4,7 @@
 \alias{combine_assayobjects}
 \title{combine_assayobjects}
 \usage{
-combine_assayobjects(
-  x,
-  min_fraction = 0.05,
-  drop_zero = TRUE,
-  ignore_unassigned = TRUE,
-  labels = names(x)
-)
+combine_assayobjects(x, ignore_unassigned = TRUE, labels = names(x))
 }
 \arguments{
 \item{x}{list of \code{AssayObject}s}

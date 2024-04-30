@@ -155,23 +155,23 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
     assay = "Spatial", probe_set = NULL, ...) {
     requireNamespace("hdf5r")
     
-    if (!dir.exists(spatial_dir)) {
+    # VisiumHD?
+    if (dir.exists(file.path(filtered_feature_bc_matrix_dir, "binned_outputs"))) {
+        if (is.null(bin_size)) {
+            bin_size <- 8
+            flog.warn("bin_size not specified, defaulting to %i um.", bin_size)
+        } 
+        bin_size_pretty <- paste0(sprintf("%03d", bin_size), "um")
+        filtered_feature_bc_matrix_dir <- file.path(filtered_feature_bc_matrix_dir, "binned_outputs", paste0("square_", 
+                             bin_size_pretty))
+        spatial_dir <- file.path(filtered_feature_bc_matrix_dir, "spatial")
+    } else if (!dir.exists(spatial_dir)) {
         flog.warn("%s does not exist.", spatial_dir)
-        if (dir.exists(file.path(filtered_feature_bc_matrix_dir, "binned_outputs"))) {
-            if (is.null(bin_size)) {
-                bin_size <- 8
-                flog.warn("bin_size not specified, defaulting to %i um.", bin_size)
-            } 
-            bin_size_pretty <- paste0(sprintf("%03d", bin_size), "um")
-            filtered_feature_bc_matrix_dir <- file.path(filtered_feature_bc_matrix_dir, "binned_outputs", paste0("square_", 
-                                 bin_size_pretty))
-            spatial_dir <- file.path(filtered_feature_bc_matrix_dir, "spatial")
-
-        } else if (file.exists(file.path(filtered_feature_bc_matrix_dir, 
+        if (file.exists(file.path(filtered_feature_bc_matrix_dir, 
             "scalefactors_json.json"))) {
             spatial_dir <- filtered_feature_bc_matrix_dir
         }
-    } 
+    }
     filename <- file.path(filtered_feature_bc_matrix_dir, 
         "filtered_feature_bc_matrix.h5")
     flog.info("Reading h5 feature matrix %s.", filename)
