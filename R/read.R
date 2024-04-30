@@ -174,6 +174,7 @@ read_visium <- function(filtered_feature_bc_matrix_dir,
     } 
     filename <- file.path(filtered_feature_bc_matrix_dir, 
         "filtered_feature_bc_matrix.h5")
+    flog.info("Reading h5 feature matrix %s.", filename)
     raw_data <- Read10X_h5(filename = filename)
     lowres <- file.path(spatial_dir, "tissue_lowres_image.png")
     if (file.exists(lowres)) {
