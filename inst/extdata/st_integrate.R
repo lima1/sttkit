@@ -21,7 +21,7 @@ option_list <- list(
     make_option(c("--batch"), action = "store", type = "character", default = NULL,
         help = "Meta data column with batch in --singlecell. Only used in scvi yet."),
     make_option(c("--integration_method"), action = "store", type = "character", default = "seurat",
-        help = "Integration: Choose between 'seurat' (default), 'celltrek', 'rctd' (alias for 'rctd_multi'), 'rctd_full', 'giotto', 'scvi_destvi', 'scvi_cell2location' as integration method"),
+        help = "Integration: Choose between 'seurat' (default), 'celltrek', 'rctd' (alias for 'rctd_multi'), 'rctd_full', 'rctd_doublet', 'giotto', 'scvi_destvi', 'scvi_cell2location' as integration method"),
     make_option(c("--downsample_cells"), action = "store", type = "integer", default = 3000,
         help = "Integration: Use that many random cells per refdata [default %default]"),
     make_option(c("--condition"), action = "store", type = "character", default = NULL,
@@ -129,7 +129,8 @@ if (is.null(opt$singlecell)) {
     stop("Need --singlecell")
 }
 
-if (!opt$integration_method %in% c("seurat", "celltrek", "rctd", "rctd_full", "rctd_multi", "giotto", "scvi", "scvi_destvi", "scvi_cell2location")) {
+if (!opt$integration_method %in% c("seurat", "celltrek", "rctd", "rctd_full", "rctd_multi",
+        "rctd_doublet", "giotto", "scvi", "scvi_destvi", "scvi_cell2location")) {
   stop("Integration: unknown integration method seleted.")
 }
 
