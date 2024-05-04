@@ -28,11 +28,9 @@ as_GiottoObject <- function(object, assay = "Spatial", slot = "counts", ...) {
     spatial_locs <-  spatial_locs[, c(2, 1)]
     colnames(spatial_locs) <- c("sdimx", "sdimy")
     spatial_locs$sdimy <- spatial_locs$sdimy * -1
-    cell_metadata <-  data.table(
-        cell_ID = rownames(object@images[[1]]@coordinates),
-        object@images[[1]]@coordinates[, c("tissue", "row", "col")])
-
-    colnames(cell_metadata) <- c("cell_ID", "in_tissue", "array_row", "array_col")
+    cell_metadata <- data.table(
+        cell_ID = rownames(object@meta.data),
+        object@meta.data)
     mg_object <- Giotto::createGiottoImage(spatial_locs = spatial_locs,
         mg_object = magick::image_read(object@images[[1]]@image),
         name = Images(object)[1],
@@ -53,12 +51,12 @@ as_GiottoObject <- function(object, assay = "Spatial", slot = "counts", ...) {
                         slot = "data", assay = "SCT")
         expr_obj <- new("exprObj", name = "normalized", exprMat = norm_exp,
                 spat_unit = "cell", feat_type = "rna", provenance = "cell")
-        gobject <- set_expression_values(gobject = gobject, values = expr_obj, 
+        gobject <- Giotto::set_expression_values(gobject = gobject, values = expr_obj, 
             set_defaults = FALSE)
     }
     if ("predictions" %in% Assays(object)) {
         enrObj <- as_spatEnrObj(object$predictions)
-        gobject <- set_spatial_enrichment(gobject, enrObj)
+        gobject <- Giotto::set_spatial_enrichment(gobject, enrObj)
     }    
     return(gobject) 
 }    

@@ -265,9 +265,9 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
                 }
                 filename <- .get_sub_path(prefix, file.path(subdir, "heatmap", k),
                     paste0("_heatmap_nmf_discrete_cluster_", k, label, libs_label, ".pdf"))
+                gp <- DoHeatmap(obj_split, features = features_nmf)
                 if (pdf) {
                     pdf(filename)
-                    gp <- DoHeatmap(obj_split, features = features_nmf)
                     print(gp)
                     invisible(dev.off())
                 }
@@ -338,11 +338,9 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
         }    
     }
     if (plot_qc) {
-        .plot_nmf_r2(object, libs, rank, prefix, file.path(subdir, "qc"), width, png, ...)
+        .plot_nmf_r2(object, libs, rank, prefix, file.path(subdir, "qc"), width, pdf, png, ...)
     }
     if (plot_ranks && length(rank) > 1 && pdf) {
-        #.plot_nmf_r2(object, libs, rank, prefix, subdir, width, 
-        #    png, feature_suffix = "rss", ...)
         filename <- .get_sub_path(prefix, file.path(subdir, "qc"), "_nmf_ranks.pdf")
         pdf(filename)
         if (is.null(nmf_obj_random)) {
@@ -365,7 +363,7 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
 }
 
 .plot_nmf_r2 <- function(object, libs, rank, prefix, subdir, width, 
-                         png, feature_suffix = "r2", ...) {
+                         pdf, png, feature_suffix = "r2", ...) {
 
     features <- paste0("nmf_k_", feature_suffix, "_", rank)
     ratio <- .get_image_ratio(length(rank))
@@ -377,7 +375,7 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
             paste0("_he_nmf_cluster_", feature_suffix, "_", libs[i], ".pdf"))
         obj_split <- object[,object$library == libs[i]]
         #obj_split@images <- obj_split@images[which(names(obj_split@images) %in% make.names(libs[i]))]
-        .plot_spatial_with_image (filename, obj_split, features, width, ratio, plot_violin = TRUE, pdf = pdf, png = png, ...)
+        .plot_spatial_with_image(filename, obj_split, features, width, ratio, plot_violin = TRUE, pdf = pdf, png = png, ...)
     #        labels = waiver(), labels_title = sprintf("%12s", labels_title), ...)
     }
 }    
