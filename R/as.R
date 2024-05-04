@@ -107,7 +107,8 @@ as_AssayObject <- function(object) {
 
 .as_AssayObject_rcdt <- function(object) {
     r <- object@results
-    if (length(r) > 1) {
+    if (is.null(names(r))) {
+        # doublet mode "multi"
         if (!is.null(r[[1]]$sub_weights)) {
             sw <- rbindlist(lapply(seq_along(r), function(i)
                     data.table(
@@ -124,7 +125,8 @@ as_AssayObject <- function(object) {
             swm <- as(swm, "sparseMatrix")
             return(CreateAssayObject(data = swm))
         }
-    } else if (length(r) == 1) {
+    } else {
+        # doublet mode "full" or "doublet"
         m <- t(spacexr::normalize_weights(as.matrix(r$weights)))
         m <- rbind(m, max = apply(m, 2, max))
         return(CreateAssayObject(data = m))
