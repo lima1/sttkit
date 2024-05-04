@@ -1209,3 +1209,99 @@ plot_predictions <- function(object, predictions = NULL, ignore = c("max", "unas
             pdf = pdf, png = png, ...)
     }
 }
+
+#' plot_prediction_summary
+#'
+#' Plots a categorical prediction summary in a Seurat object on HE slides. 
+#' @param object Seurat object
+#' @param feature Name of the feature that contains the prediction summary
+#' @param label Label of single cell dataset
+#' @param label_integration_method Label of integration method
+#' @param prefix Output file prefix
+#' @param subdir Put files in a subdirectory
+#' @param pdf Create PDF image files
+#' @param png Create PNG image files
+#' @param ... Arguments passed to \code{Seurat::SpatialDimPlot}.
+#' @export plot_prediction_summary
+#' @examples
+#' plot_prediction_summary()
+plot_prediction_summary <- function(object, feature = "spot_class",
+                          label = NULL, label_integration_method = "default", prefix, 
+                          subdir = "advanced", pdf = FALSE, png = FALSE,
+                          ...) {
+    Idents(object) <- FetchData(object, feature)[[feature]]
+
+    label <- if (is.null(label)) "" else paste0("_", label)
+    flog.info("Generating output plots for %s ...", label)
+    if (length(Images(object)) > 1 && "library" %in% colnames(object@meta.data)) {
+        x_split <- SplitObject(object, split.by = "library")
+        libs <- sapply(x_split, function(y) y$library[1])
+        libs_label <- rep("", length(libs))
+        field <- "library"
+        if ("label" %in% colnames(object@meta.data)) {
+            libs_label <- paste0("_", sapply(x_split, function(y) y$label[1]))
+            field <- "label"
+        }
+        for (j in seq_along(libs)) {
+            filename <- .get_sub_path(prefix, subdir,
+                    suffix = paste0("_he_labels_summary", label, "_", libs[j], libs_label[j], "_", label_integration_method, ".pdf"))
+            gp <- SpatialDimPlot(x_split[[j]], label = TRUE,
+                images = .get_image_slice(x_split[[j]]),
+                label.size = 3, ...)
+            if (requireNamespace("ggthemes", quietly = TRUE) &&
+                length(levels(Idents(object))) <= 8) {
+                gp <- gp + ggthemes::scale_colour_colorblind()
+            }
+            gp2 <- DimPlot(x_split[[j]], reduction = "umap", label = FALSE)
+            if (requireNamespace("ggthemes", quietly = TRUE) &&
+                length(levels(Idents(object))) <= 8) {
+                gp2 <- gp2 + ggthemes::scale_colour_colorblind()
+            }
+            if (pdf) {
+                pdf(filename, width = 7, height = 3.9)
+                print(gp)
+                print(gp2)
+                invisible(dev.off())
+            }
+            if (png) {
+                filename <- gsub("pdf$", "png", filename)
+                png(filename, width = 4, height = 3.9, units = "in", res = 150)
+                print(gp)
+                invisible(dev.off())
+                filename <- gsub("_he_labels_summary", "_umap_labels_summary", filename)
+                png(filename, width = 7, height = 3.9, units = "in", res = 150)
+                print(gp2)
+                invisible(dev.off())
+            }
+        }
+    } else {
+        filename <- .get_sub_path(prefix, subdir,
+                suffix = paste0("_he_labels_summary", label, "_", label_integration_method, ".pdf"))
+        gp <- SpatialDimPlot(object, label = TRUE, label.size = 3, ...)
+        if (requireNamespace("ggthemes", quietly = TRUE) &&
+            length(levels(Idents(object))) <= 8) {
+            gp <- gp + ggthemes::scale_colour_colorblind()
+        }
+        gp2 <- DimPlot(object, reduction = "umap", label = FALSE)
+        if (requireNamespace("ggthemes", quietly = TRUE) &&
+            length(levels(Idents(object))) <= 8) {
+            gp2 <- gp2 + ggthemes::scale_colour_colorblind()
+        }
+        if (pdf) {
+            pdf(filename, width = 7, height = 3.9)
+            print(gp)
+            print(gp2)
+            invisible(dev.off())
+        }
+        if (png) {
+            filename <- gsub("pdf$", "png", filename)
+            png(filename, width = 4, height = 3.9, units = "in", res = 150)
+            print(gp)
+            invisible(dev.off())
+            filename <- gsub("_he_labels_summary", "_umap_labels_summary", filename)
+            png(filename, width = 7, height = 3.9, units = "in", res = 150)
+            print(gp2)
+            invisible(dev.off())
+        }
+    }
+}

@@ -407,6 +407,18 @@ if (find_pred == TRUE) {
         myRCTDs <- NULL
         flog.info("Writing R data structure to %s...", filename_predictions)
         saveRDS(prediction.assay, filename_predictions)
+        if (doublet_mode == "doublet") {
+            for (i in seq_along(singlecell)) {
+                infile_tmp <- AddMetaData(infile, rctd_results[[i]]$results_df)
+                plot_prediction_summary(infile_tmp, feature = "spot_class",
+                    label = labels[i], label_integration_method = label_integration_method, 
+                    prefix = opt[["outprefix"]], pt.size.factor = opt$dot_size,
+                    pdf = "pdf" %in% opt$image_formats,
+                    png = "png" %in% opt$image_formats,
+                    crop = !opt$no_crop)
+                infile_tmp <- NULL
+            }
+        }
     } else if (opt$integration_method == "giotto") {
         instrs <- createGiottoInstructions()
 
