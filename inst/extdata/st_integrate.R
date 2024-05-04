@@ -380,13 +380,27 @@ if (find_pred == TRUE) {
         myRCTDs <- lapply(singlecell_rctd, function(sc) spacexr::create.RCTD(infile_rctd, sc, max_cores = 1, CELL_MIN_INSTANCE = 3))
         flog.info("Running RCTD...")
         doublet_mode <- ifelse(is.null(opt$sub_integration_method), "multi", opt$sub_integration_method)
-        flog.info("Using doublet mode %s.", doublet_mode)
-        myRCTDs <- lapply(myRCTDs, spacexr::run.RCTD, doublet_mode = doublet_mode)
-        rctd_results <- lapply(myRCTDs, function(x) x@results)
+        filename_rctd_results <- sttkit:::.get_serialize_path(opt$outprefix,
+            paste0("_", digest(labels), "_rctd_", doublet_mode, "_results.rds"))
+        if (!opt$force && file.exists(filename_rctd_results)) {
+            flog.warn("%s exist. Skipping run.RCTD. Use --force to overwrite.",
+                filename_rctd_results)
+            rctd_results <- readRDS(filename_rctd_results)
+            if (length(rctd_results) != length(myRCTDs)) {
+                flog.fatal("Serialized %s incompatible with input files. Remove that file and re-try.",
+                    filename_rctd_results)
+                 q(status = 1)
+            }
+            for (i in seq_along(myRCTDs)) {
+                myRCTDs[[i]]@results <- rctd_results[[i]]
+            }
+        } else {    
+            flog.info("Using doublet mode %s.", doublet_mode)
+            myRCTDs <- lapply(myRCTDs, spacexr::run.RCTD, doublet_mode = doublet_mode)
+            rctd_results <- lapply(myRCTDs, function(x) x@results)
+        }
         singlecell_rctd <- NULL
         infile_rctd <- NULL
-        filename_rctd_results <- sttkit:::.get_serialize_path(opt$outprefix,
-            paste0("_", digest(labels), "_rctd_results.rds"))
         flog.info("Writing R data structure to %s...", filename_rctd_results)
         saveRDS(rctd_results, filename_rctd_results)
         prediction.assay <- lapply(myRCTDs, as_AssayObject)
@@ -1041,18 +1055,19 @@ if (!opt$integration_method %in% c("celltrek")) {
                 filename_heatmap <- sttkit:::.get_sub_path(opt$outprefix, 
                     "advanced", suffix = paste0("_", labels[i], "_",
                         label_integration_method, "_cell_proximity_enrichment.pdf"))
+                ret <- NULL
                 if ("pdf" %in% opt$image_formats) {
                     pdf(filename_heatmap)
+                    ret <- try(cellProximityHeatmap(giotto_object, cpes[[i]]))
+                    dev.off()
+                } else if ("png" %in% opt$image_formats) {
+                    png(gsub(".pdf$", ".png", filename_heatmap), width = 7, height = 7, units = "in", res = 150)
                     ret <- try(cellProximityHeatmap(giotto_object, cpes[[i]]))
                     dev.off()
                 }
                 if (is(ret, "try_error")) {
                     flog.warn("Could not generate cell proximity heatmap.")
                     file.remove(filename_heatmap)
-                } else if ("png" %in% opt$image_formats) {
-                    png(gsub(".pdf$", ".png", filename_heatmap), width = 7, height = 7, units = "in", res = 150)
-                    ret <- try(cellProximityHeatmap(giotto_object, cpes[[i]]))
-                    dev.off()
                 }
             }
         }
