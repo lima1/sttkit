@@ -133,3 +133,17 @@ as_AssayObject <- function(object) {
     }
 }
 
+.as_assay3_subset <- function(object, features, assay = "RNA") {
+    if (is(object[[assay]], "Assay5")) {
+        # TODO: Convert to Assay3 necessary right now. https://github.com/cellgeni/sceasy/issues/76#issuecomment-1781345481
+        flog.info("Coverting Assay5 to Assay3...")
+        object[["TmpAssay3"]] <- as(object = object[[assay]], Class = "Assay")
+        DefaultAssay(object) <- "TmpAssay3"
+        object[[assay]] <- NULL
+        object <- RenameAssays(object = object, TmpAssay3 = assay)
+        object[[assay]] <- subset(object[[assay]], features = features)
+    } else {
+        object <- subset(object, features = features)
+    }
+    return(object)
+}

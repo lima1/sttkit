@@ -492,10 +492,14 @@ if (find_pred == TRUE) {
                 feats <- intersect(rownames(sc_seurat), rownames(infile))
                 feats <- feats[feats %in% union(VariableFeatures(sc_seurat), VariableFeatures(infile))]
                 flog.info("Converting --singlecell and --infile to anndata...")
-                sc_adata <- convertFormat(sc_seurat[feats,], from = "seurat",
+                sc_tmp <- sttkit:::.as_assay3_subset(sc_seurat, feats, assay = DefaultAssay(sc_seurat))
+                sc_adata <- convertFormat(sc_tmp, from = "seurat",
                     to = "anndata", main_layer = "counts", drop_single_values = FALSE)
-                infile_adata <- convertFormat(infile[feats,], from = "seurat", to = "anndata",
+                sc_tmp <- NULL
+                infile_tmp <- sttkit:::.as_assay3_subset(infile, feats, assay = "Spatial")
+                infile_adata <- convertFormat(infile_tmp, from = "seurat", to = "anndata",
                     assay = "Spatial", main_layer = "counts", drop_single_values = FALSE)
+                infile_tmp <- NULL
                 flog.info("Running DestVI scLVM. Will take a while...")
 
                 scvi$model$CondSCVI$setup_anndata(sc_adata, labels_key = opt$refdata)
@@ -522,10 +526,15 @@ if (find_pred == TRUE) {
                 feats <- intersect(rownames(sc_seurat), rownames(infile))
                 feats <- feats[feats %in% union(VariableFeatures(sc_seurat), VariableFeatures(infile))]
                 flog.info("Converting --singlecell and --infile to anndata...")
-                sc_adata <- convertFormat(sc_seurat[feats,], from = "seurat",
+                sc_tmp <- sttkit:::.as_assay3_subset(sc_seurat, feats, assay = DefaultAssay(sc_seurat))
+                sc_adata <- convertFormat(sc_tmp, from = "seurat",
                     to = "anndata", main_layer = "counts", drop_single_values = FALSE)
-                infile_adata <- convertFormat(infile[feats,], from = "seurat", to = "anndata",
+                sc_tmp <- NULL
+                infile_tmp <- sttkit:::.as_assay3_subset(infile, feats, assay = "Spatial")
+                infile_adata <- convertFormat(infile_tmp, from = "seurat", to = "anndata",
                     assay = "Spatial", main_layer = "counts", drop_single_values = FALSE)
+                infile_tmp <- NULL
+
                 sc$pp$filter_genes(sc_adata, min_cells = 1)
                 sc$pp$filter_cells(sc_adata, min_genes = 1)
                 selected <- cell2location$utils$filter_genes(

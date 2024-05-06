@@ -44,20 +44,33 @@ BiocManager::install(c("batchelor",
     "patchwork"))
 ```
  
-For the [scvi-tools](https://github.com/scverse/scvi-tools) wrapper, we recommend using our
-conda environment and additionally installing the following packages:
+For the [scvi-tools](https://github.com/scverse/scvi-tools) wrapper, we
+recommend using our conda environment and additionally installing the following
+packages (using 'mamba' instead of 'conda' should be a major speedup):
 
 ```
 conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
-conda install jax jaxlib -c conda-forge
+conda install "jaxlib=*=*cuda*" jax cuda-nvcc -c conda-forge -c nvidia
 conda install scvi-tools -c conda-forge
 ```
-
 For [cell2location](https://github.com/BayraktarLab/cell2location), install scvi-tools as above
 and then install it via pip in the activate conda environment:
 
 ```
 pip install cell2location[tutorials]
+```
+
+For [Giotto](https://github.com/drieslab/Giotto), optionally if you use conda,
+install a few missing R dependencies:
+
+```
+conda install r-terra r-checkmate r-pak -c conda-forge
+```
+
+Then install it via pak in R:
+
+```
+pak::pkg_install("drieslab/Giotto")
 ```
 
 ### sttkit
