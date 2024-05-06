@@ -61,10 +61,10 @@ pip install cell2location[tutorials]
 ```
 
 For [Giotto](https://github.com/drieslab/Giotto), optionally if you use conda,
-install a few missing R dependencies:
+install a few missing dependencies:
 
 ```
-conda install r-terra r-checkmate r-pak -c conda-forge
+conda install r-terra r-checkmate r-pak python-louvain -c conda-forge
 ```
 
 Then install it via pak in R:

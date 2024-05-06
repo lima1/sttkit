@@ -14,7 +14,10 @@ as_GiottoObject <- function(object, assay = "Spatial", slot = "counts", ...) {
         stop("Only Seurat objects supported")
     }
     if (!requireNamespace("Giotto", quietly = TRUE)) {
-        stop("Install Giotto.")
+        stop("Install Giotto >= 4.0.")
+    }
+    if (!requireNamespace("GiottoClass", quietly = TRUE)) {
+        stop("Install GiottoClass")
     }
     if (!requireNamespace("magick", quietly = TRUE)) {
         stop("Install magick.")
@@ -31,14 +34,14 @@ as_GiottoObject <- function(object, assay = "Spatial", slot = "counts", ...) {
     cell_metadata <- data.table(
         cell_ID = rownames(object@meta.data),
         object@meta.data)
-    mg_object <- Giotto::createGiottoImage(spatial_locs = spatial_locs,
+    mg_object <- GiottoClass::createGiottoImage(spatial_locs = spatial_locs,
         mg_object = magick::image_read(object@images[[1]]@image),
         name = Images(object)[1],
         scale_factor=object@images[[1]]@scale.factors$lowres)
     images <- list(mg_object)
     names(images) <- Images(object)[1]
 
-    gobject <- Giotto::createGiottoObject(
+    gobject <- GiottoClass::createGiottoObject(
         expression = raw_matrix,
         expression_feat = "rna",
         spatial_locs = spatial_locs,
@@ -51,12 +54,12 @@ as_GiottoObject <- function(object, assay = "Spatial", slot = "counts", ...) {
                         slot = "data", assay = "SCT")
         expr_obj <- new("exprObj", name = "normalized", exprMat = norm_exp,
                 spat_unit = "cell", feat_type = "rna", provenance = "cell")
-        gobject <- Giotto::set_expression_values(gobject = gobject, values = expr_obj, 
+        gobject <- GiottoClass::set_expression_values(gobject = gobject, values = expr_obj, 
             set_defaults = FALSE)
     }
     if ("predictions" %in% Assays(object)) {
         enrObj <- as_spatEnrObj(object$predictions)
-        gobject <- Giotto::set_spatial_enrichment(gobject, enrObj)
+        gobject <- GiottoClass::set_spatial_enrichment(gobject, enrObj)
     }    
     return(gobject) 
 }    
@@ -96,7 +99,7 @@ as_spatEnrObj <- function(object, slot = "data", ignore = c("max", "unassigned")
         stop("Only Assay objects supported")
     }
     if (!requireNamespace("Giotto", quietly = TRUE)) {
-        stop("Install Giotto.")
+        stop("Install Giotto >= 4.0.")
     }
     spot_proportion <- GetAssayData(object, slot = slot)
     spot_proportion <- spot_proportion[!rownames(spot_proportion) %in% ignore, ]
@@ -119,18 +122,25 @@ as_spatEnrObj <- function(object, slot = "data", ignore = c("max", "unassigned")
 #' #
 find_giotto_dwls_matrix <- function(singlecell_giotto, refdata, method = "scran", expression_values = "normalized",
                                     num_markers = 100) {
-    scran_markers_subclusters <- lapply(singlecell_giotto, findMarkers_one_vs_all,
+
+    if (!requireNamespace("Giotto", quietly = TRUE)) {
+        stop("Install Giotto >= 4.0.")
+    }
+    if (!requireNamespace("GiottoClass", quietly = TRUE)) {
+        stop("Install GiottoClass")
+    }
+    scran_markers_subclusters <- lapply(singlecell_giotto, Giotto::findMarkers_one_vs_all,
            method = method,
            expression_values = expression_values,
            cluster_column = refdata)
     
     sign_matrix <- lapply(seq_along(singlecell_giotto), function(i) {
         sig_scran <- unique(scran_markers_subclusters[[i]]$feats[which(scran_markers_subclusters[[i]]$ranking <= num_markers)])
-        gene_metadata <- fDataDT(singlecell_giotto[[i]])
+        gene_metadata <- GiottoClass::fDataDT(singlecell_giotto[[i]])
         feats <- rownames(infile)
-        feats <- unique(c(sig_scran, feats[feats %in% fDataDT(singlecell_giotto[[i]])$feat_ID]))
-        id <- pDataDT(singlecell_giotto[[i]])[[opt$refdata]]
-        exp <- makeSignMatrixDWLS(singlecell_giotto[[i]], cell_type_vector = id, sign_gene = feats)
+        feats <- unique(c(sig_scran, feats[feats %in% GiottoClass::fDataDT(singlecell_giotto[[i]])$feat_ID]))
+        id <- GiottoClass::pDataDT(singlecell_giotto[[i]])[[opt$refdata]]
+        exp <- Giotto::makeSignMatrixDWLS(singlecell_giotto[[i]], cell_type_vector = id, sign_gene = feats)
         list(matrix = exp, sig_feats = sig_scran)
     })
     return(sign_matrix)
@@ -147,9 +157,12 @@ find_giotto_dwls_matrix <- function(singlecell_giotto, refdata, method = "scran"
 #' @examples
 #' #
 calculate_giotto_spatial_correlation_cell_type <- function(gobject, cell_types, features = NULL) {
+    if (!requireNamespace("GiottoClass", quietly = TRUE)) {
+        stop("Install GiottoClass")
+    }
     dt_net <- gobject@spatial_network$cell$Delaunay_network@networkDT
     dt_enr <- gobject@spatial_enrichment$cell$rna$DWLS@enrichDT
-    expr_m <- Giotto::getExpression(gobject, "normalized", output = "matrix")
+    expr_m <- GiottoClass::getExpression(gobject, "normalized", output = "matrix")
     expr_m <- expr_m[apply(expr_m, 1, function(x) sum(x > 0)) >= 3, ]
     if (is.null(features)) features <- rownames(expr_m)
 
