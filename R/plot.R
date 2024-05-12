@@ -265,6 +265,9 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
                 }
                 filename <- .get_sub_path(prefix, file.path(subdir, "heatmap", k),
                     paste0("_heatmap_nmf_discrete_cluster_", k, label, libs_label, ".pdf"))
+                if (ncol(obj_split) > 5000) {
+                    obj_split <- subset(obj_split, downsample = 300)
+                }
                 gp <- DoHeatmap(obj_split, features = features_nmf)
                 if (pdf) {
                     pdf(filename)
@@ -1250,7 +1253,7 @@ plot_prediction_summary <- function(object, feature = "spot_class",
                 label.size = 3, ...)
             if (requireNamespace("ggthemes", quietly = TRUE) &&
                 length(levels(Idents(object))) <= 8) {
-                gp <- gp + ggthemes::scale_colour_colorblind()
+                gp <- gp + ggthemes::scale_fill_colorblind()
             }
             gp2 <- DimPlot(x_split[[j]], reduction = "umap", label = FALSE)
             if (requireNamespace("ggthemes", quietly = TRUE) &&
@@ -1280,7 +1283,7 @@ plot_prediction_summary <- function(object, feature = "spot_class",
         gp <- SpatialDimPlot(object, label = TRUE, label.size = 3, ...)
         if (requireNamespace("ggthemes", quietly = TRUE) &&
             length(levels(Idents(object))) <= 8) {
-            gp <- gp + ggthemes::scale_colour_colorblind()
+            gp <- gp + ggthemes::scale_fill_colorblind()
         }
         gp2 <- DimPlot(object, reduction = "umap", label = FALSE)
         if (requireNamespace("ggthemes", quietly = TRUE) &&

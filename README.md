@@ -32,7 +32,6 @@ A few optional additional packages extending functionality:
 remotes::install_github("satijalab/seurat-wrappers")
 remotes::install_github("navinlabcode/CellTrek")
 remotes::install_github("dmcable/spacexr", build_vignettes = FALSE)
-remotes::install_github("drieslab/Giotto@suite")
 
 # following packages not necessary with conda_environment.yml
 BiocManager::install(c("batchelor",
@@ -49,7 +48,7 @@ recommend using our conda environment and additionally installing the following
 packages (using 'mamba' instead of 'conda' should be a major speedup):
 
 ```
-conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
+conda install pytorch torchvision torchaudio "pytorch-cuda>=11.7" -c pytorch -c nvidia
 conda install "jaxlib=*=*cuda*" jax cuda-nvcc -c conda-forge -c nvidia
 conda install scvi-tools -c conda-forge
 ```

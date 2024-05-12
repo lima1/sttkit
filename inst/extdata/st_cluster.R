@@ -222,6 +222,9 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     filename <- sttkit:::.get_sub_path(prefix, "snn", "")
     filename <- sttkit:::.get_sub_path(prefix, "snn/heatmap", "_cluster_heatmap.pdf")
     markers <- sttkit:::.find_all_markers(obj, prefix, "_snn_markers.rds")
+    if (ncol(obj) > 5000) {
+        obj <- subset(obj, downsample = 300)
+    }    
     m <- GetAssayData(obj, slot = "scale.data")
     key <- if ("avg_log2FC" %in% colnames(markers)) "avg_log2FC" else "avg_logFC"
     

@@ -55,15 +55,17 @@ dependencies:
   - bioconda::bioconductor-variantannotation
   - bioconda::bioconductor-xvector
   - bioconda::bioconductor-zlibbioc
+  - bioconda::r-anndata
+  - bioconda::r-restfulr
+  - bioconda::r-sceasy
   - conda-forge::r-abind
-  - conda-forge::r-anndata
   - conda-forge::r-ape
   - conda-forge::r-argparse
   - conda-forge::r-ash
   - conda-forge::r-askpass
   - conda-forge::r-assertthat
   - conda-forge::r-backports
-  - conda-forge::r-base
+  - conda-forge::r-base>=4.3
   - conda-forge::r-base64enc
   - conda-forge::r-beeswarm
   - conda-forge::r-bh
@@ -269,11 +271,8 @@ dependencies:
   - conda-forge::r-remotes
   - conda-forge::r-reshape
   - conda-forge::r-reshape2
-  - conda-forge::r-restfulr
   - conda-forge::r-reticulate
   - conda-forge::r-rex
-  - conda-forge::r-rfast
-  - conda-forge::r-rfast2
   - conda-forge::r-rgeos
   - conda-forge::r-rjags
   - conda-forge::r-rjson
@@ -299,7 +298,6 @@ dependencies:
   - conda-forge::r-scales
   - conda-forge::r-scattermore
   - conda-forge::r-scatterpie
-  - conda-forge::r-sceasy
   - conda-forge::r-sctransform
   - conda-forge::r-sessioninfo
   - conda-forge::r-seurat

@@ -91,6 +91,9 @@ find_markers <- function(obj, references = NULL, resolution, max_markers = NULL,
         filename <- .get_sub_path(prefix, "markers",
             paste0("_single_cell_cluster_signature_", merged, resolution, ".pdf"))
         flog.info("Plotting signature heatmap to %s...", filename)
+        if (ncol(obj) > 5000) {
+            obj <- subset(obj, downsample = 300)
+        }    
         pdf(filename, width = 10, height = 5)
         p <- DoHeatmap(obj, features = rownames(obj_sc_sig), label = FALSE) + 
             theme(axis.text.y = element_blank())
