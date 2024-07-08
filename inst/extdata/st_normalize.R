@@ -11,6 +11,8 @@ option_list <- list(
         help = "Path to SpaceRanger output for Visum data."),
     make_option(c("--spaceranger_probe_set"), action = "store", type = "character", default = NULL,
         help = "Path to SpaceRanger probe set file for feature flagging. Only useful when probe set filtering was turned off."),
+    make_option(c("--spaceranger_bin_size"), action = "store", type = "integer", default = NULL,
+        help = "SpaceRanger for Visium HD bin size [default %default]"),
     make_option(c("--sampleid"), action = "store", type = "character", default = NULL,
         help = "Sample id."),
     make_option(c("--transpose"), action = "store_true", default = FALSE,
@@ -183,6 +185,7 @@ if (!opt$force && file.exists(filename)) {
                              transpose = opt$transpose,
                              sampleid = opt$sampleid,
                              downsample_prob = opt$downsample_prob,
+                             bin_size = opt$spaceranger_bin_size,
                              gtf = opt$gtf,
                              mane = opt$mane,
                              prefix = opt$outprefix)
