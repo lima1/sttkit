@@ -26,7 +26,7 @@ as_GiottoObject <- function(object, assay = "Spatial", slot = "counts", ...) {
         stop("Currently only single sample objects supported.")
     }
     raw_matrix <- GetAssayData(object, assay = assay, slot = slot)
-    spatial_locs <- GetTissueCoordinates(object)
+    spatial_locs <- GetTissueCoordinates(object)[, 1:2]
     spatial_locs <- spatial_locs / object@images[[1]]@scale.factors$lowres
     spatial_locs <-  spatial_locs[, c(2, 1)]
     colnames(spatial_locs) <- c("sdimx", "sdimy")
