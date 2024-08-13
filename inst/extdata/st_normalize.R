@@ -30,8 +30,10 @@ option_list <- list(
         help = "Which backend normalization method to use, for example poisson or glmGamPoi [default %default]. Only relevant for sctransform and sctransform2."),
     make_option(c("--hejpeg"), action = "store", type = "character", default = NULL,
         help = "Optional path to a JPEG containing cropped HE image (Spatial Transcriptomics data)."),
-    make_option(c("--dot_size"), action = "store", type = "double", default = 1.5,
+    make_option(c("--dot_size"), action = "store", type = "double", default = 1.6,
         help = "Size of dots on H&E."),
+    make_option(c("--dot_stroke"), action = "store", type = "double", default = NA,
+        help = "Outline of dots on H&E [default %default]"),
     make_option(c("--min_spots"), action = "store", type = "integer", default = 2,
         help = "Gene filter: Keep genes detected at that many spots or more [default %default]"),
     make_option(c("--min_features"), action = "store", type = "double", default = 300,
@@ -103,6 +105,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 
         plot_features(ndata, features = features,
             pt.size.factor = opt$dot_size,
+            stroke = opt$dot_stroke,
             prefix = prefix, suffix = "_he_ptx.pdf",
             ggcode = theme(legend.position = "right"),
             pdf = "pdf" %in% opt$image_formats,
@@ -117,6 +120,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
                   "percent.ribo")
     plot_features(ndata, features = features,
         pt.size.factor = opt$dot_size,
+        stroke = opt$dot_stroke,
         prefix = prefix, suffix = "_he_counts.pdf",
         ggcode = theme(legend.position = "right"),
         pdf = "pdf" %in% opt$image_formats,
@@ -126,6 +130,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     if (sum(grep("S.Score|G2M.Score", colnames(ndata@meta.data)))) {
         plot_features(ndata, features = c("S.Score", "G2M.Score"),
             pt.size.factor = opt$dot_size,
+            stroke = opt$dot_stroke,
             prefix = prefix, suffix = "_he_cell_cycle.pdf",
             ggcode = theme(legend.position = "right"),
             pdf = "pdf" %in% opt$image_formats,
@@ -218,6 +223,7 @@ m <- .write_tsv(ndata, opt$outprefix)
         png = "png" %in% opt$image_formats,
         width = 4,
         crop = !opt$no_crop,
+        stroke = opt$dot_stroke,
         pt.size.factor = opt$dot_size)
 }
 

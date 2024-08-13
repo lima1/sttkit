@@ -33,6 +33,8 @@ option_list <- list(
         help = "Skip the defined methods, separated by ':' (e.g. harmony:fastmnn)"),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.6,
         help = "Size of dots on H&E."),
+    make_option(c("--dot_stroke"), action = "store", type = "double", default = NA,
+        help = "Outline of dots on H&E [default %default]"),
     make_option(c("--ncol"), action = "store", type = "double", default = 4,
         help = "Number of columns in spatial plot for multiple-sample clustering"),
     make_option(c("--nrow"), action = "store", type = "double", default = 4,
@@ -156,7 +158,9 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     filename <- sttkit:::.get_sub_path(prefix, "snn/he", paste0("_he_cluster", num, ".pdf"))
     flog.info("Plotting clusters on H&E for %s...", ndata$library[1])
     gp <- SpatialDimPlot(ndata, label = TRUE, images = sttkit:::.get_image_slice(ndata),
-        pt.size.factor = opt$dot_size, label.size = 3, crop = !opt$no_crop)
+        pt.size.factor = opt$dot_size,
+        stroke = opt$dot_stroke,
+        label.size = 3, crop = !opt$no_crop)
     if (requireNamespace("ggthemes", quietly = TRUE) &&
         length(levels(Idents(ndata))) <= 8) {
         gp <- gp + ggthemes::scale_fill_colorblind()
@@ -582,6 +586,7 @@ if (opt$nmf) {
     plot_nmf(ndata, libs, labels = labels, rank = ks, prefix = opt$outprefix,
         pdf = "pdf" %in% opt$image_formats,
         png = "png" %in% opt$image_formats,
+        stroke = opt$dot_stroke,
         pt.size.factor = opt$dot_size)
 
      loupe <- lapply(ks, function(i) 
@@ -670,6 +675,7 @@ if (length(Images(ndata))) {
             number_features = opt$spatially_variable_nfeatures,
             pdf = "pdf" %in% opt$image_formats,
             png = "png" %in% opt$image_formats,
+            stroke = opt$dot_stroke,
             pt.size.factor = opt$dot_size, ncol = opt$ncol, nrow = opt$nrow)
     }
 }
@@ -686,6 +692,7 @@ if (opt$sc3) {
     plot_sc3(ndata, libs, labels = labels, rank = ks, prefix = opt$outprefix,
         pdf = "pdf" %in% opt$image_formats,
         png = "png" %in% opt$image_formats,
+        stroke = opt$dot_stroke,
         pt.size.factor = opt$dot_size)
 }    
 if (!is.null(opt$sc3_ident)) {
@@ -726,6 +733,7 @@ if (is(predictions, "matrix") && single_input) {
             label = labels, label_integration_method = "spaceranger_deconvolution", 
             prefix = opt[["outprefix"]], subdir = "spaceranger_deconvolution/he",
             pt.size.factor = opt$dot_size,
+            stroke = opt$dot_stroke,
             pdf = "pdf" %in% opt$image_formats,
             png = "png" %in% opt$image_formats,
             crop = !opt$no_crop)

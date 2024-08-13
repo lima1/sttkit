@@ -59,6 +59,8 @@ option_list <- list(
         help = "Input GMT file(s) for celltrek visualization. Signature names must pattern match cell types in --refdata."),
     make_option(c("--dot_size"), action = "store", type = "double", default = 1.6,
         help = "Size of dots on H&E [default %default]"),
+    make_option(c("--dot_stroke"), action = "store", type = "double", default = NA,
+        help = "Outline of dots on H&E [default %default]"),
     make_option(c("--infer_cna"), action = "store_true", default = FALSE,
         help = "Try to infer copy number alterations to label tumor clusters (works with 'seurat' integration only)."),
     make_option(c("--cna_cutoff"), action = "store", type = "double", default = 0.3,
@@ -413,6 +415,7 @@ if (find_pred == TRUE) {
                 plot_prediction_summary(infile_tmp, feature = "spot_class",
                     label = labels[i], label_integration_method = label_integration_method, 
                     prefix = opt[["outprefix"]], pt.size.factor = opt$dot_size,
+                    stroke = opt$dot_stroke,
                     pdf = "pdf" %in% opt$image_formats,
                     png = "png" %in% opt$image_formats,
                     crop = !opt$no_crop)
@@ -768,6 +771,7 @@ if (find_pred == TRUE) {
     filename <- sttkit:::.get_sub_path(prefix, "he", paste0("_he_celltrek_signature_scores", label, ".pdf"))
     ndata <- plot_signatures(ndata, file = filename, gmt = gmt, 
         cells = cells, pt.size.factor = opt$dot_size,
+        stroke = opt$dot_stroke,
         pdf = "pdf" %in% opt$image_formats,
         png = "png" %in% opt$image_formats)
 
@@ -790,6 +794,7 @@ if (find_pred == TRUE) {
           suffix = paste0("_he_celltrek_features", label, ".pdf"),
           subdir = "he",
           cells = cells, pt.size.factor = opt$dot_size,
+          stroke = opt$dot_stroke,
           image.alpha = 0,
           pdf = "pdf" %in% opt$image_formats,
           png = "png" %in% opt$image_formats,
@@ -815,7 +820,9 @@ if (find_pred == TRUE) {
     }
 
     c2 <- SpatialDimPlot(y[[i]], group.by = "cell_type",
-        pt.size.factor = opt$dot_size, cols = rep("red", length(features)))[[1]] +
+        pt.size.factor = opt$dot_size,
+        stroke = opt$dot_stroke,
+        cols = rep("red", length(features)))[[1]] +
               facet_wrap(cell_type ~ .) + theme(legend.position = "none")
     filename <- sttkit:::.get_sub_path(opt$outprefix, "he",
             suffix = paste0("_he_celltrek_labels", label, ".pdf"))
@@ -877,6 +884,7 @@ for (i in seq_along(singlecell)) {
         sttkit::plot_predictions(infile, prediction.assay[[i]], 
             label = labels[i], label_integration_method = label_integration_method, 
             prefix = opt[["outprefix"]], pt.size.factor = opt$dot_size,
+            stroke = opt$dot_stroke,
             pdf = "pdf" %in% opt$image_formats,
             png = "png" %in% opt$image_formats,
             crop = !opt$no_crop)
@@ -1025,6 +1033,7 @@ if (!opt$integration_method %in% c("celltrek")) {
                 prefix = opt[["outprefix"]],
                 pdf = "pdf" %in% opt$image_formats,
                 png = "png" %in% opt$image_formats,
+                stroke = opt$dot_stroke,
                 pt.size.factor = opt$dot_size, crop = !opt$no_crop)
         }
     }
