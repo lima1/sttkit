@@ -4,7 +4,13 @@
 \alias{cluster_spatial}
 \title{cluster_spatial}
 \usage{
-cluster_spatial(ndata, resolution = 0.8, dims = 1:30, verbose = TRUE)
+cluster_spatial(
+  ndata,
+  resolution = 0.8,
+  dims = 1:50,
+  sketch = 0,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{ndata}{Object, read by \code{\link{read_spatial}}.}
@@ -12,6 +18,8 @@ cluster_spatial(ndata, resolution = 0.8, dims = 1:30, verbose = TRUE)
 \item{resolution}{Seurat cluster resolution}
 
 \item{dims}{PCs to use}
+
+\item{sketch}{Number of sketch bins/cell. Ignored when < 1.}
 
 \item{verbose}{Verbose Seurat output}
 }

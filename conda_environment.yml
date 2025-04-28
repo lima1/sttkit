@@ -61,6 +61,7 @@ dependencies:
   - conda-forge::r-abind
   - conda-forge::r-ape
   - conda-forge::r-argparse
+  - conda-forge::r-arrow
   - conda-forge::r-ash
   - conda-forge::r-askpass
   - conda-forge::r-assertthat

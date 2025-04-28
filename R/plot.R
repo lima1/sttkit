@@ -208,7 +208,7 @@ plot_nmf <- function(object, libs, labels = NULL, rank, prefix,
             paste0("_spatial_cluster.pdf"))
         if (pdf) {
             pdf(filename, width = 10, height = 5)
-            gp <- DimPlot(object, reduction = "umap", label = TRUE)
+            gp <- DimPlot(object, reduction = .get_reduction(object), label = TRUE)
             if (requireNamespace("ggthemes", quietly = TRUE) &&
                 length(levels(Idents(object))) <= 8) {
                 gp <- gp + ggthemes::scale_colour_colorblind()
@@ -1255,7 +1255,7 @@ plot_prediction_summary <- function(object, feature = "spot_class",
                 length(levels(Idents(object))) <= 8) {
                 gp <- gp + ggthemes::scale_fill_colorblind()
             }
-            gp2 <- DimPlot(x_split[[j]], reduction = "umap", label = FALSE)
+            gp2 <- DimPlot(x_split[[j]], reduction = .get_reduction(x_split[[j]]), label = FALSE)
             if (requireNamespace("ggthemes", quietly = TRUE) &&
                 length(levels(Idents(object))) <= 8) {
                 gp2 <- gp2 + ggthemes::scale_colour_colorblind()
@@ -1285,7 +1285,7 @@ plot_prediction_summary <- function(object, feature = "spot_class",
             length(levels(Idents(object))) <= 8) {
             gp <- gp + ggthemes::scale_fill_colorblind()
         }
-        gp2 <- DimPlot(object, reduction = "umap", label = FALSE)
+        gp2 <- DimPlot(object, reduction = .get_reduction(object), label = FALSE)
         if (requireNamespace("ggthemes", quietly = TRUE) &&
             length(levels(Idents(object))) <= 8) {
             gp2 <- gp2 + ggthemes::scale_colour_colorblind()

@@ -302,7 +302,8 @@ read_spaceranger_metrics <- function(filtered_feature_bc_matrix_dir,
         return()
     }
     metrics <- read.csv(metrics_file)
-    if (metrics[["Fraction.Reads.in.Spots.Under.Tissue"]] < 0.5) {
+    if (!is.null(metrics[["Fraction.Reads.in.Spots.Under.Tissue"]]) &&
+                 metrics[["Fraction.Reads.in.Spots.Under.Tissue"]] < 0.5) {
         flog.warn("Low 'Fraction Reads in Spots Under Tissue' %.2f. Ideal > 0.5. Application performance may be affected. Many of the reads were not assigned to tissue covered spots. This could be caused by high levels of ambient RNA resulting from inefficient permeabilization, because the incorrect image was used, or because of poor tissue detection. The latter case can be addressed by using the manual tissue selection option through Loupe.", metrics[["Fraction.Reads.in.Spots.Under.Tissue"]])
     } 
     return(metrics)

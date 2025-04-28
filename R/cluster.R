@@ -4,25 +4,67 @@
 #' @param ndata Object, read by \code{\link{read_spatial}}.
 #' @param resolution Seurat cluster resolution 
 #' @param dims PCs to use
+#' @param sketch Number of sketch bins/cell. Ignored when < 1.
 #' @param verbose Verbose Seurat output
 
 #' @export cluster_spatial
 #' @examples
 #' cluster_spatial()
 
-cluster_spatial <- function(ndata, resolution = 0.8, dims = 1:30, verbose = TRUE) {
-    flog.info("Using resolution %f and %i PCs for clustering.", 
-        resolution, length(dims))
-    ndata <- RunPCA(object = ndata, npcs = min(ncol(ndata)-1, 50),
-         verbose = verbose)
-    # check for crappy samples with less than 30 spots/cells
-    if (length(dims) > length(Seurat::Reductions(ndata, slot = "pca"))) {
-        flog.warn("Ignoring provided dims argument because ndata does not have sufficient dimension.")
-        dims <- seq(1, ncol(ndata) - 1)
+cluster_spatial <- function(ndata, resolution = 0.8, dims = 1:50, sketch = 0, verbose = TRUE) {
+    if (sketch > max(dims) && ncol(ndata) > sketch) {
+        if (sketch < 5000) flog.warn("Small sketch value, will continue anyway.")
+        if (length(resolution) > 1) {
+            resolution <- max(resolution)
+            flog.warn("Only one resolution with sketching. Using %.2f", resolution)
+        }
+        def_assay <- DefaultAssay(ndata)
+        flog.info("Sketching assay %s from %i to %i bins/cells.", def_assay, ncol(ndata), sketch)
+        ndata <- SketchData(
+          object = ndata,
+          ncells = sketch,
+          method = "LeverageScore",
+          sketched.assay = "sketch",
+          features = head(VariableFeatures(ndata), 5000)
+        )
+        DefaultAssay(ndata) <- "sketch"
+        ndata <- FindVariableFeatures(ndata)
+        ndata <- ScaleData(ndata)
+        flog.info("Using resolution %f and %i PCs for clustering.", 
+            resolution, length(dims))
+        ndata <- RunPCA(object = ndata, assay = "sketch", npcs = min(ncol(ndata)-1, 50),
+             verbose = verbose, reduction.name = "pca.sketch")
+        ndata <- FindNeighbors(ndata, assay = "sketch", reduction = "pca.sketch", dims = dims, verbose = verbose)
+        ndata <- FindClusters(ndata, cluster.name = "seurat_cluster.sketched", resolution = resolution, verbose = verbose)
+        ndata <- RunUMAP(object = ndata, reduction = "pca.sketch", reduction.name = "umap.sketch", return.model = TRUE, dims = dims, verbose = verbose)
+        flog.info("Projecting sketched data back to %s", def_assay)
+        ndata <- ProjectData(
+          object = ndata,
+          assay = def_assay,
+          full.reduction = "full.pca.sketch",
+          sketched.assay = "sketch",
+          sketched.reduction = "pca.sketch",
+          umap.model = "umap.sketch",
+          dims = dims,
+          refdata = list(seurat_cluster.projected = "seurat_cluster.sketched")
+        )
+        DefaultAssay(ndata) <- def_assay
+        Idents(ndata) <- "seurat_cluster.projected"
+
+    } else {
+        flog.info("Using resolution %f and %i PCs for clustering.", 
+            resolution, length(dims))
+        ndata <- RunPCA(object = ndata, npcs = min(ncol(ndata)-1, 50),
+             verbose = verbose)
+        # check for crappy samples with less than 30 spots/cells
+        if (length(dims) > length(Seurat::Reductions(ndata, slot = .get_reduction(ndata, type = "pca")))) {
+            flog.warn("Ignoring provided dims argument because ndata does not have sufficient dimension.")
+            dims <- seq(1, ncol(ndata) - 1)
+        }
+        ndata <- RunUMAP(object = ndata, dims = dims, verbose = verbose)
+        ndata <- FindNeighbors(ndata, dims = dims, verbose = verbose)
+        ndata <- FindClusters(ndata, resolution = resolution, verbose = verbose)
     }
-    ndata <- RunUMAP(object = ndata, dims = dims, verbose = verbose)
-    ndata <- FindNeighbors(ndata, dims = dims, verbose = verbose)
-    ndata <- FindClusters(ndata, resolution = resolution, verbose = verbose)
     ndata
 }    
 
@@ -97,7 +139,7 @@ plot_clusters <- function(obj, prefix, subdir = "snn", pdf = FALSE, png = FALSE)
     } else {
         flog.info("UMAP idents...")
     }
-    gp <- DimPlot(obj, reduction = "umap", label = label)
+    gp <- DimPlot(obj, reduction = .get_reduction(obj), label = label)
     if (requireNamespace("ggthemes", quietly = TRUE) &&
         length(levels(Idents(obj))) <= 8) {
         gp <- gp + ggthemes::scale_colour_colorblind()
@@ -118,24 +160,24 @@ plot_clusters <- function(obj, prefix, subdir = "snn", pdf = FALSE, png = FALSE)
         filename <- .get_sub_path(prefix, file.path(subdir, "umap"), paste0("_", reference_technology, "_cluster_call.pdf"))
         if (pdf) {
             pdf(filename, width = 10, height = 5)
-            print(DimPlot(obj, reduction = "umap", group.by = "call", label = label))
+            print(DimPlot(obj, reduction = .get_reduction(obj), group.by = "call", label = label))
             dev.off()
         }
         if (png) {
             png(gsub(".pdf$", ".png", filename), width = 10, height = 5,
                 units = "in", res = 150)
-            print(DimPlot(obj, reduction = "umap", group.by = "call", label = label))
+            print(DimPlot(obj, reduction = .get_reduction(obj), group.by = "call", label = label))
             dev.off()
         }    
         filename <- .get_sub_path(prefix, file.path(subdir, "umap"), paste0("_", reference_technology, "_cluster_splitted.pdf"))
         if (pdf) {
             pdf(filename, width = 10, height = 10)
-            print(DimPlot(obj, split.by = "new.idents", group.by = "call"))
+            print(DimPlot(obj, reduction = .get_reduction(obj), split.by = "new.idents", group.by = "call"))
             dev.off()
         }
         if (png) {
             png(gsub(".pdf$", ".png", filename), width = 10, height = 10, res = 150, units = "in")
-            print(DimPlot(obj, split.by = "new.idents", group.by = "call"))
+            print(DimPlot(obj, reduction = .get_reduction(obj), split.by = "new.idents", group.by = "call"))
             dev.off()
         }
     }
@@ -175,7 +217,7 @@ plot_clusters <- function(obj, prefix, subdir = "snn", pdf = FALSE, png = FALSE)
     if (nrow(unique(obj[[field]])) < 2) return()
         
     flog.info("UMAP %s...", field)
-    gp <- DimPlot(obj, reduction = "umap", split.by = field)
+    gp <- DimPlot(obj, reduction = .get_reduction(obj), split.by = field)
     if (requireNamespace("ggthemes", quietly = TRUE) &&
         length(levels(Idents(obj))) <= 8) {
         gp <- gp + ggthemes::scale_colour_colorblind()
@@ -799,3 +841,9 @@ set_idents_sc3 <- function(obj, k, rank = NULL, stop_if_unavail = FALSE) {
     return(obj)
 }    
 
+.get_reduction <- function(obj, type = "umap") {
+    avail <- grep(type, Seurat::Reductions(obj), value = TRUE)
+    if (type %in% avail) return(type)
+    if (paste0(type, ".sketch") %in% avail) return(paste0(type, ".sketch"))
+    return(avail[1])
+}
