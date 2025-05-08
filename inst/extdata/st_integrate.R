@@ -377,7 +377,7 @@ if (find_pred == TRUE) {
         flog.info("Converting --singlecell to spacexr format...")
         singlecell_rctd <- lapply(singlecell, as_Reference, refdata = opt$refdata, require_int = FALSE)
         flog.info("Converting --infile to spacexr format...")
-        infile_rctd <- as_SpatialRNA(infile)
+        infile_rctd <- as_SpatialRNA(infile, assay = ifelse("sketch" %in% Assays(infile), "sketch", "Spatial"))
         flog.info("Preparing RCTD...")
         myRCTDs <- lapply(singlecell_rctd, function(sc) spacexr::create.RCTD(infile_rctd, sc, max_cores = 1, CELL_MIN_INSTANCE = 3))
         flog.info("Running RCTD...")

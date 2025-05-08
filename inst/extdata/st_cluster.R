@@ -71,6 +71,9 @@ option_list <- list(
     make_option(c("--nmf_ident"), action = "store", type = "integer",
         default = NULL,
         help = "Set Idents(infile) to NMF of specified rank after NMF [default %default]"),
+    make_option(c("--sketch"), action = "store", type = "integer",
+        default = 0,
+        help = "Downsample to the specified number of bins/cells (0 to not downsample). Should be around 50000 for Visium HD. [default %default]"),
     make_option(c("--sc3"), action = "store_true", default = FALSE,
         help = "Do additional SC3 clustering"),
     make_option(c("--sc3_ranks"), action = "store", type = "character", default = NULL,
@@ -204,7 +207,7 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 }
 .plot_cluster_qc <- function(object, prefix) {
 	m <- melt(object@meta.data)
-	colnames(m)[max(grep("snn_res", colnames(m)))] <- "res"
+	colnames(m)[max(grep("snn_res|seurat_cluster.projected", colnames(m)))] <- "res"
     filename <- sttkit:::.get_sub_path(prefix, "snn/qc", "_cluster_qc.pdf")
     pdf(filename, width=8, height=4)
 	require(ggplot2)
@@ -226,6 +229,9 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
     filename <- sttkit:::.get_sub_path(prefix, "snn", "")
     filename <- sttkit:::.get_sub_path(prefix, "snn/heatmap", "_cluster_heatmap.pdf")
     markers <- sttkit:::.find_all_markers(obj, prefix, "_snn_markers.rds")
+    if ("sketch" %in% Assays(ndata)) {
+        DefaultAssay(ndata) <- "sketch"
+    }    
     if (ncol(obj) > 5000) {
         obj <- subset(obj, downsample = 300)
     }    
@@ -261,13 +267,13 @@ if (!is.null(log_file)) flog.appender(appender.tee(log_file))
 
     if ("pdf" %in% opt$image_formats) {
         pdf(filename, height = 6, width = 8)
-        print(DimHeatmap(ndata, dims = 1:6, reduction = "pca"))
+        print(DimHeatmap(ndata, dims = 1:6, reduction = sttkit:::.get_reduction(ndata, "pca")))
         invisible(dev.off())
     }
     if ("png" %in% opt$image_formats) {
         png(gsub(".pdf$", ".png", filename), height = 6, width = 8,
             units = "in", res = 150)
-        print(DimHeatmap(ndata, dims = 1:6, reduction = "pca"))
+        print(DimHeatmap(ndata, dims = 1:6, reduction = sttkit:::.get_reduction(ndata, "pca")))
         invisible(dev.off())
     }
     filename <- sttkit:::.get_sub_path(prefix, "snn/advanced", "_cluster_markers.csv") 
@@ -416,7 +422,7 @@ if (!opt$force && file.exists(filename_final)) {
     } else {    
         ndata <- readRDS(infiles[1])
         ndata <- cluster_spatial(ndata, 
-                             resolution = as.numeric(strsplit(opt$resolution, ":")[[1]]))
+                             resolution = as.numeric(strsplit(opt$resolution, ":")[[1]]), sketch = opt[["sketch"]])
     }
     flog.info("Writing R data structure to %s...", filename_final)
     sttkit:::.serialize(ndata, opt$outprefix, ".rds")

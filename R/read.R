@@ -43,47 +43,52 @@ read_spatial <- function(file, sampleid, mt_pattern = regex_mito(),
                         hybrid_reference_prefixes = c("hg19", "mm10"),
                         gtf = NULL, mane = NULL, assay = "Spatial", 
                         serialize = TRUE, prefix) {
+    ndata <- NULL
     if (is(file, "character")) {
         flog.info("Loading %s...", basename(file))
         raw_data <- Matrix::t(read.delim(file, row.names=1))
+    } else if (is(file, "Seurat")) {    
+        ndata <- file
     } else {
         raw_data <- Matrix::t(file)
-    }    
-    if (transpose) raw_data <- Matrix::t(raw_data)
-    if (!is.null(downsample_prob)) {
-        if (!requireNamespace("DropletUtils")) {
-            flog.warn("downsample_prob defined but DropletUtils not installed. Ignoring.")
-        }
-        flog.info("Downsample input to %.2f...", downsample_prob) 
-        raw_data <- DropletUtils::downsampleMatrix(raw_data, prop = downsample_prob)
-    }        
-    spots_passing <- sum(Matrix::rowSums(raw_data) > min_features)    
-    nfeatures_0 <- Matrix::colSums(x = raw_data > 0)
+    }
+    if (is.null(ndata)) {
+        if (transpose) raw_data <- Matrix::t(raw_data)
+        if (!is.null(downsample_prob)) {
+            if (!requireNamespace("DropletUtils")) {
+                flog.warn("downsample_prob defined but DropletUtils not installed. Ignoring.")
+            }
+            flog.info("Downsample input to %.2f...", downsample_prob) 
+            raw_data <- DropletUtils::downsampleMatrix(raw_data, prop = downsample_prob)
+        }        
+        spots_passing <- sum(Matrix::rowSums(raw_data) > min_features)    
+        nfeatures_0 <- Matrix::colSums(x = raw_data > 0)
 
-    if (spots_passing < 100) {
-        flog.warn("Less than 100 spots passing min_features %i (%i out of %i).", 
-            min_features, spots_passing, ncol(raw_data))
-    }
-    # TODO: this hack is obsolete with hybrid_reference_prefixes
-    if (sum(grepl("^mm|^hs", rownames(raw_data))) > nrow(raw_data)*0.9) { 
-        rownames(raw_data) <- gsub("^mm_|^mm-", "mm10-", rownames(raw_data))
-        rownames(raw_data) <- gsub("^hs_|^hs-", "hg19-", rownames(raw_data))
-    }
-    if (!is.null(required_features)) {
-        required_features <- required_features[!make.names(required_features) %in% make.names(rownames(raw_data))]
-        if (length(required_features)) {
-            raw_data_required <- matrix(0, nrow = length(required_features),
-                ncol = ncol(raw_data), 
-                dimnames=list(required_features, colnames(raw_data)))
-            raw_data <- rbind(raw_data, raw_data_required)
+        if (spots_passing < 100) {
+            flog.warn("Less than 100 spots passing min_features %i (%i out of %i).", 
+                min_features, spots_passing, ncol(raw_data))
         }
-        raw_data <- raw_data[Matrix::rowSums(raw_data) >= min_spots | 
-                             make.names(rownames(raw_data)) %in% make.names(required_features), ]
-    } else {
-        raw_data <- raw_data[Matrix::rowSums(raw_data) >= min_spots, ]
-    }    
-    ndata <- CreateSeuratObject(raw_data, min.cells = 0,
-        min.features = min_features, project = sampleid, assay = assay)
+        # TODO: this hack is obsolete with hybrid_reference_prefixes
+        if (sum(grepl("^mm|^hs", rownames(raw_data))) > nrow(raw_data)*0.9) { 
+            rownames(raw_data) <- gsub("^mm_|^mm-", "mm10-", rownames(raw_data))
+            rownames(raw_data) <- gsub("^hs_|^hs-", "hg19-", rownames(raw_data))
+        }
+        if (!is.null(required_features)) {
+            required_features <- required_features[!make.names(required_features) %in% make.names(rownames(raw_data))]
+            if (length(required_features)) {
+                raw_data_required <- matrix(0, nrow = length(required_features),
+                    ncol = ncol(raw_data), 
+                    dimnames=list(required_features, colnames(raw_data)))
+                raw_data <- rbind(raw_data, raw_data_required)
+            }
+            raw_data <- raw_data[Matrix::rowSums(raw_data) >= min_spots | 
+                                 make.names(rownames(raw_data)) %in% make.names(required_features), ]
+        } else {
+            raw_data <- raw_data[Matrix::rowSums(raw_data) >= min_spots, ]
+        }    
+        ndata <- CreateSeuratObject(raw_data, min.cells = 0,
+            min.features = min_features, project = sampleid, assay = assay)
+    }
     mito.features <- grep(pattern = mt_pattern, x = rownames(x = ndata), value = TRUE)
     ndata <- PercentageFeatureSet(object = ndata, pattern = mt_pattern, col.name = "percent.mito")
     ndata <- PercentageFeatureSet(object = ndata, pattern = rp_pattern, col.name = "percent.ribo")
@@ -302,7 +307,8 @@ read_spaceranger_metrics <- function(filtered_feature_bc_matrix_dir,
         return()
     }
     metrics <- read.csv(metrics_file)
-    if (metrics[["Fraction.Reads.in.Spots.Under.Tissue"]] < 0.5) {
+    if (!is.null(metrics[["Fraction.Reads.in.Spots.Under.Tissue"]]) &&
+                 metrics[["Fraction.Reads.in.Spots.Under.Tissue"]] < 0.5) {
         flog.warn("Low 'Fraction Reads in Spots Under Tissue' %.2f. Ideal > 0.5. Application performance may be affected. Many of the reads were not assigned to tissue covered spots. This could be caused by high levels of ambient RNA resulting from inefficient permeabilization, because the incorrect image was used, or because of poor tissue detection. The latter case can be addressed by using the manual tissue selection option through Loupe.", metrics[["Fraction.Reads.in.Spots.Under.Tissue"]])
     } 
     return(metrics)

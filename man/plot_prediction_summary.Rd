@@ -33,7 +33,7 @@ plot_prediction_summary(
 
 \item{png}{Create PNG image files}
 
-\item{...}{Arguments passed to \code{plot_features}.}
+\item{...}{Arguments passed to \code{Seurat::SpatialDimPlot}.}
 }
 \description{
 Plots a categorical prediction summary in a Seurat object on HE slides.

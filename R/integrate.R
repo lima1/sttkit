@@ -205,16 +205,16 @@ cluster_integrated <- function(integrated, regressout, scale = NULL,
     flog.info("Running PCA...")
     integrated <- RunPCA(object = integrated, npcs = 30, verbose = verbose)
     flog.info("Running UMAP...")
-    integrated <- RunUMAP(object = integrated, reduction = "pca",
+    integrated <- RunUMAP(object = integrated, reduction = .get_reduction(integrated, type = "pca"),
         dims = 1:30, verbose = verbose)
     if (plot_umap) {
         flog.info("Plotting UMAP...")
         pdf(.get_advanced_path(prefix, umap_suffix), width = 10, height = 5)
         if ("call" %in% colnames(integrated@meta.data)) {
-            print(DimPlot(integrated, reduction = "umap", split.by = "technology",
+            print(DimPlot(integrated, reduction = .get_reduction(integrated), split.by = "technology",
                           group.by = "call"))
         } else {
-            print(DimPlot(integrated, reduction = "umap", split.by = "technology",
+            print(DimPlot(integrated, reduction = .get_reduction(integrated), split.by = "technology",
                           group.by = "library"))
         }    
         dev.off()
@@ -283,7 +283,7 @@ cluster_reference <- function(integrated, resolution = 0.8, sub = FALSE,
                if (plot_umap) {
                    pdf(.get_advanced_path(prefix, paste0("_", reference_technology, "_cluster_", sub, features,
                         resolution_label, "predictedid.pdf")), width = 10, height = 10)
-                   print(DimPlot(obj_ref, reduction = "umap", split.by = "predicted.id"))
+                   print(DimPlot(obj_ref, reduction = .get_reduction(obj_ref), split.by = "predicted.id"))
                    dev.off()
                }
             }
@@ -397,7 +397,7 @@ find_nearest_neighbors <- function(object, split.by = "library") {
         flog.info("Plotting UMAP...")
         umap_suffix <- "_umap_post_harmony_overview.pdf"
         pdf(.get_advanced_path(prefix, umap_suffix), width = 10, height = 5)
-        print(DimPlot(merged, reduction = "umap", split.by = "technology",
+        print(DimPlot(merged, reduction = .get_reduction(merged), split.by = "technology",
                           group.by = "library"))
         dev.off()
     } else {
@@ -432,7 +432,7 @@ find_nearest_neighbors <- function(object, split.by = "library") {
         umap_suffix <- "_umap_post_fastmnn_overview.pdf"
         pdf(.get_advanced_path(prefix, umap_suffix), width = 10, height = 5)
         DefaultAssay(merged) <- assay.use
-        print(DimPlot(merged, reduction = "umap", split.by = "technology",
+        print(DimPlot(merged, reduction = .get_reduction(merged), split.by = "technology",
                           group.by = "library"))
         dev.off()
     } else {
