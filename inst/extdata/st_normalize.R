@@ -6,7 +6,7 @@ suppressPackageStartupMessages(library(reshape2))
 
 option_list <- list(
     make_option(c("--infile"), action = "store", type = "character", default = NULL,
-        help = "Infile SpatialTranscriptomics data tsv file. Rows spots, columns genes. "),
+        help = "Infile SpatialTranscriptomics data tsv file. Rows spots, columns genes. Can also be an RDS file with a Seurat object."),
     make_option(c("--spaceranger_dir"), action = "store", type = "character", default = NULL,
         help = "Path to SpaceRanger output for Visum data."),
     make_option(c("--spaceranger_probe_set"), action = "store", type = "character", default = NULL,
@@ -170,16 +170,27 @@ if (!opt$force && file.exists(filename)) {
         required_features <- Reduce(union, gmt)
     }
     if (!is.null(opt$infile)) {
-        ndata <- read_spatial(opt$infile, min_spots = opt$min_spots,
-                             min_features = opt$min_features,
-                             required_features = required_features,
-                             image = opt$hejpeg,
-                             transpose = opt$transpose,
-                             sampleid = opt$sampleid,
-                             downsample_prob = opt$downsample_prob,
-                             gtf = opt$gtf,
-                             mane = opt$mane,
-                             prefix = opt$outprefix)
+        if (tolower(xfun::file_ext(opt$infile)) == "rds") {
+            ndata <- readRDS(opt$infile)
+            ndata <- read_spatial(ndata, min_spots = opt$min_spots,
+                                 min_features = opt$min_features,
+                                 sampleid = opt$sampleid,
+                                 downsample_prob = opt$downsample_prob,
+                                 gtf = opt$gtf,
+                                 mane = opt$mane,
+                                 prefix = opt$outprefix)
+        } else {
+            ndata <- read_spatial(opt$infile, min_spots = opt$min_spots,
+                                 min_features = opt$min_features,
+                                 required_features = required_features,
+                                 image = opt$hejpeg,
+                                 transpose = opt$transpose,
+                                 sampleid = opt$sampleid,
+                                 downsample_prob = opt$downsample_prob,
+                                 gtf = opt$gtf,
+                                 mane = opt$mane,
+                                 prefix = opt$outprefix)
+        }
     } else {
         ndata <- read_visium(
                              opt$spaceranger_dir,
