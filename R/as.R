@@ -44,7 +44,7 @@ as_SpatialRNA <- function(object, assay = "Spatial", slot = "counts",  ...) {
     if (!requireNamespace("spacexr", quietly = TRUE)) {
         stop("Install spacexr.")
     }
-    counts <- GetAssayData(object, assay = assay, slot = slot)
+    counts <- round(GetAssayData(object, assay = assay, slot = slot))
     coords <- GetTissueCoordinates(object)
 
     return(spacexr::SpatialRNA(coords, counts, ...))
