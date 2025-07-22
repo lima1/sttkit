@@ -315,6 +315,10 @@ if (!opt$force && file.exists(filename_singlecell)) {
             flog.warn("Removing cells from rare cell-types (< 5 cells).")
             x <- x[, idx]
         }
+        if (length(VariableFeatures(x)) != opt[["num_integration_features"]]) {
+            flog.warn("Recomputing %i variable features.", opt[["num_integration_features"]])
+            FindVariableFeatures(x, nfeatures = opt[["num_integration_features"]])
+        }
         return(x)
     })
     if (!is.null(names(singlecell))) {
